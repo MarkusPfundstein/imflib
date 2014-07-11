@@ -6,6 +6,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
 //#include <libavutil/samplefmt.h>
 //#include <libavutil/timestamp.h>
 #ifdef __cplusplus
@@ -16,7 +17,7 @@ extern "C" {
 #include <mutex>
 
 InputStreamDecoder::InputStreamDecoder(const std::string &file)
-    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams()
+    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(PIX_FMT_RGB24)
 {
     OpenFile(file);
 }
@@ -24,15 +25,15 @@ InputStreamDecoder::InputStreamDecoder(const std::string &file)
 InputStreamDecoder::~InputStreamDecoder()
 {
     CloseFile();
+    if (_swsContext) {
+        sws_freeContext(_swsContext);
+    }
 }
 
 void InputStreamDecoder::CloseFile()
 {
     if (_formatContext) {
         avformat_close_input(&_formatContext);
-    }
-    if (_videoStreamContext.videoFrame.bufferSize > 0) {
-        av_free(_videoStreamContext.videoFrame.videoData[0]);
     }
 }
 
@@ -52,6 +53,8 @@ void InputStreamDecoder::OpenFile(const std::string& file)
 
     bool gotVideo = false;
     for (unsigned int i = 0; i < _formatContext->nb_streams; ++i) {
+
+        // first , lets get codec and codec context
         AVStream *stream = _formatContext->streams[i];
 
         AVCodec *codec = avcodec_find_decoder(stream->codec->codec_id);
@@ -104,6 +107,11 @@ void InputStreamDecoder::OpenFile(const std::string& file)
                     throw std::runtime_error("Couldn't allocate image buffer");
                 }
 
+                _swsContext = sws_getContext(stream->codec->width, stream->codec->height, (PixelFormat) stream->codec->pix_fmt, stream->codec->width, stream->codec->height, (PixelFormat) _targetFormat, SWS_BILINEAR, nullptr, nullptr, nullptr);
+                if (_swsContext == nullptr) {
+                    throw std::runtime_error("Error while calling sws_getContext");
+                }
+
                 _videoStreamContext.videoFrame.bufferSize = bufSize;
 
                 gotVideo = true;
@@ -121,6 +129,7 @@ void InputStreamDecoder::OpenFile(const std::string& file)
         }
     }
 
+    // unlikely
     if ((gotVideo == false) && _audioStreams.empty() && _subtitleStreams.empty()) {
         throw std::runtime_error("no streams detected");
     }
@@ -129,29 +138,29 @@ void InputStreamDecoder::OpenFile(const std::string& file)
 void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback)
 {
     AVPacket packet;
-    av_init_packet(&packet);
     packet.data = nullptr;
+    packet.size = 0;
 
     bool noError = true;
 
+    // memory managed AVFrame.
     std::shared_ptr<AVFrame> decodedFrame(avcodec_alloc_frame(), &av_free);
 
-    //std::ofstream outFile("/home/markus/raw", std::ofstream::out | std::ofstream::binary);
-    //if (!outFile.is_open()) {
-    //throw std::runtime_error("error opening raw out file");
-    //}
-
+    // decoding loop
     while (noError) {
 
+        // NOTE: FROM HERE ON av_free_packet must be called somewhere.
+        // so dont just leave the loop
         if (av_read_frame(_formatContext, &packet) < 0) {
             std::cout << "done" << std::endl;
             break;
         }
 
-        // store reference to original packet. for freeing memory later on
+        // store reference to original packet. for freeing memory later on. because
+        // next loop will adjust data offset
         AVPacket origPacket = packet;
 
-        // decode packet
+        // decode packet.
         do {
             int gotFrame = 0;
             FRAME_TYPE frameType;
@@ -160,6 +169,7 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
                 noError = false;
                 break;
             }
+            // awesome. we got a full frame
             if (gotFrame) {
                 bool success = HandleFrame(*decodedFrame, frameType, videoCallback, audioCallback);
                 if (success == false) {
@@ -167,6 +177,8 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
                     break;
                 }
             }
+
+            // packet could still have data, lets adjust data pointer and size
             packet.data += processedBytes;
             packet.size -= processedBytes;
         } while (packet.size > 0);
@@ -176,7 +188,6 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
     }
 
     // flush remaining data
-
     packet.data = nullptr;
     packet.size = 0;
 
@@ -185,33 +196,49 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
 
     do {
         DecodePacket(packet, *decodedFrame, gotFrame, frameType);
+
+        // VERY unlikely. but why not.
         if (gotFrame) {
             HandleFrame(*decodedFrame, frameType, videoCallback, audioCallback);
         }
     } while (gotFrame);
-
-    //outFile.flush();9
-
-    //outFile.close();
 }
 
 bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback)
 {
     bool success = true;
 
+    AVPicture pic;
+
     switch (frameType) {
         case FRAME_TYPE::VIDEO:
-            av_image_copy(_videoStreamContext.videoFrame.videoData,
+
+            // THIS WOULD LEAVE COLOR SPACE
+            // copy whole image data into our video data array
+            /*av_image_copy(_videoStreamContext.videoFrame.videoData,
                           _videoStreamContext.videoLineSize,
                           (const uint8_t **)(decodedFrame.data),
                           decodedFrame.linesize,
-                          _videoStreamContext.context->pix_fmt,
-                          _videoStreamContext.context->width,
-                          _videoStreamContext.context->height);
+                          (PixelFormat)decodedFrame.format,
+                          decodedFrame.width,
+                          decodedFrame.height);*/
 
+
+
+            avpicture_alloc(&pic, (PixelFormat)_targetFormat, decodedFrame.width, decodedFrame.height);
+            sws_scale(_swsContext, decodedFrame.data, decodedFrame.linesize, 0, decodedFrame.height, pic.data, pic.linesize);
+
+            // TO-DO: Give owhership over data to _videoStreamContext
+            _videoStreamContext.videoFrame.pixelFormat = _targetFormat;
+            for (int i = 0; i < 4; ++i) {
+                _videoStreamContext.videoFrame.videoData[i] = pic.data[i];
+                _videoStreamContext.videoFrame.linesize[i] = pic.linesize[i];
+            }
+
+            // pass RawVideoFrame to user so that she can do what she wants.
             success = videoCallback(_videoStreamContext.videoFrame);
 
-            //outFile.write((const char*)_videoStreamContext.videoFrame.videoData[0], _videoStreamContext.videoFrame.bufferSize);
+            avpicture_free(&pic);
             break;
         case FRAME_TYPE::AUDIO:
             //audioCallback(*decodedFrame);
@@ -219,7 +246,8 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
         case FRAME_TYPE::SUBTITLES:
         case FRAME_TYPE::UNKNOWN:
         default:
-            break;
+            // maybe no throwing here. time will tell...
+            throw new std::runtime_error("invalid frame type");
     }
 
     return success;
@@ -227,16 +255,17 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
 
 int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType)
 {
-    // search for video stream
     AVStream* stream = _videoStreamContext.stream;
-    AVCodecContext *codecContext = _videoStreamContext.context.get();
-    if (stream->index == packet.stream_index) {
-        int processedBytes = avcodec_decode_video2(codecContext, &decodedFrame, &gotFrame, &packet);
-        std::cout << "[VIDEO] processedBytes: " << processedBytes << std::endl;
-        frameType = FRAME_TYPE::VIDEO;
-        return processedBytes;
+    // there could be no video stream
+    if (stream) {
+        AVCodecContext *codecContext = _videoStreamContext.context.get();
+        if (stream->index == packet.stream_index) {
+            int processedBytes = avcodec_decode_video2(codecContext, &decodedFrame, &gotFrame, &packet);
+            std::cout << "[VIDEO] processedBytes: " << processedBytes << std::endl;
+            frameType = FRAME_TYPE::VIDEO;
+            return processedBytes;
+        }
     }
-
 
     // search for audio stream
     for (auto i = _audioStreams.begin(); i != _audioStreams.end(); ++i) {
@@ -250,6 +279,7 @@ int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, in
         }
     }
 
+    // very unlikely
     frameType = FRAME_TYPE::UNKNOWN;
 
     return -1;

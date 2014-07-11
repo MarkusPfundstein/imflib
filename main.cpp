@@ -9,34 +9,35 @@ int main(int argc, char **argv)
 {
     InputStreamDecoder::RegisterAVFormat();
 
-    std::ofstream outFile("/home/markus/Documents/IMF/TestFiles/OUTPUT_RAW", std::ios::binary | std::ios::out);
-    if (!outFile.is_open()) {
+    std::ofstream rawOutFile("/home/markus/Documents/IMF/TestFiles/OUTPUT_RAW", std::ios::binary | std::ios::out);
+    if (!rawOutFile.is_open()) {
         throw std::runtime_error("couldnt open output file");
     }
 
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL.mpeg";
-    // std::string inputFile = ""/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
+    inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
 
     InputStreamDecoder decoder(inputFile);
 
     J2KEncoder j2kEncoder;
 
-    decoder.Decode([&outFile] (RawVideoFrame &frame) {
+    decoder.Decode([&rawOutFile, &j2kEncoder] (RawVideoFrame &rawFrame) {
                     std::cout << "got raw video frame" << std::endl;
 
-                    outFile.write((const char*)frame.videoData[0], frame.bufferSize);
+                    rawOutFile.write((const char*)rawFrame.videoData[0], rawFrame.linesize[0] * rawFrame.height);
 
-                    //j2kEncoder.encode(frame, [&outFile] (JPEG2KFrame& jpegFrame) {
-                    //                  });
+                    J2kFrame encodedFrame;
+                    j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame);
 
                     return true;
                    },
-                   [] (AVFrame &frame) {
+                   [] (AVFrame &rawFrame) {
                     std::cout << "got raw audio frame" << std::endl;
                     return true;
                    });
 
-    outFile.flush();
+    rawOutFile.flush();
+    rawOutFile.close();
 
     return 0;
 }

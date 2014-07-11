@@ -1,6 +1,13 @@
 #ifndef J2KENCODER_H
 #define J2KENCODER_H
 
+// forward declarations
+struct RawVideoFrame;
+
+struct J2kFrame
+{
+
+};
 
 class J2KEncoder
 {
@@ -8,8 +15,7 @@ class J2KEncoder
         J2KEncoder();
         virtual ~J2KEncoder();
 
-    protected:
-    private:
+        bool EncodeRawFrame(RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame);
 };
 
 #endif // J2KENCODER_H

@@ -7,6 +7,8 @@
 #include <tuple>
 #include <functional>
 
+#include "rawvideoframe.h"
+
 // forward references
 
 class Frame;
@@ -19,19 +21,9 @@ struct AVCodecContext;
 struct AVPacket;
 struct AVFrame;
 
-struct RawVideoFrame
-{
-    RawVideoFrame() : bufferSize(-1), pixelFormat(0), width(0), height(0), fieldOrder(0) {}
+struct RawVideoFrame;
 
-    uint8_t *videoData[4];
-    int bufferSize;
-
-    int pixelFormat;
-    int width;
-    int height;
-
-    int fieldOrder;
-};
+struct SwsContext;
 
 class InputStreamDecoder
 {
@@ -79,6 +71,11 @@ class InputStreamDecoder
         // we store the raw pointers to AVStream. because livetime of stream depends anyway on _formatContext
         std::vector<std::tuple<AVStream*, CodecContextPtr>> _audioStreams;
         std::vector<std::tuple<AVStream*, CodecContextPtr>> _subtitleStreams;
+
+        // Context for converting color space
+        SwsContext *_swsContext;
+
+        int _targetFormat;
 };
 
 #endif // INPUTSTREAMDECODER_H
