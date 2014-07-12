@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     }
 
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL.mpeg";
-    inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
+    //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
 
     InputStreamDecoder decoder(inputFile);
 
@@ -27,9 +27,7 @@ int main(int argc, char **argv)
                     rawOutFile.write((const char*)rawFrame.videoData[0], rawFrame.linesize[0] * rawFrame.height);
 
                     J2kFrame encodedFrame;
-                    j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame);
-
-                    return true;
+                    return j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame);
                    },
                    [] (AVFrame &rawFrame) {
                     std::cout << "got raw audio frame" << std::endl;
