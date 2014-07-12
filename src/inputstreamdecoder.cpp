@@ -102,17 +102,10 @@ void InputStreamDecoder::OpenFile(const std::string& file)
                 _videoStreamContext.videoFrame.pixelFormat = stream->codec->pix_fmt;
                 _videoStreamContext.videoFrame.fieldOrder = stream->codec->field_order;
 
-                bufSize = av_image_alloc(_videoStreamContext.videoFrame.videoData, _videoStreamContext.videoLineSize, stream->codec->width, stream->codec->height, stream->codec->pix_fmt, 1);
-                if (bufSize < 0) {
-                    throw std::runtime_error("Couldn't allocate image buffer");
-                }
-
                 _swsContext = sws_getContext(stream->codec->width, stream->codec->height, (PixelFormat) stream->codec->pix_fmt, stream->codec->width, stream->codec->height, (PixelFormat) _targetFormat, SWS_BILINEAR, nullptr, nullptr, nullptr);
                 if (_swsContext == nullptr) {
                     throw std::runtime_error("Error while calling sws_getContext");
                 }
-
-                _videoStreamContext.videoFrame.bufferSize = bufSize;
 
                 gotVideo = true;
                 break;

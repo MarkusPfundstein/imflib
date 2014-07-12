@@ -99,6 +99,12 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
 
     opj_image_destroy(image);
 
+    // this gets allocated in openjpeg lib. its seriously ridicolous :D nothing mentioned
+    // in the api or anywhere
+    if (encodingParameters.cp_comment != nullptr) {
+        free(encodingParameters.cp_comment);
+    }
+
     return success;
 }
 
