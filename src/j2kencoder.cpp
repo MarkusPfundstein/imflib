@@ -54,6 +54,9 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     // ??? seriously ???
     int bigEndian = false;
 
+    int widthUsed = rawFrame.width;
+    int heightUsed = rawFrame.height;
+
     opj_image_cmptparm_t *componentParameter = (opj_image_cmptparm_t*) malloc((size_t)numberComponents * sizeof(opj_image_cmptparm_t));
     memset(&componentParameter[0], 0, (size_t)numberComponents * sizeof(opj_image_cmptparm_t));
 
@@ -63,8 +66,8 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
         componentParameter[i].sgnd = (uint32_t) bigEndian;
         componentParameter[i].dx = (uint32_t) encodingParameters.subsampling_dx * 1;
         componentParameter[i].dy = (uint32_t) encodingParameters.subsampling_dy * 1;
-        componentParameter[i].w = (uint32_t) rawFrame.width;
-        componentParameter[i].h = (uint32_t) rawFrame.height;
+        componentParameter[i].w = (uint32_t) widthUsed;
+        componentParameter[i].h = (uint32_t) heightUsed;
     }
 
     // create image. NOTE: THIS IMAGE MUST BE FREE'D!!!
@@ -76,24 +79,20 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
 
     image->x0 = (uint32_t) encodingParameters.image_offset_x0;
     image->y0 = (uint32_t) encodingParameters.image_offset_y0;
-    image->x1 = (uint32_t) encodingParameters.image_offset_x0 + (uint32_t) (rawFrame.width - 1) * (uint32_t) encodingParameters.subsampling_dx + 1;
-    image->y1 = (uint32_t) encodingParameters.image_offset_y0 + (uint32_t) (rawFrame.height - 1) * (uint32_t) encodingParameters.subsampling_dy + 1;
+    image->x1 = (uint32_t) encodingParameters.image_offset_x0 + (uint32_t) (widthUsed - 1) * (uint32_t) encodingParameters.subsampling_dx + 1;
+    image->y1 = (uint32_t) encodingParameters.image_offset_y0 + (uint32_t) (heightUsed - 1) * (uint32_t) encodingParameters.subsampling_dy + 1;
 
     unsigned char* dataPtr = rawFrame.videoData[0];
 
-    if (rawBitDepth == 8) {
-        unsigned char value = 0;
-        for (int i = 0; i < numberComponents; ++i) {
-            int loop = (rawFrame.width * rawFrame.height);
-            for (int j = 0; j < loop; ++j) {
-                unsigned char t = dataPtr[i * loop + j];
-                image->comps[i].data[j] = rawSigned ? (char)value : value;
-            }
+    int jpegIndex = 0;
+    for (int y = 0; y < heightUsed; ++y) {
+        for (int x = 0; x < widthUsed; ++x) {
+            int rgbIndex = x * 3;
+            image->comps[0].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 0)];	// R
+            image->comps[1].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 1)];	// G
+            image->comps[2].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 2)];	// B
+            jpegIndex++;
         }
-    } else {
-        std::cout << "[J2kEncoder] Unsupported bitrate" << std::endl;
-        opj_image_destroy(image);
-        return false;
     }
 
     bool success = EncodeImage(image, encodedFrame, encodingParameters);
