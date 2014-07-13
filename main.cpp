@@ -7,6 +7,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include <AS_02.h>
+
 bool HandleVideoFrame(RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder)
 {
     static int DEBUG_WRITE_COUNT = 0;
@@ -50,7 +52,6 @@ int main(int argc, char **argv)
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL.mpeg";
     //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
     InputStreamDecoder decoder(inputFile);
-
 
     decoder.Decode([&j2kEncoder] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder); },
                    [] (AVFrame &rawFrame) {

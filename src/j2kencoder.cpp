@@ -26,13 +26,15 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     encodingParameters.cp_ty0 = 0;
     encodingParameters.subsampling_dx = 1;
     encodingParameters.subsampling_dy = 1;
-    encodingParameters.tcp_mct = 1;         // yes, multiple components.
+    encodingParameters.tcp_mct = 1;         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
+    std::cout << (encodingParameters.tcp_mct == 0 ? "STORE AS RGB" : "STORE AS YUV") << std::endl;
 
     // store here string for code stream commment. must be on heap. gets FREE'd below (not delete'd).
     // if you dont do it it gets allocated anyway . lol
     //encodingParameters.cp_comment = (char*)malloc(blabla)
 
     // without this we get segfault. no idea why -> TO-DO: find out :-)
+    // but what stands there means that we store lossless. 1 layer, comp. rate of that layer = 0
     if (encodingParameters.tcp_numlayers == 0) {
         encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug
         encodingParameters.tcp_numlayers++;
@@ -47,7 +49,10 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     // We get RGB24 image data. Thus 3 components, 8 bit per component
     int numberComponents = 3;
     int rawBitDepth = 8;
+
+    // doesnt seem to affect the output file
     OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SRGB;
+    //OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SYCC;
 
     // no idea
     // int rawSigned = true;
