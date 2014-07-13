@@ -2,13 +2,11 @@
 #include "rawvideoframe.h"
 
 
-#include <vector>
 #include <stdexcept>
 #include <iostream>
 #include <cstring> // memset
 
-#include <sstream>
-#include <iomanip>
+#include <functional>
 
 J2KEncoder::J2KEncoder()
 {
@@ -30,6 +28,10 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     encodingParameters.subsampling_dy = 1;
     encodingParameters.tcp_mct = 1;         // yes, multiple components.
 
+    // store here string for code stream commment. must be on heap. gets FREE'd below (not delete'd).
+    // if you dont do it it gets allocated anyway . lol
+    //encodingParameters.cp_comment = (char*)malloc(blabla)
+
     // without this we get segfault. no idea why -> TO-DO: find out :-)
     if (encodingParameters.tcp_numlayers == 0) {
         encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug
@@ -37,11 +39,10 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
         encodingParameters.cp_disto_alloc = 1;
     }
 
-    // not used in openjpeg lib
-    //encodingParameters.image_offset_x0 = 0;
-    //encodingParameters.image_offset_y0 = 0;
-    //encodingParameters.cod_format = 0;
-    //encodingParameters.decod_format = 15;       // or 18
+    // IMF profiles - TO-DO: they dont do anything yet. thus are not implemented into jpeg2000. lets fix this later
+    //encodingParameters.rsiz = OPJ_PROFILE_IMF_2K_R;
+    //encodingParameters.rsiz = OPJ_PROFILE_IMF_4K_R;
+    //encodingParameters.rsiz = OPJ_PROFILE_IMF_8K_R;
 
     // We get RGB24 image data. Thus 3 components, 8 bit per component
     int numberComponents = 3;
@@ -49,7 +50,7 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SRGB;
 
     // no idea
-    int rawSigned = true;
+    // int rawSigned = true;
 
     // ??? seriously ???
     int bigEndian = false;
@@ -100,7 +101,7 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     opj_image_destroy(image);
 
     // this gets allocated in openjpeg lib. its seriously ridicolous :D nothing mentioned
-    // in the api or anywhere
+    // in the api or anywhere. nevertheless, we have to free it here
     if (encodingParameters.cp_comment != nullptr) {
         free(encodingParameters.cp_comment);
     }
@@ -110,11 +111,6 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
 
 bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cparameters_t &parameters)
 {
-    static int DEBUG_WRITE_COUNT = 0;
-
-    std::stringstream DS;
-    DS << "/home/markus/Documents/IMF/TestFiles/J2KFILES/" << std::setw( 7 ) << std::setfill( '0' ) << DEBUG_WRITE_COUNT << ".j2c";
-    std::string DEBUG_OUT_FILE = DS.str();
 
     opj_codec_t* codec = opj_create_compress((OPJ_CODEC_FORMAT) 0);
     if (codec == nullptr) {
@@ -122,20 +118,27 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
         return false;
     }
 
+    opj_set_info_handler(codec, [](const char* s, void *) { std::cout << "[I]" << s << std::endl; }, nullptr);
+    opj_set_warning_handler(codec, [](const char* s, void *) { std::cout << "[I]" << s << std::endl; }, nullptr);
+    opj_set_error_handler(codec, [](const char* s, void *) { std::cout << "[I]" << s << std::endl; }, nullptr);
+
+
     opj_setup_encoder(codec, &parameters, image);
 
-    opj_set_info_handler(codec, [](const char* s, void *c) { std::cout << "[I]" << s << std::endl; }, nullptr);
-    opj_set_warning_handler(codec, [](const char* s, void *c) { std::cout << "[I]" << s << std::endl; }, nullptr);
-    opj_set_error_handler(codec, [](const char* s, void *c) { std::cout << "[I]" << s << std::endl; }, nullptr);
 
     // TO-DO: Move from file stream to memory stream
-
-    opj_stream_t* stream = opj_stream_create_default_file_stream(DEBUG_OUT_FILE.c_str(), false);
+    //opj_stream_t* stream = opj_stream_create_default_file_stream(DEBUG_OUT_FILE.c_str(), false);
+    opj_stream_t* stream = opj_stream_default_create(false);
     if (stream == nullptr) {
-        std::cout << "error creating outputfile for j2k" << DEBUG_OUT_FILE << std::endl;
         opj_destroy_codec(codec);
         return false;
     }
+
+    opj_stream_set_user_data(stream, &encodedFrame, nullptr);
+    opj_stream_set_write_function(stream, &J2KEncoder::WriteJ2kFrame);
+
+
+    // TO-DO : ADD TILE SUPPORT
 
     std::cout << "start compress" << std::endl;
     bool success = opj_start_compress(codec, image, stream);
@@ -153,12 +156,17 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
         std::cout << "failed to encode image: opj_end_compress" << std::endl;
     }
 
-    std::cout << "GENERATED: " << DEBUG_OUT_FILE << std::endl;
-
     opj_stream_destroy(stream);
     opj_destroy_codec(codec);
 
-    DEBUG_WRITE_COUNT++;
-
     return true;
+}
+
+OPJ_SIZE_T J2KEncoder::WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *userData)
+{
+    J2kFrame *frame = static_cast<J2kFrame*>(userData);
+    frame->data.reserve(bufferSize);
+    std::copy((uint8_t*)data, (uint8_t*)data + bufferSize, std::back_inserter(frame->data));
+
+    return bufferSize;
 }

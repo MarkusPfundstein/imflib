@@ -81,8 +81,6 @@ void InputStreamDecoder::OpenFile(const std::string& file)
             throw std::runtime_error("Could not open codec");
         }
 
-        int bufSize = 0;
-
         switch (stream->codec->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
                 if (gotVideo) {
@@ -200,6 +198,7 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
 bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback)
 {
     bool success = true;
+    (void)audioCallback;
 
     AVPicture pic;
 
