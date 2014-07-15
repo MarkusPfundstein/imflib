@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <boost/any.hpp>
+#include <list>
 
 class MXFWriter
 {
@@ -11,7 +12,7 @@ class MXFWriter
         MXFWriter(const std::map<std::string, boost::any> &muxerOptions);
         virtual ~MXFWriter();
 
-        void MuxVideoFiles(const std::string& inputDirectory, const std::string &finalFile);
+        void MuxVideoFiles(const std::list<std::string> &files, const std::string &finalFile);
     protected:
     private:
 

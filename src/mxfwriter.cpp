@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include <stdexcept>
+#include <memory>
 
 #include "rationalnumber.h"
 
@@ -47,20 +48,20 @@ MXFWriter::~MXFWriter()
     //dtor
 }
 
-void MXFWriter::MuxVideoFiles(const std::string& inputDirectory, const std::string& finaleFile )
+void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::string& finalFile )
 {
     AESEncContext* context = nullptr;
     HMACContext* HMAC = nullptr;
     AS_02::JP2K::MXFWriter writer;
     JP2K::FrameBuffer frameBuffer(4 * Kumu::Megabyte);
     JP2K::SequenceParser parser;
-    byte_t IV_buf[CBC_BLOCK_SIZE];
+    //byte_t IV_buf[CBC_BLOCK_SIZE];
     Kumu::FortunaRNG rng;
     MXF::FileDescriptor *essenceDescriptor = nullptr;
     MXF::InterchangeObject_list_t essenceSubDescriptors;
     const Dictionary *dict = &DefaultSMPTEDict();
 
-    Result_t result = parser.OpenRead(inputDirectory.c_str(), true);
+    Result_t result = parser.OpenRead(files, true);
     if (ASDCP_SUCCESS(result) == 0) {
         throw std::runtime_error("error opening j2k parser");
     }
@@ -77,11 +78,13 @@ void MXFWriter::MuxVideoFiles(const std::string& inputDirectory, const std::stri
 
     JP2K::PictureDescriptorDump(pictureDescriptor);
 
+    MXF::JPEG2000PictureSubDescriptor* pictureSubDescriptor = new MXF::JPEG2000PictureSubDescriptor(dict);
+
     bool yuvEssence = boost::any_cast<bool>(_muxerOptions["yuv_essence"]);
     if (yuvEssence) {
         std::cout << "write yuv essence" << std::endl;
         MXF::CDCIEssenceDescriptor* cdciDescriptor = new MXF::CDCIEssenceDescriptor(dict);
-        essenceSubDescriptors.push_back(new MXF::JPEG2000PictureSubDescriptor(dict));
+        essenceSubDescriptors.push_back(pictureSubDescriptor);
 
         result = JP2K_PDesc_to_MD(pictureDescriptor,
                                   *dict,
@@ -101,7 +104,7 @@ void MXFWriter::MuxVideoFiles(const std::string& inputDirectory, const std::stri
     } else {
         std::cout << "write rgb essence" << std::endl;
         MXF::RGBAEssenceDescriptor* rgbDescriptor = new MXF::RGBAEssenceDescriptor(dict);
-        essenceSubDescriptors.push_back(new MXF::JPEG2000PictureSubDescriptor(dict));
+        essenceSubDescriptors.push_back(pictureSubDescriptor);
 
         result = JP2K_PDesc_to_MD(pictureDescriptor,
                                   *dict,
@@ -118,5 +121,62 @@ void MXFWriter::MuxVideoFiles(const std::string& inputDirectory, const std::stri
 
     if (essenceDescriptor == nullptr) {
         throw std::runtime_error("unable to obtain essence descriptor");
+    }
+
+    WriterInfo info = s_MyInfo;
+    info.LabelSetType = LS_MXF_SMPTE;
+
+    std::map<std::string, boost::any>::iterator it = _muxerOptions.find("asset_id");
+    if (it != _muxerOptions.end()) {
+        std::string assetId = boost::any_cast<std::string>(it->second);
+        std::cout << "Use asset id " << assetId << std::endl;
+        memcpy(info.AssetUUID, assetId.c_str(), UUIDlen);
+    } else {
+        std::cout << "Random UUID" << std::endl;
+        Kumu::GenRandomUUID(info.AssetUUID);
+    }
+
+    result = writer.OpenWrite(finalFile,
+                              info,
+                              essenceDescriptor,
+                              essenceSubDescriptors,
+                              pictureDescriptor.EditRate,
+                              16384, // mxf header size
+                              AS_02::IS_FOLLOW, // index strategy
+                              60); // partition space
+
+    if (ASDCP_FAILURE(result)) {
+        throw std::runtime_error("error open mxf writer");
+    }
+
+    result = parser.Reset();
+    while (ASDCP_SUCCESS(result)) {
+        result = parser.ReadFrame(frameBuffer);
+
+        if (ASDCP_SUCCESS(result)) {
+            //if ( Options.verbose_flag )
+            //FrameBuffer.Dump(stderr, Options.fb_dump_size);
+            //if ( Options.encrypt_header_flag )
+            //FrameBuffer.PlaintextOffset(0);
+            //}
+        }
+
+        if (ASDCP_SUCCESS(result)) {
+            result = writer.WriteFrame(frameBuffer, context, HMAC);
+
+            // The Writer class will forward the last block of ciphertext
+            // to the encryption context for use as the IV for the next
+            // frame. If you want to use non-sequitur IV values, un-comment
+            // the following  line of code.
+            // if ( ASDCP_SUCCESS(result) && Options.key_flag )
+            //     Context->SetIVec(RNG.FillRandom(IV_buf, CBC_BLOCK_SIZE));
+        }
+    }
+
+    if (result == RESULT_ENDOFFILE) {
+        result = writer.Finalize();
+        if (ASDCP_FAILURE(result)) {
+            throw std::runtime_error("error writing mxf file");
+        }
     }
 }

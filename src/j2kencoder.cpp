@@ -65,7 +65,7 @@ void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     //encodingParameters.rsiz = OPJ_PROFILE_IMF_4K_R;
     //encodingParameters.rsiz = OPJ_PROFILE_IMF_8K_R;
 
-    // We get RGB24 image data. Thus 3 components, 8 bit per component
+    // will probably always be 3
     int numberComponents = 3;
 
     int rawBitDepth = static_cast<int>(_targetBitRate);
@@ -158,12 +158,10 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
 
     // TO-DO : ADD TILE SUPPORT
 
-    std::cout << "start compress" << std::endl;
     bool success = opj_start_compress(codec, image, stream);
     if (success == false)  {
         std::cout << "ERROR opj_start_compress" << std::endl;
     } else {
-        std::cout << "start encode" << std::endl;
         success = success && opj_encode(codec, stream);
         if (success == false) {
             std::cout << "ERROR opj_encode" << std::endl;
@@ -177,7 +175,7 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
     opj_stream_destroy(stream);
     opj_destroy_codec(codec);
 
-    return true;
+    return success;
 }
 
 OPJ_SIZE_T J2KEncoder::WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *userData)

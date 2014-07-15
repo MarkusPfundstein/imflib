@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <iomanip>
-#include <vector>
+#include <list>
 #include <boost/filesystem.hpp>
 #include <signal.h>
 
@@ -25,7 +25,7 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
     std::cout << "[WRITE] wrote " << encodedFrame.data.size() << " Bytes to: " << targetFile << std::endl;
 }
 
-bool HandleVideoFrame(RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::vector<std::string> &outFiles, const std::string& outFilePath)
+bool HandleVideoFrame(RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
 {
     std::stringstream ss;
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     }
 
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL.mpeg";
-    inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p_SMALL.mp4";
+    //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p_SMALL.mp4";
 
     if (!filesystem::is_regular_file(inputFile)) {
         std::cerr << inputFile << " is not a file" << std::endl;
@@ -112,20 +112,21 @@ int main(int argc, char **argv)
     std::map<std::string, boost::any> muxerOptions;
 
     // storage for all j2k files. we need that later for asdcp lib
-    std::vector<std::string> j2kFiles;
+    std::list<std::string> j2kFiles;
 
     signal(SIGINT, SignalHandler);
     signal(SIGTERM, SignalHandler);
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
+        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_YUV444;
         bool yuvEssence = false;
         if (colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444) {
             yuvEssence = true;
         }
 
-        J2KEncoder::BIT_RATE bitRate = J2KEncoder::BIT_RATE::BR_10bit;
+        // 10bit creates green video file :-)
+        J2KEncoder::BIT_RATE bitRate = J2KEncoder::BIT_RATE::BR_8bit;
 
         J2KEncoder j2kEncoder(colorFormat, bitRate);
         InputStreamDecoder decoder(inputFile);
@@ -140,17 +141,21 @@ int main(int argc, char **argv)
         muxerOptions["subsampling_dx"] = 1;
         muxerOptions["subsampling_dy"] = 1;
         muxerOptions["encrypt_header"] = encryptHeader;
-        muxerOptions["bits"] = (int)bitRate;
+        muxerOptions["bits"] = static_cast<int>(bitRate);
 
         MXFWriter mxfWriter(muxerOptions);
         if (j2kFiles.empty() == false) {
-            mxfWriter.MuxVideoFiles(tempFilePath, finalVideoFile);
+            mxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile);
         }
 
         CleanJ2KFiles(tempFilePath);
     } catch (std::runtime_error &ex) {
         std::cerr << "error decoding: " << ex.what() << std::endl;
         CleanJ2KFiles(tempFilePath);
+        if (filesystem::exists(finalVideoFile)) {
+            const filesystem::path path(finalVideoFile);
+            filesystem::remove(path);
+        }
         return 1;
     }
 
