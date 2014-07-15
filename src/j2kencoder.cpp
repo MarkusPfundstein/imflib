@@ -25,14 +25,11 @@ void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     int subsamplingDx;
     int subsamplingDy;
 
-    if (_targetColorFormat != COLOR_FORMAT::CF_RGB444) {
-        throw std::runtime_error("j2k yuv not possible yet");
-    }
-
     switch (_targetColorFormat) {
         case COLOR_FORMAT::CF_YUV422:
-            subsamplingDx = subsamplingDy = 2;
-            break;
+            throw std::runtime_error("j2k yuv 422 not possible yet");
+            //subsamplingDx = subsamplingDy = 2;
+            //break;
         case COLOR_FORMAT::CF_RGB444:
         case COLOR_FORMAT::CF_YUV444:
         default:
@@ -48,7 +45,7 @@ void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     encodingParameters.cp_ty0 = 0;
     encodingParameters.subsampling_dx = 1;
     encodingParameters.subsampling_dy = 1;
-    encodingParameters.tcp_mct = 0;//_targetColorFormat == CF_RGB444 ? 0 : 1;         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
+    encodingParameters.tcp_mct = (_targetColorFormat == CF_RGB444 ? 0 : 1);         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
     std::cout << (encodingParameters.tcp_mct == 0 ? "STORE AS RGB" : "STORE AS YUV") << std::endl;
 
     // store here string for code stream commment. must be on heap. gets FREE'd below (not delete'd).
@@ -89,8 +86,8 @@ void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
         componentParameter[i].prec = (uint32_t) rawBitDepth;
         componentParameter[i].bpp = (uint32_t) rawBitDepth;
         componentParameter[i].sgnd = (uint32_t) bigEndian;
-        componentParameter[i].dx = (uint32_t) encodingParameters.subsampling_dx * (i > 0 ? subsamplingDx : 1);
-        componentParameter[i].dy = (uint32_t) encodingParameters.subsampling_dy * (i > 0 ? subsamplingDy : 1);
+        componentParameter[i].dx = (uint32_t) encodingParameters.subsampling_dx;// * (i > 0 ? subsamplingDx : 1);
+        componentParameter[i].dy = (uint32_t) encodingParameters.subsampling_dy;// * (i > 0 ? subsamplingDy : 1);
         componentParameter[i].w = (uint32_t) widthUsed;
         componentParameter[i].h = (uint32_t) heightUsed;
     }

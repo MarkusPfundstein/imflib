@@ -79,25 +79,27 @@ void MXFWriter::MuxVideoFiles(const std::string& inputDirectory, const std::stri
 
     bool yuvEssence = boost::any_cast<bool>(_muxerOptions["yuv_essence"]);
     if (yuvEssence) {
-        throw std::runtime_error("yuv muxing not possible yet");
-        /*
-        ASDCP::MXF::CDCIEssenceDescriptor* cdciDescriptor = new ASDCP::MXF::CDCIEssenceDescriptor(g_dict);
-        essence_sub_descriptors.push_back(new ASDCP::MXF::JPEG2000PictureSubDescriptor(g_dict));
+        std::cout << "write yuv essence" << std::endl;
+        MXF::CDCIEssenceDescriptor* cdciDescriptor = new MXF::CDCIEssenceDescriptor(dict);
+        essenceSubDescriptors.push_back(new MXF::JPEG2000PictureSubDescriptor(dict));
 
-        result = ASDCP::JP2K_PDesc_to_MD(PDesc, *g_dict, *static_cast<ASDCP::MXF::GenericPictureEssenceDescriptor*>(cdciDescriptor),
-					   *static_cast<ASDCP::MXF::JPEG2000PictureSubDescriptor*>(essence_sub_descriptors.back()));
+        result = JP2K_PDesc_to_MD(pictureDescriptor,
+                                  *dict,
+                                  *static_cast<MXF::GenericPictureEssenceDescriptor*>(cdciDescriptor),
+                                  *static_cast<MXF::JPEG2000PictureSubDescriptor*>(essenceSubDescriptors.back()));
 
-        if ( ASDCP_SUCCESS(result) ) {
-            cdciDescriptor->PictureEssenceCoding = Options.picture_coding;
-            cdciDescriptor->HorizontalSubsampling = 1;
-            cdciDescriptor->VerticalSubsampling = 1;
-            cdciDescriptor->ComponentDepth = Options.component_depth;
-            cdciDescriptor->FrameLayout = Options.frame_layout;
-            cdciDescriptor->AspectRatio = Options.aspect_ratio;
-            cdciDescriptor->FieldDominance = Options.field_dominance;
-            essence_descriptor = static_cast<ASDCP::MXF::FileDescriptor*>(tmp_dscr);
-	    }*/
+        if (ASDCP_SUCCESS(result)) {
+            cdciDescriptor->PictureEssenceCoding = UL(dict->ul(MDD_JP2KEssenceCompression_BroadcastProfile_1));
+            cdciDescriptor->HorizontalSubsampling = boost::any_cast<int>(_muxerOptions["subsampling_dx"]);
+            cdciDescriptor->VerticalSubsampling = boost::any_cast<int>(_muxerOptions["subsampling_dy"]);
+            cdciDescriptor->ComponentDepth = boost::any_cast<int>(_muxerOptions["bits"]);
+            cdciDescriptor->FrameLayout = 0;    // no interlaced shit
+            cdciDescriptor->AspectRatio = pictureDescriptor.AspectRatio;
+            cdciDescriptor->FieldDominance = 0; // only for interlaced shit
+            essenceDescriptor = static_cast<MXF::FileDescriptor*>(cdciDescriptor);
+	    }
     } else {
+        std::cout << "write rgb essence" << std::endl;
         MXF::RGBAEssenceDescriptor* rgbDescriptor = new MXF::RGBAEssenceDescriptor(dict);
         essenceSubDescriptors.push_back(new MXF::JPEG2000PictureSubDescriptor(dict));
 

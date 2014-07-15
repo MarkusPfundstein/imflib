@@ -77,6 +77,8 @@ int main(int argc, char **argv)
 
     InputStreamDecoder::RegisterAVFormat();
 
+    bool encryptHeader = false;
+
     // file path to store intermediate j2k files.
     tempFilePath = "/home/markus/Documents/IMF/TestFiles/J2KFILES";
     if (!filesystem::is_directory(tempFilePath)) {
@@ -117,13 +119,15 @@ int main(int argc, char **argv)
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::COLOR_FORMAT cf = J2KEncoder::COLOR_FORMAT::CF_RGB444;
+        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
         bool yuvEssence = false;
-        if (cf != J2KEncoder::COLOR_FORMAT::CF_RGB444) {
+        if (colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444) {
             yuvEssence = true;
         }
 
-        J2KEncoder j2kEncoder(J2KEncoder::COLOR_FORMAT::CF_RGB444, J2KEncoder::BIT_RATE::BR_8bit);
+        J2KEncoder::BIT_RATE bitRate = J2KEncoder::BIT_RATE::BR_10bit;
+
+        J2KEncoder j2kEncoder(colorFormat, bitRate);
         InputStreamDecoder decoder(inputFile);
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, tempFilePath); },
@@ -133,6 +137,10 @@ int main(int argc, char **argv)
         muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
         muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
         muxerOptions["yuv_essence"] = yuvEssence;
+        muxerOptions["subsampling_dx"] = 1;
+        muxerOptions["subsampling_dy"] = 1;
+        muxerOptions["encrypt_header"] = encryptHeader;
+        muxerOptions["bits"] = (int)bitRate;
 
         MXFWriter mxfWriter(muxerOptions);
         if (j2kFiles.empty() == false) {
