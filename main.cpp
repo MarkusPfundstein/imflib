@@ -47,10 +47,10 @@ int main(int argc, char **argv)
 
     InputStreamDecoder::RegisterAVFormat();
 
-    J2KEncoder j2kEncoder(J2KEncoder::COLOR_FORMAT::CF_YUV422, J2KEncoder::BIT_RATE::BR_10bit);
+    J2KEncoder j2kEncoder(J2KEncoder::COLOR_FORMAT::CF_YUV444, J2KEncoder::BIT_RATE::BR_8bit);
 
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL.mpeg";
-    inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p_SMALL.mp4";
+    //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p_SMALL.mp4";
     InputStreamDecoder decoder(inputFile);
 
     decoder.Decode([&j2kEncoder] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder); },

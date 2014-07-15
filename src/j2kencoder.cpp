@@ -43,7 +43,7 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     encodingParameters.cp_ty0 = 0;
     encodingParameters.subsampling_dx = 1;
     encodingParameters.subsampling_dy = 1;
-    encodingParameters.tcp_mct = _targetColorFormat == CF_RGB444 ? 0 : 1;         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
+    encodingParameters.tcp_mct = 0;//_targetColorFormat == CF_RGB444 ? 0 : 1;         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
     std::cout << (encodingParameters.tcp_mct == 0 ? "STORE AS RGB" : "STORE AS YUV") << std::endl;
 
     // store here string for code stream commment. must be on heap. gets FREE'd below (not delete'd).

@@ -26,8 +26,8 @@ class J2KEncoder
         };
 
         enum BIT_RATE {
-            BR_8bit,
-            BR_10bit,
+            BR_8bit = 8,
+            BR_10bit = 10,
         };
 
         J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate);
