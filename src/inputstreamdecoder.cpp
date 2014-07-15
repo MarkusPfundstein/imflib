@@ -14,7 +14,9 @@ extern "C" {
 #endif
 
 #include <iostream>
+#include <cstring>
 #include <mutex>
+#include <cmath>
 
 InputStreamDecoder::InputStreamDecoder(const std::string &file)
     : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(PIX_FMT_RGB24)
@@ -87,7 +89,11 @@ void InputStreamDecoder::OpenFile(const std::string& file)
                     std::cout << "second video stream detected. this is not implemented yet" << std::endl;
                 }
                 std::cout << "video stream detected: " << stream->index << std::endl;
-                //std::cout << "codec: " << stream->codec->name << std::endl;
+                if (stream->codec->codec){
+                    std::cout << "codec: " << stream->codec->codec->name << std::endl;
+                } else {
+                    std::cout << "couldn't detect codec name" << std::endl;
+                }
                 std::cout << "pix_fmt: " << av_get_pix_fmt_name(stream->codec->pix_fmt) << std::endl;
                 std::cout << "size: " << stream->codec->width << ":" << stream->codec->height << std::endl;
 
@@ -124,6 +130,40 @@ void InputStreamDecoder::OpenFile(const std::string& file)
     if ((gotVideo == false) && _audioStreams.empty() && _subtitleStreams.empty()) {
         throw std::runtime_error("no streams detected");
     }
+}
+
+RationalNumber InputStreamDecoder::GetFrameRate()
+{
+    AVRational rat = _videoStreamContext.stream->r_frame_rate;
+    RationalNumber n;
+    av_reduce(&n.num, &n.denum, rat.num, rat.den, 1024*1024);
+    return n;
+}
+
+RationalNumber InputStreamDecoder::GetAspectRatio()
+{
+    AVRational *sar = nullptr;
+    AVCodecContext *context = _videoStreamContext.context.get();
+    AVStream *stream = _videoStreamContext.stream;
+    if (context->sample_aspect_ratio.num) {
+        std::cout << "here" << std::endl;
+        sar = &context->sample_aspect_ratio;
+    } else if (stream->sample_aspect_ratio.num) {
+        std::cout << "or here" << std::endl;
+        sar = &stream->sample_aspect_ratio;
+    }
+    AVRational source;
+    if (sar == nullptr) {
+        // brute force divide
+        source.num = stream->codec->width;
+        source.den = stream->codec->height;
+    } else {
+        source.num = sar->num * stream->codec->width;
+        source.den = sar->den * stream->codec->height;
+    }
+    AVRational displayAspectRatio;
+    av_reduce(&displayAspectRatio.num, &displayAspectRatio.den, source.num, source.den, 1024*1024);
+    return RationalNumber(displayAspectRatio.num, displayAspectRatio.den);
 }
 
 void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback)

@@ -1,6 +1,7 @@
 #include "j2kencoder.h"
 #include "rawvideoframe.h"
 
+#include "j2kframe.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -19,10 +20,14 @@ J2KEncoder::~J2KEncoder()
     //dtor
 }
 
-bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
+void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
 {
     int subsamplingDx;
     int subsamplingDy;
+
+    if (_targetColorFormat != COLOR_FORMAT::CF_RGB444) {
+        throw std::runtime_error("j2k yuv not possible yet");
+    }
 
     switch (_targetColorFormat) {
         case COLOR_FORMAT::CF_YUV422:
@@ -67,10 +72,6 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     int numberComponents = 3;
 
     int rawBitDepth = static_cast<int>(_targetBitRate);
-
-
-
-
 
     // no idea
     // int rawSigned = true;
@@ -129,7 +130,9 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
         free(encodingParameters.cp_comment);
     }
 
-    return success;
+    if (success == false) {
+        throw std::runtime_error("error encoding image");
+    }
 }
 
 bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cparameters_t &parameters)
@@ -141,16 +144,12 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
         return false;
     }
 
-    opj_set_info_handler(codec, [](const char* s, void *) { std::cout << "[I]" << s << std::endl; }, nullptr);
-    opj_set_warning_handler(codec, [](const char* s, void *) { std::cout << "[I]" << s << std::endl; }, nullptr);
-    opj_set_error_handler(codec, [](const char* s, void *) { std::cout << "[I]" << s << std::endl; }, nullptr);
-
+    opj_set_info_handler(codec, [](const char* s, void *) { std::cout << "[J2K INFO] " << s; }, nullptr);
+    opj_set_warning_handler(codec, [](const char* s, void *) { std::cout << "[J2K WARNING] " << s; }, nullptr);
+    opj_set_error_handler(codec, [](const char* s, void *) { std::cout << "[J2K ERROR] " << s; }, nullptr);
 
     opj_setup_encoder(codec, &parameters, image);
 
-
-    // TO-DO: Move from file stream to memory stream
-    //opj_stream_t* stream = opj_stream_create_default_file_stream(DEBUG_OUT_FILE.c_str(), false);
     opj_stream_t* stream = opj_stream_default_create(false);
     if (stream == nullptr) {
         opj_destroy_codec(codec);
@@ -159,7 +158,6 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
 
     opj_stream_set_user_data(stream, &encodedFrame, nullptr);
     opj_stream_set_write_function(stream, &J2KEncoder::WriteJ2kFrame);
-
 
     // TO-DO : ADD TILE SUPPORT
 

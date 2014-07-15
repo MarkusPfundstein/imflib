@@ -9,6 +9,8 @@
 
 #include "rawvideoframe.h"
 
+#include "rationalnumber.h"
+
 // forward references
 
 class Frame;
@@ -44,6 +46,9 @@ class InputStreamDecoder
         virtual ~InputStreamDecoder();
 
         void Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback);
+
+        RationalNumber GetFrameRate();
+        RationalNumber GetAspectRatio();
 
     protected:
     private:
