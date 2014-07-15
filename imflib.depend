@@ -1,0 +1,292 @@
+# depslib dependency file v1.0
+1405447601 source:/home/markus/Documents/IMF/imflib/main.cpp
+	"src/j2kencoder.h"
+	"src/inputstreamdecoder.h"
+	"src/mxfwriter.h"
+	"src/j2kframe.h"
+	<iostream>
+	<fstream>
+	<stdexcept>
+	<sstream>
+	<iomanip>
+	<list>
+	<boost/filesystem.hpp>
+	<signal.h>
+
+1388705361 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_02_JP2K.cpp
+	"AS_02_internal.h"
+	<iostream>
+	<iomanip>
+
+1388705362 /home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_02_internal.h
+	"KM_log.h"
+	"AS_DCP_internal.h"
+	"AS_02.h"
+
+1371491754 /home/markus/Documents/IMF/asdcplib-2.1.4/src/KM_log.h
+	<KM_platform.h>
+	<KM_mutex.h>
+	<KM_util.h>
+	<stdarg.h>
+	<errno.h>
+	<iosfwd>
+	<set>
+
+1404992020 /home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_internal.h
+	<KM_platform.h>
+	<KM_util.h>
+	<KM_log.h>
+	"Metadata.h"
+
+1372785387 /home/markus/Documents/IMF/asdcplib-2.1.4/src/Metadata.h
+	"MXF.h"
+
+1394413320 /home/markus/Documents/IMF/asdcplib-2.1.4/src/MXF.h
+	"MXFTypes.h"
+	<algorithm>
+
+1372744278 /home/markus/Documents/IMF/asdcplib-2.1.4/src/MXFTypes.h
+	"KLV.h"
+	<list>
+	<vector>
+	<map>
+	<wchar.h>
+
+1400564777 /home/markus/Documents/IMF/asdcplib-2.1.4/src/KLV.h
+	<KM_fileio.h>
+	<KM_memio.h>
+	"AS_DCP.h"
+	"MDD.h"
+	<map>
+
+1388705362 /home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP.h
+	<KM_error.h>
+	<KM_fileio.h>
+	<stdio.h>
+	<stdarg.h>
+	<math.h>
+	<iosfwd>
+	<string>
+	<cstring>
+	<list>
+
+1394413320 /home/markus/Documents/IMF/asdcplib-2.1.4/src/MDD.h
+
+1404991757 /home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_02.h
+	"Metadata.h"
+
+1388705361 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_02_PCM.cpp
+	"AS_02_internal.h"
+	<map>
+	<iostream>
+	<iomanip>
+
+1404992077 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP.cpp
+	"AS_DCP_internal.h"
+	<assert.h>
+
+1394834018 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_AES.cpp
+	<assert.h>
+	<AS_DCP.h>
+	<KM_log.h>
+	<KM_prng.h>
+	<openssl/aes.h>
+	<openssl/sha.h>
+	<openssl/bn.h>
+	<openssl/err.h>
+
+1388705362 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_ATMOS.cpp
+	<iostream>
+	"AS_DCP.h"
+	"AS_DCP_DCData_internal.h"
+	"AS_DCP_internal.h"
+
+1388705362 /home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_DCData_internal.h
+	<list>
+	"AS_DCP_internal.h"
+
+1388705362 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_DCData.cpp
+	<iostream>
+	"AS_DCP.h"
+	"AS_DCP_DCData_internal.h"
+	"AS_DCP_internal.h"
+
+1399571788 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_JP2K.cpp
+	"AS_DCP_internal.h"
+	<iostream>
+	<iomanip>
+
+1388705362 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_MPEG2.cpp
+	"AS_DCP_internal.h"
+	<iostream>
+	<iomanip>
+
+1388705362 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_MXF.cpp
+	<KM_fileio.h>
+	<KM_xml.h>
+	"AS_DCP_internal.h"
+	"JP2K.h"
+	"MPEG.h"
+	"Wav.h"
+	<iostream>
+	<iomanip>
+
+1401746871 /home/markus/Documents/IMF/asdcplib-2.1.4/src/JP2K.h
+	<KM_platform.h>
+	<KM_util.h>
+	<AS_DCP.h>
+	<assert.h>
+
+1314723865 /home/markus/Documents/IMF/asdcplib-2.1.4/src/MPEG.h
+	<KM_platform.h>
+	"AS_DCP.h"
+	<stdio.h>
+	<assert.h>
+
+1369764792 /home/markus/Documents/IMF/asdcplib-2.1.4/src/Wav.h
+	<KM_fileio.h>
+	<AS_DCP.h>
+
+1388705362 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_PCM.cpp
+	"AS_DCP_internal.h"
+	<map>
+	<iostream>
+	<iomanip>
+
+1388705362 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/AS_DCP_TimedText.cpp
+	"AS_DCP_internal.h"
+	"KM_xml.h"
+	<iostream>
+	<iomanip>
+
+1386207352 /home/markus/Documents/IMF/asdcplib-2.1.4/src/KM_xml.h
+	<KM_util.h>
+	<list>
+	<string>
+
+1365809970 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/CRC16.c
+	"CRC16.h"
+
+1365809970 /home/markus/Documents/IMF/asdcplib-2.1.4/src/CRC16.h
+
+1388705362 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/DCData_ByteStream_Parser.cpp
+	"AS_DCP.h"
+	"KM_fileio.h"
+	"KM_log.h"
+
+1398129593 /home/markus/Documents/IMF/asdcplib-2.1.4/src/KM_fileio.h
+	<KM_util.h>
+	<string>
+	<io.h>
+	<dirent.h>
+	<unistd.h>
+	<time.h>
+	<sys/types.h>
+	<regex.h>
+	<sys/stat.h>
+
+1388705362 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/DCData_Sequence_Parser.cpp
+	"AS_DCP.h"
+	<algorithm>
+	<list>
+	<string>
+	"KM_fileio.h"
+	"KM_log.h"
+
+1370565660 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/Dict.cpp
+	"KM_mutex.h"
+	"KM_log.h"
+	"KLV.h"
+	"MDD.cpp"
+
+1239304609 /home/markus/Documents/IMF/asdcplib-2.1.4/src/KM_mutex.h
+	<KM_platform.h>
+	<pthread.h>
+
+1394413320 /home/markus/Documents/IMF/asdcplib-2.1.4/src/MDD.cpp
+	"KLV.h"
+
+1370809051 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/Index.cpp
+	"MXF.h"
+
+1404992285 source:/home/markus/Documents/IMF/asdcplib-2.1.4/src/JP2K.cpp
+	"JP2K.h"
+	"KM_log.h"
+
+1405444251 source:/home/markus/Documents/IMF/imflib/src/j2kencoder.cpp
+	"j2kencoder.h"
+	"rawvideoframe.h"
+	"j2kframe.h"
+	<stdexcept>
+	<iostream>
+	<cstring>
+	<functional>
+
+1405442844 /home/markus/Documents/IMF/imflib/src/j2kencoder.h
+	<openjpeg-2.1/openjpeg.h>
+
+1405434975 /home/markus/Documents/IMF/imflib/src/inputstreamdecoder.h
+	<string>
+	<memory>
+	<vector>
+	<tuple>
+	<functional>
+	"rawvideoframe.h"
+	"rationalnumber.h"
+
+1405004474 source:/home/markus/Documents/IMF/imflib/src/videoframe.cpp
+	"videoframe.h"
+
+1405004479 /home/markus/Documents/IMF/imflib/src/videoframe.h
+	"frame.h"
+
+1405006394 /home/markus/Documents/IMF/imflib/src/frame.h
+	<memory>
+
+1405438806 source:/home/markus/Documents/IMF/imflib/src/inputstreamdecoder.cpp
+	"inputstreamdecoder.h"
+	<libavformat/avformat.h>
+	<libavcodec/avcodec.h>
+	<libavutil/imgutils.h>
+	<libswscale/swscale.h>
+	<iostream>
+	<cstring>
+	<mutex>
+	<cmath>
+
+1405004486 source:/home/markus/Documents/IMF/imflib/src/audioframe.cpp
+	"audioframe.h"
+
+1405004709 /home/markus/Documents/IMF/imflib/src/audioframe.h
+	"frame.h"
+
+1405005250 source:/home/markus/Documents/IMF/imflib/src/frame.cpp
+	"frame.h"
+	<libavformat/avformat.h>
+	<libavcodec/avcodec.h>
+
+1405276521 /home/markus/Documents/IMF/imflib/src/rawvideoframe.h
+	<cstdint>
+
+1405419430 /home/markus/Documents/IMF/imflib/src/j2kframe.h
+	<vector>
+
+1405446658 source:/home/markus/Documents/IMF/imflib/src/mxfwriter.cpp
+	"mxfwriter.h"
+	<KM_fileio.h>
+	<KM_prng.h>
+	<AS_02.h>
+	<Metadata.h>
+	<iostream>
+	<stdexcept>
+	<memory>
+	"rationalnumber.h"
+
+1405446645 /home/markus/Documents/IMF/imflib/src/mxfwriter.h
+	<string>
+	<map>
+	<boost/any.hpp>
+	<list>
+
+1405435790 /home/markus/Documents/IMF/imflib/src/rationalnumber.h
+
