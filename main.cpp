@@ -14,7 +14,7 @@ bool HandleVideoFrame(RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder)
     static int DEBUG_WRITE_COUNT = 0;
 
     std::stringstream DS;
-    DS << "/home/markus/Documents/IMF/TestFiles/J2KFILES/" << std::setw( 7 ) << std::setfill( '0' ) << DEBUG_WRITE_COUNT << ".j2c";
+    DS << "/home/markus/Documents/IMF/TestFiles/J2KFILES/" << std::setw( 7 ) << std::setfill( '0' ) << DEBUG_WRITE_COUNT << ".j2k";
     std::string DEBUG_OUT_FILE = DS.str();
 
     std::cout << "got raw video frame" << std::endl;
@@ -47,10 +47,10 @@ int main(int argc, char **argv)
 
     InputStreamDecoder::RegisterAVFormat();
 
-    J2KEncoder j2kEncoder;
+    J2KEncoder j2kEncoder(J2KEncoder::COLOR_FORMAT::CF_YUV422, J2KEncoder::BIT_RATE::BR_10bit);
 
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL.mpeg";
-    //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
+    inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p_SMALL.mp4";
     InputStreamDecoder decoder(inputFile);
 
     decoder.Decode([&j2kEncoder] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder); },

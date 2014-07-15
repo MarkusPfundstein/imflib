@@ -8,7 +8,8 @@
 
 #include <functional>
 
-J2KEncoder::J2KEncoder()
+J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate)
+    : _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate)
 {
     //ctor
 }
@@ -20,13 +21,29 @@ J2KEncoder::~J2KEncoder()
 
 bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
 {
+    int subsamplingDx;
+    int subsamplingDy;
+
+    switch (_targetColorFormat) {
+        case COLOR_FORMAT::CF_YUV422:
+            subsamplingDx = subsamplingDy = 2;
+            break;
+        case COLOR_FORMAT::CF_RGB444:
+        case COLOR_FORMAT::CF_YUV444:
+        default:
+            subsamplingDx = subsamplingDy = 1;
+    }
+    // doesnt seem to affect the output file
+    //OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SYCC;
+    OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SRGB;
+
     opj_cparameters_t encodingParameters;
     opj_set_default_encoder_parameters(&encodingParameters);
     encodingParameters.cp_tx0 = 0;
     encodingParameters.cp_ty0 = 0;
     encodingParameters.subsampling_dx = 1;
     encodingParameters.subsampling_dy = 1;
-    encodingParameters.tcp_mct = 1;         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
+    encodingParameters.tcp_mct = _targetColorFormat == CF_RGB444 ? 0 : 1;         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
     std::cout << (encodingParameters.tcp_mct == 0 ? "STORE AS RGB" : "STORE AS YUV") << std::endl;
 
     // store here string for code stream commment. must be on heap. gets FREE'd below (not delete'd).
@@ -48,11 +65,12 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
 
     // We get RGB24 image data. Thus 3 components, 8 bit per component
     int numberComponents = 3;
-    int rawBitDepth = 8;
 
-    // doesnt seem to affect the output file
-    OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SRGB;
-    //OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SYCC;
+    int rawBitDepth = static_cast<int>(_targetBitRate);
+
+
+
+
 
     // no idea
     // int rawSigned = true;
@@ -70,8 +88,8 @@ bool J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
         componentParameter[i].prec = (uint32_t) rawBitDepth;
         componentParameter[i].bpp = (uint32_t) rawBitDepth;
         componentParameter[i].sgnd = (uint32_t) bigEndian;
-        componentParameter[i].dx = (uint32_t) encodingParameters.subsampling_dx * 1;
-        componentParameter[i].dy = (uint32_t) encodingParameters.subsampling_dy * 1;
+        componentParameter[i].dx = (uint32_t) encodingParameters.subsampling_dx * (i > 0 ? subsamplingDx : 1);
+        componentParameter[i].dy = (uint32_t) encodingParameters.subsampling_dy * (i > 0 ? subsamplingDy : 1);
         componentParameter[i].w = (uint32_t) widthUsed;
         componentParameter[i].h = (uint32_t) heightUsed;
     }
