@@ -98,9 +98,9 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
             cdciDescriptor->ComponentDepth = boost::any_cast<int>(_muxerOptions["bits"]);
             cdciDescriptor->FrameLayout = 0;    // no interlaced shit
             cdciDescriptor->AspectRatio = pictureDescriptor.AspectRatio;
-            cdciDescriptor->FieldDominance = 0; // only for interlaced shit
+            cdciDescriptor->FieldDominance = 0; // only for interlaced shit // field dominance = 1 -> upper field first
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(cdciDescriptor);
-	    }
+	}
     } else {
         std::cout << "write rgb essence" << std::endl;
         MXF::RGBAEssenceDescriptor* rgbDescriptor = new MXF::RGBAEssenceDescriptor(dict);
@@ -116,7 +116,7 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
             rgbDescriptor->ComponentMaxRef = 1023;
             rgbDescriptor->ComponentMinRef = 0;
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(rgbDescriptor);
-	    }
+	}
     }
 
     if (essenceDescriptor == nullptr) {
