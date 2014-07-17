@@ -19,7 +19,14 @@ extern "C" {
 #include <cmath>
 
 InputStreamDecoder::InputStreamDecoder(const std::string &file)
-    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(PIX_FMT_RGB24)
+    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(PIX_FMT_RGB48)
+{
+    OpenFile(file);
+}
+
+// To-DO: Move enum from J2KEncoder into public header and put it in class declaration
+InputStreamDecoder::InputStreamDecoder(const std::string& file, int bitsPerComponent)
+    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(PIX_FMT_RGB48)
 {
     OpenFile(file);
 }

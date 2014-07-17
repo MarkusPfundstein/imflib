@@ -18,6 +18,27 @@ using namespace boost;
 // file path for j2k files
 std::string tempFilePath;
 
+std::ofstream debugFile("/home/markus/Documents/IMF/TestFiles/DEBUG_RAW.raw", std::ios::binary | std::ios::out);
+
+static std::string debugRawFileDirectory("/home/markus/Documents/IMF/TestFiles/RAWFILES");
+static int rawCount = 0;
+
+void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
+{
+    debugFile.write((const char*)rawFrame.videoData[0], rawFrame.linesize[0] * rawFrame.height);
+    debugFile.flush();
+
+    std::stringstream ss;
+    ss << debugRawFileDirectory << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawCount << ".raw";
+    std::string targetFile(ss.str());
+    std::ofstream of(targetFile, std::ios::binary | std::ios::out);
+    of.write((const char*)rawFrame.videoData[0], rawFrame.linesize[0] * rawFrame.height);
+    of.flush();
+    of.close();
+
+    rawCount++;
+}
+
 void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
 {
     std::ofstream of(targetFile, std::ios::binary | std::ios::out);
@@ -25,14 +46,13 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
     std::cout << "[WRITE] wrote " << encodedFrame.data.size() << " Bytes to: " << targetFile << std::endl;
 }
 
-bool HandleVideoFrame(RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
+bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
 {
     std::stringstream ss;
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
     std::string targetFile(ss.str());
 
-    //write raw file...
-    //rawOutFile.write((const char*)rawFrame.videoData[0], rawFrame.linesize[0] * rawFrame.height);
+    WriteRawFrameToFile(rawFrame);
 
     J2kFrame encodedFrame;
     j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame);
@@ -95,8 +115,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL.mpeg";
+    std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg";
     //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p_SMALL.mp4";
+
+
 
     if (!filesystem::is_regular_file(inputFile)) {
         std::cerr << inputFile << " is not a file" << std::endl;
@@ -106,7 +128,10 @@ int main(int argc, char **argv)
     std::string finalVideoFile = "/home/markus/Documents/IMF/FINAL.mxf";
     if (filesystem::exists(finalVideoFile)) {
         std::cerr << finalVideoFile << " exists already. Use -f option to override" << std::endl;
-        return 1;
+
+        std::cout << "REMOVE FOR DEBUG MODE" << std::endl;
+        filesystem::remove(filesystem::path(finalVideoFile));
+        //return 1;
     }
 
     std::map<std::string, boost::any> muxerOptions;
@@ -126,10 +151,12 @@ int main(int argc, char **argv)
         }
 
         // 10bit creates green video file :-)
-        J2KEncoder::BIT_RATE bitRate = J2KEncoder::BIT_RATE::BR_8bit;
+        J2KEncoder::BIT_RATE bitsPerComponent = J2KEncoder::BIT_RATE::BR_8bit;
 
-        J2KEncoder j2kEncoder(colorFormat, bitRate);
-        InputStreamDecoder decoder(inputFile);
+        std::cout << "encode with " << bitsPerComponent * 3 << " bpp" << std::endl;
+
+        J2KEncoder j2kEncoder(colorFormat, bitsPerComponent);
+        InputStreamDecoder decoder(inputFile, static_cast<int>(bitsPerComponent));
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, tempFilePath); },
                        [&] (AVFrame &) { return HandleAudioFrame(); });
@@ -141,14 +168,14 @@ int main(int argc, char **argv)
         muxerOptions["subsampling_dx"] = 1;
         muxerOptions["subsampling_dy"] = 1;
         muxerOptions["encrypt_header"] = encryptHeader;
-        muxerOptions["bits"] = static_cast<int>(bitRate);
+        muxerOptions["bits"] = static_cast<int>(bitsPerComponent);
 
         MXFWriter mxfWriter(muxerOptions);
         if (j2kFiles.empty() == false) {
             mxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile);
         }
 
-        CleanJ2KFiles(tempFilePath);
+        //CleanJ2KFiles(tempFilePath);
     } catch (std::runtime_error &ex) {
         std::cerr << "error decoding: " << ex.what() << std::endl;
         CleanJ2KFiles(tempFilePath);

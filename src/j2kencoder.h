@@ -26,7 +26,7 @@ class J2KEncoder
         J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate);
         virtual ~J2KEncoder();
 
-        void EncodeRawFrame(RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame);
+        void EncodeRawFrame(const RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame);
 
     private:
         bool EncodeImage(opj_image_t *image, J2kFrame& encodedFrame, opj_cparameters_t &parameters);

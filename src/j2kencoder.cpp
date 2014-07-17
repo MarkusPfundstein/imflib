@@ -20,7 +20,7 @@ J2KEncoder::~J2KEncoder()
     //dtor
 }
 
-void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
+void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
 {
     OPJ_COLOR_SPACE colorSpace;
     bool doMct = false;
@@ -47,7 +47,7 @@ void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     encodingParameters.subsampling_dx = 1;
     encodingParameters.subsampling_dy = 1;
     encodingParameters.tcp_mct = (doMct ? 1 : 0);         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
-    std::cout << (encodingParameters.tcp_mct == 0 ? "STORE AS RGB" : "STORE AS YUV") << std::endl;
+    std::cout << "[J2K] " << (encodingParameters.tcp_mct == 0 ? "STORE AS RGB" : "STORE AS YUV") << std::endl;
 
     // store here string for code stream commment. must be on heap. gets FREE'd below (not delete'd).
     // if you dont do it it gets allocated anyway . lol
@@ -70,6 +70,8 @@ void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     int numberComponents = 3;
 
     int rawBitDepth = static_cast<int>(_targetBitRate);
+
+    std::cout << "[J2K] BitsPerComponent: " << rawBitDepth << std::endl;
 
     // no idea
     // int rawSigned = true;
@@ -110,10 +112,36 @@ void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     int jpegIndex = 0;
     for (int y = 0; y < heightUsed; ++y) {
         for (int x = 0; x < widthUsed; ++x) {
-            int rgbIndex = x * 3;
-            image->comps[0].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 0)];	// R
-            image->comps[1].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 1)];	// G
-            image->comps[2].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 2)];	// B
+            /*if (rawBitDepth == 8) {
+                int rgbIndex = x * 3;
+                image->comps[0].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 0)];	// R
+                image->comps[1].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 1)];	// G
+                image->comps[2].data[jpegIndex] = dataPtr[y * 3 * widthUsed + (rgbIndex + 2)];	// B
+            if (rawBitDepth <= 16) {*/
+                int rgbIndex = x * 6;
+
+                unsigned char r1 = dataPtr[y * 6 * widthUsed + (rgbIndex + 0)];
+                unsigned char r2 = dataPtr[y * 6 * widthUsed + (rgbIndex + 1)];
+                unsigned char g1 = dataPtr[y * 6 * widthUsed + (rgbIndex + 2)];
+                unsigned char g2 = dataPtr[y * 6 * widthUsed + (rgbIndex + 3)];
+                unsigned char b1 = dataPtr[y * 6 * widthUsed + (rgbIndex + 4)];
+                unsigned char b2 = dataPtr[y * 6 * widthUsed + (rgbIndex + 5)];
+                unsigned short red;
+                unsigned short green;
+                unsigned short blue;
+                if(bigEndian) {
+                    red = (unsigned short)((r1 << 8) + r2);
+                    green = (unsigned short)((g1 << 8) + g2);
+                    blue = (unsigned short)((b1 << 8) + b2);
+                } else {
+                    red = (unsigned short)((r2 << 8) + r1);
+                    green = (unsigned short)((g2 << 8) + g1);
+                    blue = (unsigned short)((b2 << 8) + b1);
+                }
+                image->comps[0].data[jpegIndex] = (unsigned short) red;;	// R
+                image->comps[1].data[jpegIndex] = (unsigned short) green;;//dataPtr[y * 3 * widthUsed + (rgbIndex + 1)];	// G
+                image->comps[2].data[jpegIndex] = (unsigned short) blue;//dataPtr[y * 3 * widthUsed + (rgbIndex + 2)];	// B
+            //}
             jpegIndex++;
         }
     }

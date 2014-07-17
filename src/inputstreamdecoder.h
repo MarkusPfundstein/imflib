@@ -43,6 +43,8 @@ class InputStreamDecoder
         static void RegisterAVFormat();
 
         InputStreamDecoder(const std::string& file);
+        // To-DO: Move enum from J2KEncoder into public header and put it in method declaration
+        InputStreamDecoder(const std::string& file, int bitsPerComponent);
         virtual ~InputStreamDecoder();
 
         void Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback);
