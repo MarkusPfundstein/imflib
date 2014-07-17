@@ -129,8 +129,8 @@ int main(int argc, char **argv)
     }*/
 
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg";
-    inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
-    inputFile = "/home/markus/Documents/IMF/TestFiles/Out.mov";
+    //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_med.mp4";
+    //inputFile = "/home/markus/Documents/IMF/TestFiles/Out2.mov";
 
 
     if (!filesystem::is_regular_file(inputFile)) {
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_MT_6;
+        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_ST_5;
 
         J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
         bool yuvEssence = false;
@@ -163,6 +163,10 @@ int main(int argc, char **argv)
         }
 
         bool useTiles = true;
+
+        if (profile != J2KEncoder::PROFILE::BCP_MT_6 || profile != J2KEncoder::PROFILE::BCP_MT_6) {
+            useTiles = false;
+        }
 
         // 10bit creates green video file :-)
         J2KEncoder::BIT_RATE bitsPerComponent = J2KEncoder::BIT_RATE::BR_8bit;
