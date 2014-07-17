@@ -32,7 +32,7 @@ public:
 
       memcpy(ProductUUID, default_ProductUUID_Data, UUIDlen);
       CompanyName = "ODMedia";
-      ProductName = "IMF-Encoder PRE";
+      ProductName = "IMF-Encoder";
       ProductVersion = "0.1";
   }
 } s_MyInfo;
