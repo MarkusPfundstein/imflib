@@ -22,22 +22,23 @@ J2KEncoder::~J2KEncoder()
 
 void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
 {
-    int subsamplingDx;
-    int subsamplingDy;
+    OPJ_COLOR_SPACE colorSpace;
+    bool doMct = false;
 
     switch (_targetColorFormat) {
         case COLOR_FORMAT::CF_YUV422:
             throw std::runtime_error("j2k yuv 422 not possible yet");
-            //subsamplingDx = subsamplingDy = 2;
-            //break;
-        case COLOR_FORMAT::CF_RGB444:
         case COLOR_FORMAT::CF_YUV444:
+            doMct = true;
+            colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SYCC;
+            break;
+        case COLOR_FORMAT::CF_RGB444:
+            doMct = false;
+            colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SRGB;
+            break;
         default:
-            subsamplingDx = subsamplingDy = 1;
+            throw std::runtime_error("unsupported colorspace");
     }
-    // doesnt seem to affect the output file
-    //OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SYCC;
-    OPJ_COLOR_SPACE colorSpace = OPJ_COLOR_SPACE::OPJ_CLRSPC_SRGB;
 
     opj_cparameters_t encodingParameters;
     opj_set_default_encoder_parameters(&encodingParameters);
@@ -45,7 +46,7 @@ void J2KEncoder::EncodeRawFrame(RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
     encodingParameters.cp_ty0 = 0;
     encodingParameters.subsampling_dx = 1;
     encodingParameters.subsampling_dy = 1;
-    encodingParameters.tcp_mct = (_targetColorFormat == CF_RGB444 ? 0 : 1);         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
+    encodingParameters.tcp_mct = (doMct ? 1 : 0);         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
     std::cout << (encodingParameters.tcp_mct == 0 ? "STORE AS RGB" : "STORE AS YUV") << std::endl;
 
     // store here string for code stream commment. must be on heap. gets FREE'd below (not delete'd).
