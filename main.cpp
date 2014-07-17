@@ -15,10 +15,11 @@
 
 using namespace boost;
 
-// file path for j2k files. needs to be global for signal handler
-std::string tempFilePath;
+// needs to be global for signal handler
+// storage for all j2k files. we need that later for asdcp lib
+std::list<std::string> j2kFiles;
 
-
+/*
 void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
 {
 
@@ -40,6 +41,7 @@ void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
 
     rawCount++;
 }
+*/
 
 void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
 {
@@ -54,7 +56,7 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
     std::string targetFile(ss.str());
 
-    WriteRawFrameToFile(rawFrame);
+    //WriteRawFrameToFile(rawFrame);
 
     J2kFrame encodedFrame;
     j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame);
@@ -72,7 +74,7 @@ bool HandleAudioFrame()
     return true;
 }
 
-void CleanJ2KFiles(const std::string &directory)
+void CleanDirectory(const std::string &directory)
 {
     filesystem::directory_iterator it(directory);
     filesystem::directory_iterator itEnd;
@@ -83,11 +85,19 @@ void CleanJ2KFiles(const std::string &directory)
     }
 }
 
+void CleanJ2KFiles(const std::list<std::string>& files)
+{
+    for (const std::string &s : files) {
+        const filesystem::path path = s;
+        filesystem::remove(path);
+    }
+}
+
 void SignalHandler(int sig)
 {
     if (sig == SIGINT || sig == SIGQUIT || sig == SIGTERM) {
         std::cerr << "[CLEANUP]" << std::endl;
-        //CleanJ2KFiles(tempFilePath);
+        CleanJ2KFiles(j2kFiles);
         exit(1);
     }
 }
@@ -102,20 +112,21 @@ int main(int argc, char **argv)
     bool encryptHeader = false;
 
     // file path to store intermediate j2k files.
-    tempFilePath = "/home/markus/Documents/IMF/TestFiles/J2KFILES";
+    std::string tempFilePath = "/home/markus/Documents/IMF/TestFiles/J2KFILES";
     if (!filesystem::is_directory(tempFilePath)) {
         std::cerr << tempFilePath << " is not a directory" << std::endl;
         return 1;
     }
 
     // FOR DEBUG
-    CleanJ2KFiles(tempFilePath);
+    /*
+    CleanDirectory(tempFilePath);
 
     // check if temp directory is empty. this is important.
     if (!filesystem::is_empty(tempFilePath)) {
         std::cerr << tempFilePath << " is not empty. Use -r option to empty it before encoding" << std::endl;
         return 1;
-    }
+    }*/
 
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg";
     inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
@@ -137,9 +148,6 @@ int main(int argc, char **argv)
     }
 
     std::map<std::string, boost::any> muxerOptions;
-
-    // storage for all j2k files. we need that later for asdcp lib
-    std::list<std::string> j2kFiles;
 
     signal(SIGINT, SignalHandler);
     signal(SIGTERM, SignalHandler);
@@ -183,10 +191,10 @@ int main(int argc, char **argv)
             mxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile);
         }
 
-        //CleanJ2KFiles(tempFilePath);
+        CleanJ2KFiles(j2kFiles);
     } catch (std::runtime_error &ex) {
         std::cerr << "[EXCEPTION CAUGHT - Aborting]: " << ex.what() << std::endl;
-        //CleanJ2KFiles(tempFilePath);
+        CleanJ2KFiles(j2kFiles);
         if (filesystem::exists(finalVideoFile)) {
             const filesystem::path path(finalVideoFile);
             filesystem::remove(path);
