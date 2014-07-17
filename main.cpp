@@ -87,7 +87,7 @@ void SignalHandler(int sig)
 {
     if (sig == SIGINT || sig == SIGQUIT || sig == SIGTERM) {
         std::cerr << "[CLEANUP]" << std::endl;
-        CleanJ2KFiles(tempFilePath);
+        //CleanJ2KFiles(tempFilePath);
         exit(1);
     }
 }
@@ -118,8 +118,8 @@ int main(int argc, char **argv)
     }
 
     std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg";
-    //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p_SMALL.mp4";
-
+    inputFile = "/home/markus/Documents/IMF/TestFiles/h264_1080p.mp4";
+    inputFile = "/home/markus/Documents/IMF/TestFiles/Out.mov";
 
 
     if (!filesystem::is_regular_file(inputFile)) {
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
             yuvEssence = true;
         }
 
-        bool useTiles = false;
+        bool useTiles = true;
 
         // 10bit creates green video file :-)
         J2KEncoder::BIT_RATE bitsPerComponent = J2KEncoder::BIT_RATE::BR_8bit;
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
         //CleanJ2KFiles(tempFilePath);
     } catch (std::runtime_error &ex) {
         std::cerr << "[EXCEPTION CAUGHT - Aborting]: " << ex.what() << std::endl;
-        CleanJ2KFiles(tempFilePath);
+        //CleanJ2KFiles(tempFilePath);
         if (filesystem::exists(finalVideoFile)) {
             const filesystem::path path(finalVideoFile);
             filesystem::remove(path);

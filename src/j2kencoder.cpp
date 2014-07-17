@@ -173,10 +173,11 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
     if (success == false)  {
         std::cout << "ERROR opj_start_compress" << std::endl;
     } else {
-        if (_useTiles && (_profile == PROFILE::BCP_MT_6 || _profile == PROFILE::BCP_MT_7)) {
+        /* this routine doesnt work. seems to be experimental
+        if (false && _useTiles && (_profile == PROFILE::BCP_MT_6 || _profile == PROFILE::BCP_MT_7)) {
             std::cout << "[J2K] Write Tiles" << std::endl;
             OPJ_BYTE *data;
-            OPJ_UINT32 dataSize = (720/2)*(576/2)*3;
+            OPJ_UINT32 dataSize = (widthUsed / 2) * (heightUsed / 2) * 3;
             data = (OPJ_BYTE*) malloc( dataSize * sizeof(OPJ_BYTE));
             memset(data, 0, dataSize );
             for (int i = 0; i < 4; ++i) {
@@ -188,11 +189,12 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
             }
             free(data);
         } else {
+        */
             success = success && opj_encode(codec, stream);
             if (success == false) {
                 std::cout << "ERROR opj_encode" << std::endl;
             }
-        }
+        //}
     }
     success = success && opj_end_compress(codec, stream);
     if (success == false)  {
@@ -219,7 +221,7 @@ void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROF
     // set the ones that are the same for all profiles
     encodingParameters.roi_compno = -1;         // no region of interest
     encodingParameters.mode = 0;                // code block style 0000 0000
-    encodingParameters.cblockw_init = 128;        // 32 = 3, 128 = 5
+    encodingParameters.cblockw_init = 128;        // in asdcplib: 32 = 3, 128 = 5, in obj_dump: 128=2^7 , correct
     encodingParameters.cblockh_init = 128;
     encodingParameters.prog_order = OPJ_CPRL;   // progression order CPRL, is 4
     encodingParameters.numpocs = 0;             // no poc marker
@@ -250,6 +252,7 @@ void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROF
 
     switch (profile) {
         case PROFILE::BCP_ST_1:
+            // SetRate(
         case PROFILE::BCP_ST_2:
         case PROFILE::BCP_ST_3:
         case PROFILE::BCP_ST_4:
