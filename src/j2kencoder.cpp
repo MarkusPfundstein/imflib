@@ -9,8 +9,8 @@
 
 #include <functional>
 
-J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate)
-    : _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate)
+J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile)
+    : _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate), _profile(profile)
 {
     //ctor
 }
@@ -42,29 +42,12 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
 
     opj_cparameters_t encodingParameters;
     opj_set_default_encoder_parameters(&encodingParameters);
-    encodingParameters.cp_tx0 = 0;
-    encodingParameters.cp_ty0 = 0;
     encodingParameters.subsampling_dx = 1;
     encodingParameters.subsampling_dy = 1;
     encodingParameters.tcp_mct = (doMct ? 1 : 0);         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
-    std::cout << "[J2K] " << (encodingParameters.tcp_mct == 0 ? "STORE AS RGB" : "STORE AS YUV") << std::endl;
+    std::cout << "[J2K] " << (encodingParameters.tcp_mct == 0 ? "Store as RGB" : "Store as YUV") << std::endl;
 
-    // store here string for code stream commment. must be on heap. gets FREE'd below (not delete'd).
-    // if you dont do it it gets allocated anyway . lol
-    //encodingParameters.cp_comment = (char*)malloc(blabla)
-
-    // without this we get segfault. no idea why -> TO-DO: find out :-)
-    // but what stands there means that we store lossless. 1 layer, comp. rate of that layer = 0
-    if (encodingParameters.tcp_numlayers == 0) {
-        encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug
-        encodingParameters.tcp_numlayers++;
-        encodingParameters.cp_disto_alloc = 1;
-    }
-
-    // IMF profiles - TO-DO: they dont do anything yet. thus are not implemented into jpeg2000. lets fix this later
-    //encodingParameters.rsiz = OPJ_PROFILE_IMF_2K_R;
-    //encodingParameters.rsiz = OPJ_PROFILE_IMF_4K_R;
-    //encodingParameters.rsiz = OPJ_PROFILE_IMF_8K_R;
+    SetBroadcastProfile(encodingParameters, _profile);
 
     // will probably always be 3
     int numberComponents = 3;
@@ -214,4 +197,59 @@ OPJ_SIZE_T J2KEncoder::WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *us
     std::copy((uint8_t*)data, (uint8_t*)data + bufferSize, std::back_inserter(frame->data));
 
     return bufferSize;
+}
+
+void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROFILE profile)
+{
+    // set the ones that are the same for all profiles
+    encodingParameters.roi_compno = -1;         // no region of interest
+    encodingParameters.mode = 0;                // code block style 0000 0000
+    encodingParameters.cblockw_init = 128;        // 32 = 3, 128 = 5
+    encodingParameters.cblockh_init = 128;
+    encodingParameters.prog_order = OPJ_CPRL;   // progression order CPRL, is 4
+    encodingParameters.numpocs = 0;             // no poc marker
+
+    encodingParameters.cp_tx0 = 0;
+    encodingParameters.cp_ty0 = 0;
+
+    // one layer only
+    encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug
+    encodingParameters.tcp_numlayers = 1;
+    encodingParameters.cp_disto_alloc = 1;
+
+    // use custom precinct size
+    encodingParameters.csty |= 0x01;
+    // this will cut precinct size of lowest band LL
+    encodingParameters.res_spec = encodingParameters.numresolution - 1;
+    for (int i = 0; i < encodingParameters.numresolution; ++i) {
+        // the standard says precinct size 8 for any band > LL
+        // but here we have to put in 2^8
+        encodingParameters.prcw_init[i] = 256;
+        encodingParameters.prch_init[i] = 256;
+    }
+
+    // To-DO: Set rates
+
+    switch (profile) {
+        case PROFILE::BCP_ST_1:
+        case PROFILE::BCP_ST_2:
+        case PROFILE::BCP_ST_3:
+        case PROFILE::BCP_ST_4:
+        case PROFILE::BCP_ST_5:
+            encodingParameters.tile_size_on = OPJ_FALSE;
+            encodingParameters.cp_tdx = 1;
+            encodingParameters.cp_tdy = 1;
+            encodingParameters.tp_flag = 'C';           // one tile part for each component
+            encodingParameters.tp_on = 1;
+            encodingParameters.irreversible = 1;        // 9-7 Irreversible Transform
+            break;
+        case PROFILE::BCP_MT_6:
+        case PROFILE::BCP_MT_7:
+            encodingParameters.irreversible = 0;        // 5-3 Reversible Transform
+            throw std::runtime_error("multi tiles not implemted yet");
+            break;
+        default:
+            throw std::runtime_error("undefined broadcast profile");
+
+    }
 }

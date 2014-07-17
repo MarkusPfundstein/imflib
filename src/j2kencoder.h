@@ -23,7 +23,17 @@ class J2KEncoder
             BR_10bit = 10
         };
 
-        J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate);
+        enum PROFILE {
+            BCP_ST_1 = 1,
+            BCP_ST_2,
+            BCP_ST_3,
+            BCP_ST_4,
+            BCP_ST_5,
+            BCP_MT_6,
+            BCP_MT_7
+        };
+
+        J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile);
         virtual ~J2KEncoder();
 
         void EncodeRawFrame(const RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame);
@@ -31,10 +41,13 @@ class J2KEncoder
     private:
         bool EncodeImage(opj_image_t *image, J2kFrame& encodedFrame, opj_cparameters_t &parameters);
 
+        void SetBroadcastProfile(opj_cparameters_t &parameters, PROFILE profile);
+
         static OPJ_SIZE_T WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *userData);
 
         COLOR_FORMAT _targetColorFormat;
         BIT_RATE _targetBitRate;
+        PROFILE _profile;
 };
 
 #endif // J2KENCODER_H

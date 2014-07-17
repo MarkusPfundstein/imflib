@@ -81,6 +81,13 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
     MXF::JPEG2000PictureSubDescriptor* pictureSubDescriptor = new MXF::JPEG2000PictureSubDescriptor(dict);
 
     bool yuvEssence = boost::any_cast<bool>(_muxerOptions["yuv_essence"]);
+
+    int profileInt = boost::any_cast<int>(_muxerOptions["broadcast_profile"]);
+
+    // 353 is profile 1.
+    MDD_t profile = static_cast<MDD_t>(static_cast<int>(MDD_JP2KEssenceCompression_BroadcastProfile_1) + (profileInt - 1));
+    std::cout << "broadcast profile enum: " << profile << std::endl;
+
     if (yuvEssence) {
         std::cout << "write yuv essence" << std::endl;
         MXF::CDCIEssenceDescriptor* cdciDescriptor = new MXF::CDCIEssenceDescriptor(dict);
@@ -92,7 +99,7 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                                   *static_cast<MXF::JPEG2000PictureSubDescriptor*>(essenceSubDescriptors.back()));
 
         if (ASDCP_SUCCESS(result)) {
-            cdciDescriptor->PictureEssenceCoding = UL(dict->ul(MDD_JP2KEssenceCompression_BroadcastProfile_1));
+            cdciDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
             cdciDescriptor->HorizontalSubsampling = boost::any_cast<int>(_muxerOptions["subsampling_dx"]);
             cdciDescriptor->VerticalSubsampling = boost::any_cast<int>(_muxerOptions["subsampling_dy"]);
             cdciDescriptor->ComponentDepth = boost::any_cast<int>(_muxerOptions["bits"]);
@@ -112,8 +119,8 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                                   *static_cast<MXF::JPEG2000PictureSubDescriptor*>(essenceSubDescriptors.back()));
 
         if (ASDCP_SUCCESS(result)) {
-            rgbDescriptor->PictureEssenceCoding = UL(dict->ul(MDD_JP2KEssenceCompression_BroadcastProfile_1));
-            rgbDescriptor->ComponentMaxRef = 1023;
+            rgbDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
+            rgbDescriptor->ComponentMaxRef = 1023;          // this must be 255 for 8 bit right?
             rgbDescriptor->ComponentMinRef = 0;
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(rgbDescriptor);
 	}

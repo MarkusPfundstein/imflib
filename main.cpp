@@ -144,7 +144,9 @@ int main(int argc, char **argv)
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_YUV444;
+        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_ST_1;
+
+        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
         bool yuvEssence = false;
         if (colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444) {
             yuvEssence = true;
@@ -155,8 +157,8 @@ int main(int argc, char **argv)
 
         std::cout << "encode with " << bitsPerComponent * 3 << " bpp" << std::endl;
 
-        J2KEncoder j2kEncoder(colorFormat, bitsPerComponent);
-        InputStreamDecoder decoder(inputFile, static_cast<int>(bitsPerComponent));
+        J2KEncoder j2kEncoder(colorFormat, bitsPerComponent, profile);
+        InputStreamDecoder decoder(inputFile);
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, tempFilePath); },
                        [&] (AVFrame &) { return HandleAudioFrame(); });
@@ -169,6 +171,7 @@ int main(int argc, char **argv)
         muxerOptions["subsampling_dy"] = 1;
         muxerOptions["encrypt_header"] = encryptHeader;
         muxerOptions["bits"] = static_cast<int>(bitsPerComponent);
+        muxerOptions["broadcast_profile"] = static_cast<int>(profile);
 
         MXFWriter mxfWriter(muxerOptions);
         if (j2kFiles.empty() == false) {
@@ -177,7 +180,7 @@ int main(int argc, char **argv)
 
         //CleanJ2KFiles(tempFilePath);
     } catch (std::runtime_error &ex) {
-        std::cerr << "error decoding: " << ex.what() << std::endl;
+        std::cerr << "[EXCEPTION CAUGHT - Aborting]: " << ex.what() << std::endl;
         CleanJ2KFiles(tempFilePath);
         if (filesystem::exists(finalVideoFile)) {
             const filesystem::path path(finalVideoFile);

@@ -24,13 +24,6 @@ InputStreamDecoder::InputStreamDecoder(const std::string &file)
     OpenFile(file);
 }
 
-// To-DO: Move enum from J2KEncoder into public header and put it in class declaration
-InputStreamDecoder::InputStreamDecoder(const std::string& file, int bitsPerComponent)
-    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(PIX_FMT_RGB48)
-{
-    OpenFile(file);
-}
-
 InputStreamDecoder::~InputStreamDecoder()
 {
     CloseFile();
@@ -275,9 +268,13 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
             }
 
             // pass RawVideoFrame to user so that she can do what she wants.
-            success = videoCallback(_videoStreamContext.videoFrame);
-
-            avpicture_free(&pic);
+            try {
+                success = videoCallback(_videoStreamContext.videoFrame);
+                avpicture_free(&pic);
+            } catch (...) {
+                avpicture_free(&pic);
+                throw;
+            }
             break;
         case FRAME_TYPE::AUDIO:
             //audioCallback(*decodedFrame);
