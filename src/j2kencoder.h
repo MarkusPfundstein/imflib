@@ -33,21 +33,22 @@ class J2KEncoder
             BCP_MT_7
         };
 
-        J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile);
+        J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles);
         virtual ~J2KEncoder();
 
         void EncodeRawFrame(const RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame);
 
     private:
-        bool EncodeImage(opj_image_t *image, J2kFrame& encodedFrame, opj_cparameters_t &parameters);
+        bool EncodeImage(opj_image_t *image, J2kFrame& encodedFrame, opj_cparameters_t &parameters, int widthUsed, int heightUsed);
 
-        void SetBroadcastProfile(opj_cparameters_t &parameters, PROFILE profile);
+        void SetBroadcastProfile(opj_cparameters_t &parameters, PROFILE profile, int widthUsed, int heightUsed);
 
         static OPJ_SIZE_T WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *userData);
 
         COLOR_FORMAT _targetColorFormat;
         BIT_RATE _targetBitRate;
         PROFILE _profile;
+        bool _useTiles;
 };
 
 #endif // J2KENCODER_H

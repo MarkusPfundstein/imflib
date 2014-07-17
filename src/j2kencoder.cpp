@@ -9,8 +9,8 @@
 
 #include <functional>
 
-J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile)
-    : _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate), _profile(profile)
+J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles)
+    : _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate), _profile(profile), _useTiles(useTiles)
 {
     //ctor
 }
@@ -47,7 +47,10 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
     encodingParameters.tcp_mct = (doMct ? 1 : 0);         // 0 = store as rgb, 1 = store as yuv ??? I THINK!!! :-)
     std::cout << "[J2K] " << (encodingParameters.tcp_mct == 0 ? "Store as RGB" : "Store as YUV") << std::endl;
 
-    SetBroadcastProfile(encodingParameters, _profile);
+    int widthUsed = rawFrame.width;
+    int heightUsed = rawFrame.height;
+
+    SetBroadcastProfile(encodingParameters, _profile, widthUsed, heightUsed);
 
     // will probably always be 3
     int numberComponents = 3;
@@ -62,8 +65,6 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
     // ??? seriously ???
     int bigEndian = false;
 
-    int widthUsed = rawFrame.width;
-    int heightUsed = rawFrame.height;
 
     opj_image_cmptparm_t *componentParameter = (opj_image_cmptparm_t*) malloc((size_t)numberComponents * sizeof(opj_image_cmptparm_t));
     memset(&componentParameter[0], 0, (size_t)numberComponents * sizeof(opj_image_cmptparm_t));
@@ -129,7 +130,7 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
         }
     }
 
-    bool success = EncodeImage(image, encodedFrame, encodingParameters);
+    bool success = EncodeImage(image, encodedFrame, encodingParameters, widthUsed, heightUsed);
 
     opj_image_destroy(image);
 
@@ -144,7 +145,7 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
     }
 }
 
-bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cparameters_t &parameters)
+bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cparameters_t &parameters, int widthUsed, int heightUsed)
 {
 
     opj_codec_t* codec = opj_create_compress((OPJ_CODEC_FORMAT) 0);
@@ -168,15 +169,29 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cpa
     opj_stream_set_user_data(stream, &encodedFrame, nullptr);
     opj_stream_set_write_function(stream, &J2KEncoder::WriteJ2kFrame);
 
-    // TO-DO : ADD TILE SUPPORT
-
     bool success = opj_start_compress(codec, image, stream);
     if (success == false)  {
         std::cout << "ERROR opj_start_compress" << std::endl;
     } else {
-        success = success && opj_encode(codec, stream);
-        if (success == false) {
-            std::cout << "ERROR opj_encode" << std::endl;
+        if (_useTiles && (_profile == PROFILE::BCP_MT_6 || _profile == PROFILE::BCP_MT_7)) {
+            std::cout << "[J2K] Write Tiles" << std::endl;
+            OPJ_BYTE *data;
+            OPJ_UINT32 dataSize = (720/2)*(576/2)*3;
+            data = (OPJ_BYTE*) malloc( dataSize * sizeof(OPJ_BYTE));
+            memset(data, 0, dataSize );
+            for (int i = 0; i < 4; ++i) {
+                success = opj_write_tile(codec, i, data, dataSize, stream);
+                if (success == false) {
+                    std::cout << "ERROR opj_write_tile" << std::endl;
+                    break;
+                }
+            }
+            free(data);
+        } else {
+            success = success && opj_encode(codec, stream);
+            if (success == false) {
+                std::cout << "ERROR opj_encode" << std::endl;
+            }
         }
     }
     success = success && opj_end_compress(codec, stream);
@@ -199,7 +214,7 @@ OPJ_SIZE_T J2KEncoder::WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *us
     return bufferSize;
 }
 
-void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROFILE profile)
+void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROFILE profile, int widthUsed, int heightUsed)
 {
     // set the ones that are the same for all profiles
     encodingParameters.roi_compno = -1;         // no region of interest
@@ -211,6 +226,9 @@ void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROF
 
     encodingParameters.cp_tx0 = 0;
     encodingParameters.cp_ty0 = 0;
+
+    encodingParameters.tp_flag = 'C';           // one tile part for each component
+    encodingParameters.tp_on = 1;               // generate tile part
 
     // one layer only
     encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug
@@ -236,17 +254,27 @@ void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROF
         case PROFILE::BCP_ST_3:
         case PROFILE::BCP_ST_4:
         case PROFILE::BCP_ST_5:
+            if (_useTiles) {
+                throw std::runtime_error("single tile broadcast profile cant be used with tiles");
+            }
             encodingParameters.tile_size_on = OPJ_FALSE;
-            encodingParameters.cp_tdx = 1;
+            encodingParameters.cp_tdx = 1;              // one huge tile
             encodingParameters.cp_tdy = 1;
-            encodingParameters.tp_flag = 'C';           // one tile part for each component
-            encodingParameters.tp_on = 1;
             encodingParameters.irreversible = 1;        // 9-7 Irreversible Transform
             break;
         case PROFILE::BCP_MT_6:
         case PROFILE::BCP_MT_7:
+            if (_useTiles) {
+                encodingParameters.tile_size_on = OPJ_TRUE;
+                encodingParameters.cp_tdx = widthUsed / 2;          // 4 tiles
+                encodingParameters.cp_tdy = heightUsed / 2;
+            } else {
+                encodingParameters.tile_size_on = OPJ_FALSE;
+                encodingParameters.cp_tdx = 1;
+                encodingParameters.cp_tdy = 1;
+            }
             encodingParameters.irreversible = 0;        // 5-3 Reversible Transform
-            throw std::runtime_error("multi tiles not implemted yet");
+            //throw std::runtime_error("multi tiles not implemted yet");
             break;
         default:
             throw std::runtime_error("undefined broadcast profile");

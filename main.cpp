@@ -15,19 +15,21 @@
 
 using namespace boost;
 
-// file path for j2k files
+// file path for j2k files. needs to be global for signal handler
 std::string tempFilePath;
 
-std::ofstream debugFile("/home/markus/Documents/IMF/TestFiles/DEBUG_RAW.raw", std::ios::binary | std::ios::out);
-
-static std::string debugRawFileDirectory("/home/markus/Documents/IMF/TestFiles/RAWFILES");
-static int rawCount = 0;
 
 void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
 {
+
+    static std::ofstream debugFile("/home/markus/Documents/IMF/TestFiles/DEBUG_RAW.raw", std::ios::binary | std::ios::out);
+    static std::string debugRawFileDirectory("/home/markus/Documents/IMF/TestFiles/RAWFILES");
+    static int rawCount = 0;
+    // write a raw video file
     debugFile.write((const char*)rawFrame.videoData[0], rawFrame.linesize[0] * rawFrame.height);
     debugFile.flush();
 
+    // write frame in separate raw image
     std::stringstream ss;
     ss << debugRawFileDirectory << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawCount << ".raw";
     std::string targetFile(ss.str());
@@ -144,7 +146,7 @@ int main(int argc, char **argv)
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_ST_1;
+        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_MT_6;
 
         J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
         bool yuvEssence = false;
@@ -152,17 +154,20 @@ int main(int argc, char **argv)
             yuvEssence = true;
         }
 
+        bool useTiles = false;
+
         // 10bit creates green video file :-)
         J2KEncoder::BIT_RATE bitsPerComponent = J2KEncoder::BIT_RATE::BR_8bit;
 
         std::cout << "encode with " << bitsPerComponent * 3 << " bpp" << std::endl;
 
-        J2KEncoder j2kEncoder(colorFormat, bitsPerComponent, profile);
+        J2KEncoder j2kEncoder(colorFormat, bitsPerComponent, profile, useTiles);
         InputStreamDecoder decoder(inputFile);
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, tempFilePath); },
                        [&] (AVFrame &) { return HandleAudioFrame(); });
 
+        // to-do: put all this shit in a struct
         muxerOptions["framerate"] = decoder.GetFrameRate();
         muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
         muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
