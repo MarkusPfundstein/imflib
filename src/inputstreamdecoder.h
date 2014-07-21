@@ -42,7 +42,7 @@ class InputStreamDecoder
 
         static void RegisterAVFormat();
 
-        InputStreamDecoder(const std::string& file);
+        InputStreamDecoder(const std::string& file, int depth, bool yuv);
         virtual ~InputStreamDecoder();
 
         void Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback);

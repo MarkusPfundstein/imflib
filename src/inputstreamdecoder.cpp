@@ -18,9 +18,18 @@ extern "C" {
 #include <mutex>
 #include <cmath>
 
-InputStreamDecoder::InputStreamDecoder(const std::string &file)
-    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(PIX_FMT_RGB48)
+InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, bool yuv)
+    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(-1)
 {
+    if (bitDepth == 8) {
+        if (yuv) {
+            _targetFormat = PIX_FMT_YUV444P;
+        } else {
+            _targetFormat = PIX_FMT_RGB24;
+        }
+    } else if (bitDepth <= 16) {
+        _targetFormat = PIX_FMT_RGB48;
+    }
     OpenFile(file);
 }
 

@@ -154,9 +154,9 @@ int main(int argc, char **argv)
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_MT_6;
+        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_ST_1;
 
-        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
+        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_YUV444;
         bool yuvEssence = false;
         if (colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444) {
             yuvEssence = true;
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 
         bool useTiles = true;
 
-        if (useTiles && (profile != J2KEncoder::PROFILE::BCP_MT_6 || profile != J2KEncoder::PROFILE::BCP_MT_7)) {
+        if (useTiles && profile != J2KEncoder::PROFILE::BCP_MT_6 && profile != J2KEncoder::PROFILE::BCP_MT_7) {
             std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
             useTiles = false;
         }
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
         std::cout << "encode with " << bitsPerComponent * 3 << " bpp" << std::endl;
 
         J2KEncoder j2kEncoder(colorFormat, bitsPerComponent, profile, useTiles);
-        InputStreamDecoder decoder(inputFile);
+        InputStreamDecoder decoder(inputFile, static_cast<int>(bitsPerComponent), yuvEssence);
 
         RationalNumber fps = decoder.GetFrameRate();
 
