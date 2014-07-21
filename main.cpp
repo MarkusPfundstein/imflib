@@ -50,7 +50,7 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
     std::cout << "[WRITE] wrote " << encodedFrame.data.size() << " Bytes to: " << targetFile << std::endl;
 }
 
-bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
+bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath, RationalNumber fps)
 {
     std::stringstream ss;
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
@@ -59,7 +59,7 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
     //WriteRawFrameToFile(rawFrame);
 
     J2kFrame encodedFrame;
-    j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame);
+    j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame, fps);
 
     WriteToFile(encodedFrame, targetFile);
     outFiles.push_back(targetFile);
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_ST_5;
+        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_MT_6;
 
         J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
         bool yuvEssence = false;
@@ -164,7 +164,8 @@ int main(int argc, char **argv)
 
         bool useTiles = true;
 
-        if (profile != J2KEncoder::PROFILE::BCP_MT_6 || profile != J2KEncoder::PROFILE::BCP_MT_6) {
+        if (useTiles && (profile != J2KEncoder::PROFILE::BCP_MT_6 || profile != J2KEncoder::PROFILE::BCP_MT_7)) {
+            std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
             useTiles = false;
         }
 
@@ -176,11 +177,14 @@ int main(int argc, char **argv)
         J2KEncoder j2kEncoder(colorFormat, bitsPerComponent, profile, useTiles);
         InputStreamDecoder decoder(inputFile);
 
-        decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, tempFilePath); },
+        RationalNumber fps = decoder.GetFrameRate();
+
+        decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, tempFilePath, fps); },
                        [&] (AVFrame &) { return HandleAudioFrame(); });
 
         // to-do: put all this shit in a struct
-        muxerOptions["framerate"] = decoder.GetFrameRate();
+        muxerOptions["framerate"] = fps;
+        // this one cant be set before decoding. on some codecs it would return wrong value
         muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
         muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
         muxerOptions["yuv_essence"] = yuvEssence;

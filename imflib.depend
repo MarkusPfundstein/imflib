@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1405609687 source:/home/markus/Documents/IMF/imflib/main.cpp
+1405950945 source:/home/markus/Documents/IMF/imflib/main.cpp
 	"src/j2kencoder.h"
 	"src/inputstreamdecoder.h"
 	"src/mxfwriter.h"
@@ -213,7 +213,7 @@
 	"JP2K.h"
 	"KM_log.h"
 
-1405606678 source:/home/markus/Documents/IMF/imflib/src/j2kencoder.cpp
+1405951045 source:/home/markus/Documents/IMF/imflib/src/j2kencoder.cpp
 	"j2kencoder.h"
 	"rawvideoframe.h"
 	"j2kframe.h"
@@ -221,9 +221,11 @@
 	<iostream>
 	<cstring>
 	<functional>
+	<cmath>
 
-1405603062 /home/markus/Documents/IMF/imflib/src/j2kencoder.h
+1405948785 /home/markus/Documents/IMF/imflib/src/j2kencoder.h
 	<openjpeg-2.1/openjpeg.h>
+	"rationalnumber.h"
 
 1405594085 /home/markus/Documents/IMF/imflib/src/inputstreamdecoder.h
 	<string>
@@ -243,7 +245,7 @@
 1405006394 /home/markus/Documents/IMF/imflib/src/frame.h
 	<memory>
 
-1405606767 source:/home/markus/Documents/IMF/imflib/src/inputstreamdecoder.cpp
+1405712146 source:/home/markus/Documents/IMF/imflib/src/inputstreamdecoder.cpp
 	"inputstreamdecoder.h"
 	<libavformat/avformat.h>
 	<libavcodec/avcodec.h>

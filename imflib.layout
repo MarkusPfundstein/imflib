@@ -16,16 +16,16 @@
 	<File name="src/j2kencoder.h" open="1" top="0" tabpos="4">
 		<Cursor position="389" topLine="8" />
 	</File>
-	<File name="src/j2kframe.h" open="1" top="0" tabpos="17">
+	<File name="src/j2kframe.h" open="1" top="0" tabpos="10">
 		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="src/mxfwriter.cpp" open="1" top="0" tabpos="9">
-		<Cursor position="2981" topLine="117" />
+	<File name="src/mxfwriter.cpp" open="1" top="1" tabpos="8">
+		<Cursor position="659" topLine="8" />
 	</File>
-	<File name="src/mxfwriter.h" open="1" top="0" tabpos="8">
+	<File name="src/mxfwriter.h" open="1" top="0" tabpos="7">
 		<Cursor position="116" topLine="0" />
 	</File>
-	<File name="src/rationalnumber.h" open="1" top="0" tabpos="13">
+	<File name="src/rationalnumber.h" open="1" top="0" tabpos="9">
 		<Cursor position="192" topLine="0" />
 	</File>
 	<File name="src/rawvideoframe.h" open="1" top="0" tabpos="3">

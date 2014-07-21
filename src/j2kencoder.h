@@ -7,6 +7,7 @@ extern "C" {
 // forward declarations
 struct RawVideoFrame;
 struct J2kFrame;
+#include "rationalnumber.h"
 
 
 class J2KEncoder
@@ -20,7 +21,8 @@ class J2KEncoder
 
         enum BIT_RATE {
             BR_8bit = 8,
-            BR_10bit = 10
+            BR_10bit = 10,
+            BR_12bit = 12
         };
 
         enum PROFILE {
@@ -36,12 +38,14 @@ class J2KEncoder
         J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles);
         virtual ~J2KEncoder();
 
-        void EncodeRawFrame(const RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame);
+        void EncodeRawFrame(const RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame, RationalNumber fps);
 
     private:
         bool EncodeImage(opj_image_t *image, J2kFrame& encodedFrame, opj_cparameters_t &parameters, int widthUsed, int heightUsed);
 
-        void SetBroadcastProfile(opj_cparameters_t &parameters, PROFILE profile, int widthUsed, int heightUsed);
+        void SetBroadcastProfile(opj_cparameters_t &parameters, PROFILE profile, int widthUsed, int heightUsed, RationalNumber fps);
+
+        void SetRates(PROFILE profile, RationalNumber targetFps, opj_cparameters_t &parameters, int frameSize);
 
         static OPJ_SIZE_T WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *userData);
 

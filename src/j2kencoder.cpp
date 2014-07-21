@@ -8,6 +8,7 @@
 #include <cstring> // memset
 
 #include <functional>
+#include <cmath>
 
 J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles)
     : _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate), _profile(profile), _useTiles(useTiles)
@@ -20,7 +21,7 @@ J2KEncoder::~J2KEncoder()
     //dtor
 }
 
-void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encodedFrame)
+void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encodedFrame, RationalNumber fps)
 {
     OPJ_COLOR_SPACE colorSpace;
     bool doMct = false;
@@ -50,7 +51,7 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
     int widthUsed = rawFrame.width;
     int heightUsed = rawFrame.height;
 
-    SetBroadcastProfile(encodingParameters, _profile, widthUsed, heightUsed);
+    SetBroadcastProfile(encodingParameters, _profile, widthUsed, heightUsed, fps);
 
     // will probably always be 3
     int numberComponents = 3;
@@ -145,7 +146,7 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
     }
 }
 
-bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cparameters_t &parameters, int widthUsed, int heightUsed)
+bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame, opj_cparameters_t &parameters, int, int)
 {
 
     opj_codec_t* codec = opj_create_compress((OPJ_CODEC_FORMAT) 0);
@@ -216,12 +217,12 @@ OPJ_SIZE_T J2KEncoder::WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *us
     return bufferSize;
 }
 
-void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROFILE profile, int widthUsed, int heightUsed)
+void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROFILE profile, int widthUsed, int heightUsed, RationalNumber fps)
 {
     // set the ones that are the same for all profiles
     encodingParameters.roi_compno = -1;         // no region of interest
     encodingParameters.mode = 0;                // code block style 0000 0000
-    encodingParameters.cblockw_init = 128;        // in asdcplib: 32 = 3, 128 = 5, in obj_dump: 128=2^7 , correct
+    encodingParameters.cblockw_init = 128;        // in asdcplib: 32 = 3, 64 = 4, 128 = 5, in obj_dump: 64=2^6,128=2^7 , correct
     encodingParameters.cblockh_init = 128;
     encodingParameters.prog_order = OPJ_CPRL;   // progression order CPRL, is 4
     encodingParameters.numpocs = 0;             // no poc marker
@@ -248,7 +249,18 @@ void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROF
         encodingParameters.prch_init[i] = 256;
     }
 
+    SetRates(profile, fps, encodingParameters, 3 * widthUsed * heightUsed * static_cast<int>(_targetBitRate));
     // To-DO: Set rates
+    //"JPEG 2000 Profile-3 and 4 (2k/4k dc profile) requires:\n"
+      //                "Maximum 1302083 compressed bytes @ 24fps\n"
+        //              "-> Specified rate exceeds this limit. Rate will be forced to 1302083 bytes.\n");
+        //parameters->max_cs_size = OPJ_CINEMA_24_CS;
+
+    //"Maximum 1041666 compressed bytes @ 24fps\n"
+      //                "-> Specified rate exceeds this limit. Rate will be forced to 1041666 bytes.\n");
+        //parameters->max_comp_size = OPJ_CINEMA_24_COMP;
+    //parameters->tcp_rates[0] = (OPJ_FLOAT32) (image->numcomps * image->comps[0].w * image->comps[0].h * image->comps[0].prec)/
+            //(OPJ_FLOAT32)(((OPJ_UINT32)parameters->max_cs_size) * 8 * image->comps[0].dx * image->comps[0].dy);
 
     switch (profile) {
         case PROFILE::BCP_ST_1:
@@ -282,5 +294,37 @@ void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROF
         default:
             throw std::runtime_error("undefined broadcast profile");
 
+    }
+}
+
+void J2KEncoder::SetRates(PROFILE profile, RationalNumber targetFps, opj_cparameters_t &parameters, int frameSize)
+{
+    // only for profile 1 to 6, 7 is unspecfified
+    const int MAX_COMP_BITRATE[6] = {200, 200, 200, 400, 800, 1600};
+
+    //const int MAX_COMP_SAMPLING_RATE[7] = {65, 130, 195, 260, 520, 520, 520};
+
+    const int profileIndex = static_cast<int>(profile);
+
+    const int MEGA = 1000000;       // 10 ^ 6
+
+    // formula is target rate * 10^6 / ( targetFps * 8 )
+    float fps = (float)targetFps.num / (float)targetFps.denum;
+
+    // profile 7 has no limitation
+    if (profileIndex < 7) {
+        parameters.max_comp_size = floorf((MAX_COMP_BITRATE[profileIndex - 1] / (fps * 8)) * MEGA);
+        std::cout << "[J2K] max compressed bit rate for profile " << profileIndex << " with " << targetFps.num << "/" << targetFps.denum << " fps: " << parameters.max_comp_size << std::endl;
+    } else {
+        std::cout << "[J2K] lossless compression" << std::endl;
+    }
+
+    // TO-DO: this is a heuristic. I have no idea how to calculate max_cs_size. When I know, this should be fixed
+    parameters.max_cs_size = floorf(parameters.max_comp_size * 1.25f);
+
+    std::cout << "[J2K] max_cs_size: " << parameters.max_cs_size << std::endl;
+
+    if (parameters.max_cs_size > 0) {
+        parameters.tcp_rates[0] = (OPJ_FLOAT32) frameSize / (OPJ_FLOAT32) (((OPJ_UINT32)parameters.max_cs_size) * 8);
     }
 }
