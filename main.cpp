@@ -154,9 +154,9 @@ int main(int argc, char **argv)
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_ST_1;
+        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_ST_4;
 
-        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_YUV444;
+        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
         bool yuvEssence = false;
         if (colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444) {
             yuvEssence = true;

@@ -232,18 +232,11 @@ void J2KEncoder::SetBroadcastProfile(opj_cparameters_t &encodingParameters, PROF
     encodingParameters.roi_compno = -1;         // no region of interest
     encodingParameters.mode = 0;                // code block style 0000 0000
 
-    encodingParameters.cblockw_init = 32;        // 2^5
-    encodingParameters.cblockh_init = 32;
-    // sanity check... TO-DO: add more sanity checks
-    if (encodingParameters.cblockh_init > 64) {
-        encodingParameters.cblockh_init = 64;
-    }
+    encodingParameters.cblockw_init = 64;        // 2^6
+    encodingParameters.cblockh_init = 64;
 
     encodingParameters.prog_order = OPJ_CPRL;   // progression order CPRL, is 4
     encodingParameters.numpocs = 0;             // no poc marker
-
-
-
 
     encodingParameters.cp_tx0 = 0;
     encodingParameters.cp_ty0 = 0;
