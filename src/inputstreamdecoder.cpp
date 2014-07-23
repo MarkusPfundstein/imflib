@@ -130,6 +130,10 @@ void InputStreamDecoder::OpenFile(const std::string& file)
                 std::cout << "subtitle stream detected: " << stream->index << std::endl;
                 _subtitleStreams.push_back(std::make_tuple(stream, codecContext));
                 break;
+            case AVMEDIA_TYPE_DATA:
+            case AVMEDIA_TYPE_ATTACHMENT:
+            case AVMEDIA_TYPE_NB:
+            case AVMEDIA_TYPE_UNKNOWN:
             default:
                 std::cout << "invalid stream detected: " << stream->index << std::endl;
         }

@@ -2,28 +2,28 @@
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Debug" />
 	<File name="main.cpp" open="1" top="1" tabpos="2">
-		<Cursor position="4655" topLine="143" />
+		<Cursor position="6482" topLine="0" />
 	</File>
 	<File name="src/inputstreamdecoder.cpp" open="1" top="0" tabpos="6">
-		<Cursor position="376" topLine="2" />
+		<Cursor position="1059" topLine="28" />
 	</File>
 	<File name="src/inputstreamdecoder.h" open="1" top="0" tabpos="5">
 		<Cursor position="863" topLine="19" />
 	</File>
 	<File name="src/j2kencoder.cpp" open="1" top="0" tabpos="1">
-		<Cursor position="9453" topLine="220" />
+		<Cursor position="1139" topLine="25" />
 	</File>
 	<File name="src/j2kencoder.h" open="1" top="0" tabpos="4">
-		<Cursor position="1158" topLine="15" />
+		<Cursor position="68" topLine="0" />
 	</File>
 	<File name="src/j2kframe.h" open="1" top="0" tabpos="10">
 		<Cursor position="0" topLine="0" />
 	</File>
 	<File name="src/mxfwriter.cpp" open="1" top="0" tabpos="8">
-		<Cursor position="4720" topLine="84" />
+		<Cursor position="2299" topLine="53" />
 	</File>
 	<File name="src/mxfwriter.h" open="1" top="0" tabpos="7">
-		<Cursor position="116" topLine="0" />
+		<Cursor position="471" topLine="0" />
 	</File>
 	<File name="src/rationalnumber.h" open="1" top="0" tabpos="9">
 		<Cursor position="192" topLine="0" />
