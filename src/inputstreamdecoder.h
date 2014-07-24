@@ -55,14 +55,16 @@ class InputStreamDecoder
 
         int GetNumberAudioTracks() const;
 
+        bool HasVideoTrack() const;
+
     protected:
     private:
         void OpenFile(const std::string& file);
         void CloseFile();
 
-        int DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType);
+        int DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType, int &audioStreamIndex);
 
-        bool HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback);
+        bool HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex);
 
         AVFormatContext* _formatContext;
 

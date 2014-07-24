@@ -60,10 +60,10 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
 
     //WriteRawFrameToFile(rawFrame);
 
-    J2kFrame encodedFrame;
-    j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame);
+    J2kFrame j2kFrame;
+    j2kEncoder.EncodeRawFrame(rawFrame, j2kFrame);
 
-    WriteToFile(encodedFrame, targetFile);
+    WriteToFile(j2kFrame, targetFile);
     outFiles.push_back(targetFile);
 
     std::cout << std::endl;
@@ -75,7 +75,8 @@ bool HandleAudioFrame(const AVFrame &rawFrame, PCMEncoder &pcmEncoder, std::list
 {
     std::cout << "audio index [" << index << "]" << std::endl;
 
-    pcmEncoder.EncodeRawFrame(rawFrame);
+    PCMFrame pcmFrame;
+    pcmEncoder.EncodeRawFrame(rawFrame, pcmFrame);
 
     return true;
 }
@@ -125,9 +126,11 @@ int main(int argc, char **argv)
         colorFormat(J2KEncoder::COLOR_FORMAT::CF_RGB444),
         yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
         useTiles(true),
-        inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
+        inputFile("/home/markus/Documents/IMF/TestFiles/vidtest.wav"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
-        finalVideoFile("/home/markus/Documents/IMF/FINAL.mxf")
+        finalVideoFile("/home/markus/Documents/IMF/FINAL.mxf"),
+        sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000),
+        tempAudioFilesPath("/home/markus/Documents/IMF/TestFiles/WAVFILES")
         {
             if (useTiles && profile != J2KEncoder::PROFILE::BCP_MT_6 && profile != J2KEncoder::PROFILE::BCP_MT_7) {
                 std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
@@ -136,6 +139,7 @@ int main(int argc, char **argv)
         }
 
 
+        /* VIDEO STUFF */
         J2KEncoder::PROFILE profile ;
         J2KEncoder::BIT_RATE bitsPerComponent;
         J2KEncoder::COLOR_FORMAT colorFormat;
@@ -145,6 +149,10 @@ int main(int argc, char **argv)
         std::string inputFile;
         std::string tempFilePath;
         std::string finalVideoFile;
+
+        /* AUDIO STUFF */
+        PCMEncoder::SAMPLE_RATE sampleRate;
+        std::string tempAudioFilesPath;
     };
 
     EncoderOptions options;
@@ -192,16 +200,24 @@ int main(int argc, char **argv)
         RationalNumber fps = decoder.GetFrameRate();
 
         // create one j2k encoder -> we assume only one video track
+
         J2KEncoder j2kEncoder(options.colorFormat, options.bitsPerComponent, options.profile, options.useTiles, fps, decoder.GetVideoWidth(), decoder.GetVideoHeight());
-        j2kEncoder.InitEncoder();
+        if (decoder.HasVideoTrack()) {
+            // j2kEncoder will throw here if video width or video height are 0. which is most likely if we push audio only
+            j2kEncoder.InitEncoder();
+        }
 
         // create one pcm encoder foreach audio track
         std::vector<std::shared_ptr<PCMEncoder>> pcmEncoders;
         for (int i = 0; i < decoder.GetNumberAudioTracks(); ++i) {
-            std::shared_ptr<PCMEncoder> pcmEncoder(new PCMEncoder());
+            std::stringstream ss;
+            ss << options.tempAudioFilesPath << "/AUDIO_" << (i + 1) << ".wav";
+            std::string wavFile = ss.str();
+            wavFiles.push_back(wavFile);
+            std::shared_ptr<PCMEncoder> pcmEncoder(new PCMEncoder(options.sampleRate));
             pcmEncoder->InitEncoder();
-
             pcmEncoders.push_back(pcmEncoder);
+
         }
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },

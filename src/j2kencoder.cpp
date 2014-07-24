@@ -12,14 +12,10 @@
 J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles, RationalNumber fps, int width, int height)
     :
     _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate), _profile(profile), _useTiles(useTiles), _fps(fps),
-    _componentParameter(nullptr), _widthUsed(width), _heightUsed(height), _bigEndian(false), _colorSpace(_targetColorFormat == CF_RGB444 ? OPJ_CLRSPC_SRGB : OPJ_CLRSPC_SYCC)
+    _componentParameter(nullptr), _widthUsed(width), _heightUsed(height), _encodingParameters(), _bigEndian(false),
+    _colorSpace(_targetColorFormat == CF_RGB444 ? OPJ_CLRSPC_SRGB : OPJ_CLRSPC_SYCC)
 {
-    if (_widthUsed <= 0 || _heightUsed <= 0) {
-        throw std::runtime_error("[J2K ERROR] Width or Height must be bigger than 0");
-    }
-    if (_fps.num == 0) {
-        throw std::runtime_error("[J2K ERROR] Invalid framerate");
-    }
+    _encodingParameters.cp_comment = nullptr;
 }
 
 J2KEncoder::~J2KEncoder()
@@ -34,6 +30,13 @@ J2KEncoder::~J2KEncoder()
 
 void J2KEncoder::InitEncoder()
 {
+    if (_widthUsed <= 0 || _heightUsed <= 0) {
+        throw std::runtime_error("[J2K ERROR] Width or Height must be bigger than 0");
+    }
+    if (_fps.num == 0) {
+        throw std::runtime_error("[J2K ERROR] Invalid framerate");
+    }
+
     // will probably always be 3
     int numberComponents = 3;
 

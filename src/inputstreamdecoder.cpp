@@ -88,8 +88,10 @@ void InputStreamDecoder::OpenFile(const std::string& file)
 
         codecContext->extradata_size = stream->codec->extradata_size;
 
+        codecContext->channels = 2;
+
         if (avcodec_open2(codecContext.get(), codec, &codecOptions) < 0) {
-            throw std::runtime_error("Could not open codec");
+            throw std::runtime_error("[InputStreamDecoder] Could not open codec");
         }
 
         switch (stream->codec->codec_type) {
@@ -143,6 +145,11 @@ void InputStreamDecoder::OpenFile(const std::string& file)
     if ((gotVideo == false) && _audioStreams.empty() && _subtitleStreams.empty()) {
         throw std::runtime_error("no streams detected");
     }
+}
+
+bool InputStreamDecoder::HasVideoTrack() const
+{
+    return _videoStreamContext.stream != nullptr;
 }
 
 int InputStreamDecoder::GetNumberAudioTracks() const
@@ -236,15 +243,16 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
         // decode packet.
         do {
             int gotFrame = 0;
+            int audioStreamIndex;
             FRAME_TYPE frameType;
-            int processedBytes = DecodePacket(packet, *decodedFrame, gotFrame, frameType);
+            int processedBytes = DecodePacket(packet, *decodedFrame, gotFrame, frameType, audioStreamIndex);
             if (processedBytes < 0) {
                 noError = false;
                 break;
             }
             // awesome. we got a full frame
             if (gotFrame) {
-                bool success = HandleFrame(*decodedFrame, frameType, videoCallback, audioCallback);
+                bool success = HandleFrame(*decodedFrame, frameType, videoCallback, audioCallback, audioStreamIndex);
                 if (success == false) {
                     noError = false;
                     break;
@@ -264,20 +272,21 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
     packet.data = nullptr;
     packet.size = 0;
 
+    int audioStreamIndex;
     int gotFrame = 0;
     FRAME_TYPE frameType;
 
     do {
-        DecodePacket(packet, *decodedFrame, gotFrame, frameType);
+        DecodePacket(packet, *decodedFrame, gotFrame, frameType, audioStreamIndex);
 
         // VERY unlikely. but why not.
         if (gotFrame) {
-            HandleFrame(*decodedFrame, frameType, videoCallback, audioCallback);
+            HandleFrame(*decodedFrame, frameType, videoCallback, audioCallback, audioStreamIndex);
         }
     } while (gotFrame);
 }
 
-bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback)
+bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
 {
     bool success = true;
     (void)audioCallback;
@@ -320,6 +329,12 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
             break;
         case FRAME_TYPE::AUDIO:
             //audioCallback(*decodedFrame);
+
+            try {
+                success = audioCallback(decodedFrame, audioStreamIndex);
+            } catch (...) {
+                throw;
+            }
             break;
         case FRAME_TYPE::SUBTITLES:
         case FRAME_TYPE::UNKNOWN:
@@ -331,9 +346,11 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
     return success;
 }
 
-int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType)
+int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType, int &index)
 {
     AVStream* stream = _videoStreamContext.stream;
+
+    index = -1;
     // there could be no video stream
     if (stream) {
         AVCodecContext *codecContext = _videoStreamContext.context.get();
@@ -346,6 +363,7 @@ int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, in
     }
 
     // search for audio stream
+    int j = 0;
     for (auto i = _audioStreams.begin(); i != _audioStreams.end(); ++i) {
         AVStream* audioStream = std::get<0>(*i);
         AVCodecContext *audioCodecContext = std::get<1>(*i).get();
@@ -353,6 +371,7 @@ int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, in
             int processedBytes = avcodec_decode_audio4(audioCodecContext, &decodedFrame, &gotFrame, &packet);
             std::cout << "[AUDIO] processedBytes: " << processedBytes << std::endl;
             frameType = FRAME_TYPE::AUDIO;
+            index = j++;
             return processedBytes;
         }
     }

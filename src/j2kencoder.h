@@ -62,9 +62,9 @@ class J2KEncoder
         bool _useTiles;
         RationalNumber _fps;
         opj_image_cmptparm_t* _componentParameter;
-        opj_cparameters_t _encodingParameters;
         int _widthUsed;
         int _heightUsed;
+        opj_cparameters_t _encodingParameters;
         bool _bigEndian;
         OPJ_COLOR_SPACE _colorSpace;
 };
