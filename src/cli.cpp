@@ -2,6 +2,7 @@
 #include "inputstreamdecoder.h"
 #include "mxfwriter.h"
 #include "common.h"
+#include "pcmencoder.h"
 
 #include <iostream>
 #include <fstream>
@@ -17,6 +18,8 @@ using namespace boost;
 // needs to be global for signal handler
 // storage for all j2k files. we need that later for asdcp lib
 std::list<std::string> j2kFiles;
+// storage for all wav files
+std::list<std::string> wavFiles;
 
 /*
 void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
@@ -68,8 +71,12 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
     return true;
 }
 
-bool HandleAudioFrame()
+bool HandleAudioFrame(const AVFrame &rawFrame, PCMEncoder &pcmEncoder, std::list<std::string> &outFiles, int index)
 {
+    std::cout << "audio index [" << index << "]" << std::endl;
+
+    pcmEncoder.EncodeRawFrame(rawFrame);
+
     return true;
 }
 
@@ -84,7 +91,7 @@ void CleanDirectory(const std::string &directory)
     }
 }
 
-void CleanJ2KFiles(const std::list<std::string>& files)
+void CleanFiles(const std::list<std::string>& files)
 {
     for (const std::string &s : files) {
         const filesystem::path path = s;
@@ -96,7 +103,8 @@ void SignalHandler(int sig)
 {
     if (sig == SIGINT || sig == SIGQUIT || sig == SIGTERM) {
         std::cerr << "[CLEANUP]" << std::endl;
-        CleanJ2KFiles(j2kFiles);
+        CleanFiles(j2kFiles);
+        CleanFiles(wavFiles);
         exit(1);
     }
 }
@@ -186,8 +194,11 @@ int main(int argc, char **argv)
         J2KEncoder j2kEncoder(options.colorFormat, options.bitsPerComponent, options.profile, options.useTiles, fps, decoder.GetVideoWidth(), decoder.GetVideoHeight());
         j2kEncoder.InitEncoder();
 
+        PCMEncoder pcmEncoder;
+        pcmEncoder.InitEncoder();
+
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
-                       [&] (AVFrame &) { return HandleAudioFrame(); });
+                       [&] (AVFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, pcmEncoder, wavFiles, index); });
 
         // to-do: put all this shit in a struct
         muxerOptions["framerate"] = fps;
@@ -206,10 +217,12 @@ int main(int argc, char **argv)
             mxfWriter.MuxVideoFiles(j2kFiles, options.finalVideoFile);
         }
 
-        CleanJ2KFiles(j2kFiles);
+        CleanFiles(j2kFiles);
+        CleanFiles(wavFiles);
     } catch (std::runtime_error &ex) {
         std::cerr << "[EXCEPTION CAUGHT - Aborting]: " << ex.what() << std::endl;
-        CleanJ2KFiles(j2kFiles);
+        CleanFiles(j2kFiles);
+        CleanFiles(wavFiles);
         if (filesystem::exists(options.finalVideoFile)) {
             const filesystem::path path(options.finalVideoFile);
             filesystem::remove(path);

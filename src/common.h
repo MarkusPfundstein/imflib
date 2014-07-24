@@ -19,7 +19,6 @@ struct RawVideoFrame
     int fieldOrder;
 };
 
-
 struct J2kFrame
 {
     J2kFrame() : data(0) { };
