@@ -49,7 +49,7 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
     std::cout << "[WRITE] wrote " << encodedFrame.data.size() << " Bytes to: " << targetFile << std::endl;
 }
 
-bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath, RationalNumber fps)
+bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
 {
     std::stringstream ss;
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
@@ -58,7 +58,7 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
     //WriteRawFrameToFile(rawFrame);
 
     J2kFrame encodedFrame;
-    j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame, fps);
+    j2kEncoder.EncodeRawFrame(rawFrame, encodedFrame);
 
     WriteToFile(encodedFrame, targetFile);
     outFiles.push_back(targetFile);
@@ -108,12 +108,43 @@ int main(int argc, char **argv)
 
     InputStreamDecoder::RegisterAVFormat();
 
-    bool encryptHeader = false;
+    struct EncoderOptions {
 
-    // file path to store intermediate j2k files.
-    std::string tempFilePath = "/home/markus/Documents/IMF/TestFiles/J2KFILES";
-    if (!filesystem::is_directory(tempFilePath)) {
-        std::cerr << tempFilePath << " is not a directory" << std::endl;
+        EncoderOptions()
+        :
+        profile(J2KEncoder::PROFILE::BCP_ST_4),
+        bitsPerComponent(J2KEncoder::BIT_RATE::BR_8bit),
+        colorFormat(J2KEncoder::COLOR_FORMAT::CF_RGB444),
+        yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
+        useTiles(true),
+        inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
+        tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
+        finalVideoFile("/home/markus/Documents/IMF/FINAL.mxf")
+        {
+            if (useTiles && profile != J2KEncoder::PROFILE::BCP_MT_6 && profile != J2KEncoder::PROFILE::BCP_MT_7) {
+                std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
+                useTiles = false;
+            }
+        }
+
+
+        J2KEncoder::PROFILE profile ;
+        J2KEncoder::BIT_RATE bitsPerComponent;
+        J2KEncoder::COLOR_FORMAT colorFormat;
+        bool yuvEssence;
+        bool useTiles;
+
+        std::string inputFile;
+        std::string tempFilePath;
+        std::string finalVideoFile;
+    };
+
+    EncoderOptions options;
+
+
+    std::cout << "encode with " << options.bitsPerComponent * 3 << " bpp" << std::endl;
+    if (!filesystem::is_directory(options.tempFilePath)) {
+        std::cerr << options.tempFilePath << " is not a directory" << std::endl;
         return 1;
     }
 
@@ -127,22 +158,16 @@ int main(int argc, char **argv)
         return 1;
     }*/
 
-    std::string inputFile = "/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg";
-    //inputFile = "/home/markus/Documents/IMF/TestFiles/h264_med.mp4";
-    //inputFile = "/home/markus/Documents/IMF/TestFiles/Out2.mov";
-
-
-    if (!filesystem::is_regular_file(inputFile)) {
-        std::cerr << inputFile << " is not a file" << std::endl;
+    if (!filesystem::is_regular_file(options.inputFile)) {
+        std::cerr << options.inputFile << " is not a file" << std::endl;
         return 1;
     }
 
-    std::string finalVideoFile = "/home/markus/Documents/IMF/FINAL.mxf";
-    if (filesystem::exists(finalVideoFile)) {
-        std::cerr << finalVideoFile << " exists already. Use -f option to override" << std::endl;
+    if (filesystem::exists(options.finalVideoFile)) {
+        std::cerr << options.finalVideoFile << " exists already. Use -f option to override" << std::endl;
 
         std::cout << "REMOVE FOR DEBUG MODE" << std::endl;
-        filesystem::remove(filesystem::path(finalVideoFile));
+        filesystem::remove(filesystem::path(options.finalVideoFile));
         //return 1;
     }
 
@@ -153,32 +178,15 @@ int main(int argc, char **argv)
     signal(SIGQUIT, SignalHandler);
 
     try {
-        J2KEncoder::PROFILE profile = J2KEncoder::PROFILE::BCP_ST_4;
 
-        J2KEncoder::COLOR_FORMAT colorFormat = J2KEncoder::COLOR_FORMAT::CF_RGB444;
-        bool yuvEssence = false;
-        if (colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444) {
-            yuvEssence = true;
-        }
-
-        bool useTiles = true;
-
-        if (useTiles && profile != J2KEncoder::PROFILE::BCP_MT_6 && profile != J2KEncoder::PROFILE::BCP_MT_7) {
-            std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
-            useTiles = false;
-        }
-
-        // 10bit creates green video file :-)
-        J2KEncoder::BIT_RATE bitsPerComponent = J2KEncoder::BIT_RATE::BR_8bit;
-
-        std::cout << "encode with " << bitsPerComponent * 3 << " bpp" << std::endl;
-
-        J2KEncoder j2kEncoder(colorFormat, bitsPerComponent, profile, useTiles);
-        InputStreamDecoder decoder(inputFile, static_cast<int>(bitsPerComponent), yuvEssence);
+        InputStreamDecoder decoder(options.inputFile, static_cast<int>(options.bitsPerComponent), options.yuvEssence);
 
         RationalNumber fps = decoder.GetFrameRate();
 
-        decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, tempFilePath, fps); },
+        J2KEncoder j2kEncoder(options.colorFormat, options.bitsPerComponent, options.profile, options.useTiles, fps, decoder.GetVideoWidth(), decoder.GetVideoHeight());
+        j2kEncoder.InitEncoder();
+
+        decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
                        [&] (AVFrame &) { return HandleAudioFrame(); });
 
         // to-do: put all this shit in a struct
@@ -186,24 +194,24 @@ int main(int argc, char **argv)
         // this one cant be set before decoding. on some codecs it would return wrong value
         muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
         muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
-        muxerOptions["yuv_essence"] = yuvEssence;
+        muxerOptions["yuv_essence"] = options.yuvEssence;
         muxerOptions["subsampling_dx"] = 1;
         muxerOptions["subsampling_dy"] = 1;
-        muxerOptions["encrypt_header"] = encryptHeader;
-        muxerOptions["bits"] = static_cast<int>(bitsPerComponent);
-        muxerOptions["broadcast_profile"] = static_cast<int>(profile);
+        muxerOptions["encrypt_header"] = false;
+        muxerOptions["bits"] = static_cast<int>(options.bitsPerComponent);
+        muxerOptions["broadcast_profile"] = static_cast<int>(options.profile);
 
         MXFWriter mxfWriter(muxerOptions);
         if (j2kFiles.empty() == false) {
-            mxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile);
+            mxfWriter.MuxVideoFiles(j2kFiles, options.finalVideoFile);
         }
 
         CleanJ2KFiles(j2kFiles);
     } catch (std::runtime_error &ex) {
         std::cerr << "[EXCEPTION CAUGHT - Aborting]: " << ex.what() << std::endl;
         CleanJ2KFiles(j2kFiles);
-        if (filesystem::exists(finalVideoFile)) {
-            const filesystem::path path(finalVideoFile);
+        if (filesystem::exists(options.finalVideoFile)) {
+            const filesystem::path path(options.finalVideoFile);
             filesystem::remove(path);
         }
         return 1;

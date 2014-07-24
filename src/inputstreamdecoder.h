@@ -47,8 +47,10 @@ class InputStreamDecoder
 
         void Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback);
 
-        RationalNumber GetFrameRate();
-        RationalNumber GetAspectRatio();
+        RationalNumber GetFrameRate() const;
+        RationalNumber GetAspectRatio() const;
+        int GetVideoWidth() const ;
+        int GetVideoHeight() const;
 
     protected:
     private:

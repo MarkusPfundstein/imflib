@@ -51,7 +51,7 @@
 			<Add option="-ansi" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="main.cpp" />
+		<Unit filename="src/cli.cpp" />
 		<Unit filename="src/inputstreamdecoder.cpp" />
 		<Unit filename="src/inputstreamdecoder.h" />
 		<Unit filename="src/j2kencoder.cpp" />

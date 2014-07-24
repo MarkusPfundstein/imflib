@@ -145,19 +145,25 @@ void InputStreamDecoder::OpenFile(const std::string& file)
     }
 }
 
-RationalNumber InputStreamDecoder::GetFrameRate()
+RationalNumber InputStreamDecoder::GetFrameRate() const
 {
+    if (_videoStreamContext.stream == nullptr) {
+        return RationalNumber(0, 0);
+    }
     AVRational rat = _videoStreamContext.stream->r_frame_rate;
     RationalNumber n;
     av_reduce(&n.num, &n.denum, rat.num, rat.den, 1024*1024);
     return n;
 }
 
-RationalNumber InputStreamDecoder::GetAspectRatio()
+RationalNumber InputStreamDecoder::GetAspectRatio() const
 {
     AVRational *sar = nullptr;
     AVCodecContext *context = _videoStreamContext.context.get();
     AVStream *stream = _videoStreamContext.stream;
+    if (stream == nullptr || context == nullptr) {
+        return RationalNumber(0, 0);
+    }
     if (context->sample_aspect_ratio.num) {
         std::cout << "here" << std::endl;
         sar = &context->sample_aspect_ratio;
@@ -177,6 +183,24 @@ RationalNumber InputStreamDecoder::GetAspectRatio()
     AVRational displayAspectRatio;
     av_reduce(&displayAspectRatio.num, &displayAspectRatio.den, source.num, source.den, 1024*1024);
     return RationalNumber(displayAspectRatio.num, displayAspectRatio.den);
+}
+
+int InputStreamDecoder::GetVideoWidth() const
+{
+    AVStream *stream = _videoStreamContext.stream;
+    if (stream == nullptr) {
+        return 0;
+    }
+    return stream->codec->width;
+}
+
+int InputStreamDecoder::GetVideoHeight() const
+{
+    AVStream *stream = _videoStreamContext.stream;
+    if (stream == nullptr) {
+        return 0;
+    }
+    return stream->codec->height;
 }
 
 void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback)

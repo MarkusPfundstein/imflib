@@ -306,13 +306,13 @@
 	<boost/filesystem.hpp>
 	<signal.h>
 
-1406111331 /home/markus/Documents/Projects/ODMedia/imflib/src/j2kencoder.h
+1406200464 /home/markus/Documents/Projects/ODMedia/imflib/src/j2kencoder.h
 	<openjpeg.h>
 	"rationalnumber.h"
 
 1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/rationalnumber.h
 
-1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.h
+1406194974 /home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.h
 	<string>
 	<memory>
 	<vector>
@@ -333,7 +333,7 @@
 1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/j2kframe.h
 	<vector>
 
-1406110334 source:/home/markus/Documents/Projects/ODMedia/imflib/src/j2kencoder.cpp
+1406203340 source:/home/markus/Documents/Projects/ODMedia/imflib/src/j2kencoder.cpp
 	"j2kencoder.h"
 	"rawvideoframe.h"
 	"j2kframe.h"
@@ -343,7 +343,7 @@
 	<functional>
 	<cmath>
 
-1406111968 source:/home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.cpp
+1406195142 source:/home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.cpp
 	"inputstreamdecoder.h"
 	<libavformat/avformat.h>
 	<libavcodec/avcodec.h>
@@ -365,7 +365,7 @@
 	<memory>
 	"rationalnumber.h"
 
-1406122469 source:/home/markus/Documents/Projects/ODMedia/imflib/src/cli.cpp
+1406201228 source:/home/markus/Documents/Projects/ODMedia/imflib/src/cli.cpp
 	"j2kencoder.h"
 	"inputstreamdecoder.h"
 	"mxfwriter.h"
