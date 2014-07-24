@@ -145,6 +145,11 @@ void InputStreamDecoder::OpenFile(const std::string& file)
     }
 }
 
+int InputStreamDecoder::GetNumberAudioTracks() const
+{
+    return _audioStreams.size();
+}
+
 RationalNumber InputStreamDecoder::GetFrameRate() const
 {
     if (_videoStreamContext.stream == nullptr) {

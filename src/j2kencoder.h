@@ -33,7 +33,11 @@ class J2KEncoder
             BCP_MT_7
         };
 
-        J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles, RationalNumber fps, int widthUsed, int heightUsed);
+        explicit J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles, RationalNumber fps, int widthUsed, int heightUsed);
+
+        J2KEncoder(const J2KEncoder& ) = delete;
+        J2KEncoder* operator=(const J2KEncoder& ) = delete;
+
         virtual ~J2KEncoder();
 
         void InitEncoder();

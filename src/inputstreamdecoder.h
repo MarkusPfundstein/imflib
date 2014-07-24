@@ -39,7 +39,11 @@ class InputStreamDecoder
 
         static void RegisterAVFormat();
 
-        InputStreamDecoder(const std::string& file, int depth, bool yuv);
+        explicit InputStreamDecoder(const std::string& file, int depth, bool yuv);
+
+        InputStreamDecoder(const InputStreamDecoder& ) = delete;
+        InputStreamDecoder* operator=(const InputStreamDecoder& ) = delete;
+
         virtual ~InputStreamDecoder();
 
         void Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback);
@@ -48,6 +52,8 @@ class InputStreamDecoder
         RationalNumber GetAspectRatio() const;
         int GetVideoWidth() const ;
         int GetVideoHeight() const;
+
+        int GetNumberAudioTracks() const;
 
     protected:
     private:
@@ -62,9 +68,12 @@ class InputStreamDecoder
 
         typedef std::shared_ptr<AVCodecContext> CodecContextPtr;
 
-        struct _VideoStreamContext {
-            _VideoStreamContext()
+        struct VideoStreamContext {
+            VideoStreamContext()
                 : stream(nullptr), context(nullptr), videoFrame() {}
+
+            VideoStreamContext(const VideoStreamContext& ) = delete;
+            VideoStreamContext* operator=(const VideoStreamContext& ) = delete;
 
             AVStream *stream;
             CodecContextPtr context;

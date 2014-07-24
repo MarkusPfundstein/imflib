@@ -188,21 +188,28 @@ int main(int argc, char **argv)
     try {
 
         InputStreamDecoder decoder(options.inputFile, static_cast<int>(options.bitsPerComponent), options.yuvEssence);
-
+        // decoder knows now some metadata about the video. Attention: IT DOESN'T KNOW ASPECT RATIO!!!!
         RationalNumber fps = decoder.GetFrameRate();
 
+        // create one j2k encoder -> we assume only one video track
         J2KEncoder j2kEncoder(options.colorFormat, options.bitsPerComponent, options.profile, options.useTiles, fps, decoder.GetVideoWidth(), decoder.GetVideoHeight());
         j2kEncoder.InitEncoder();
 
-        PCMEncoder pcmEncoder;
-        pcmEncoder.InitEncoder();
+        // create one pcm encoder foreach audio track
+        std::vector<std::shared_ptr<PCMEncoder>> pcmEncoders;
+        for (int i = 0; i < decoder.GetNumberAudioTracks(); ++i) {
+            std::shared_ptr<PCMEncoder> pcmEncoder(new PCMEncoder());
+            pcmEncoder->InitEncoder();
+
+            pcmEncoders.push_back(pcmEncoder);
+        }
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
-                       [&] (AVFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, pcmEncoder, wavFiles, index); });
+                       [&] (AVFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavFiles, index); });
 
         // to-do: put all this shit in a struct
         muxerOptions["framerate"] = fps;
-        // this one cant be set before decoding. on some codecs it would return wrong value
+        // Aspect Ratio is now known.
         muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
         muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
         muxerOptions["yuv_essence"] = options.yuvEssence;
@@ -212,10 +219,15 @@ int main(int argc, char **argv)
         muxerOptions["bits"] = static_cast<int>(options.bitsPerComponent);
         muxerOptions["broadcast_profile"] = static_cast<int>(options.profile);
 
-        MXFWriter mxfWriter(muxerOptions);
+        // write video
+        MXFWriter videoMxfWriter(muxerOptions);
         if (j2kFiles.empty() == false) {
-            mxfWriter.MuxVideoFiles(j2kFiles, options.finalVideoFile);
+            videoMxfWriter.MuxVideoFiles(j2kFiles, options.finalVideoFile);
         }
+
+        // write audio
+        // MXFWriter audioMxfWriter(...)
+        // audioMxfWriter.MuxAudioFiles(wavFiles, ...);
 
         CleanFiles(j2kFiles);
         CleanFiles(wavFiles);
