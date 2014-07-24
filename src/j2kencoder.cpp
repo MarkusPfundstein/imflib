@@ -1,7 +1,6 @@
 #include "j2kencoder.h"
-#include "rawvideoframe.h"
+#include "common.h"
 
-#include "j2kframe.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -140,13 +139,21 @@ void J2KEncoder::WritePixel8bit(opj_image_t *image, unsigned char r, unsigned ch
             image->comps[2].data[jpegIndex] = b;
             break;*/
             //std::cout << "rgb: " << (unsigned int)r << "," << (unsigned int)g << "," << (unsigned int)b << std::endl;
-            y = (( 66 * r + 129 * g + 25  * b) >> 8) + 16;
-            u = ((-38 * r - 74  * g + 112 * b) >> 8) + 128;
-            v = ((112 * r - 94  * g - 18  * b) >> 8) + 128;
+
+            // FIXED POINT matrix
+            //y = (( 66 * r + 129 * g + 25  * b) >> 8) + 16;
+            //u = ((-38 * r - 74  * g + 112 * b) >> 8) + 128;
+            //v = ((112 * r - 94  * g - 18  * b) >> 8) + 128;
             //std::cout << "yuv: " << (unsigned int)y << "," << (unsigned int)u << "," << (unsigned int)v << std::endl;
-            image->comps[0].data[jpegIndex] = y > 128 ? (unsigned char) 128 : y;
-            image->comps[1].data[jpegIndex] = u > 128 ? (unsigned char) 128 : u;
-            image->comps[2].data[jpegIndex] = v > 128 ? (unsigned char) 128 : v;
+
+            // JPEG matrix
+            y = 0   + (0.299    * r) + (0.587    * g) + (0.114    * b);
+            u = 128 - (0.168736 * r) - (0.331264 * g) + (0.5      * b);
+            v = 128 + (0.5      * r) - (0.418688 * g) - (0.081312 * b);
+
+            image->comps[0].data[jpegIndex] = y;// > 128 ? (unsigned char) 128 : y;
+            image->comps[1].data[jpegIndex] = u;// > 128 ? (unsigned char) 128 : u;
+            image->comps[2].data[jpegIndex] = v;// > 128 ? (unsigned char) 128 : v;
             break;
         case COLOR_FORMAT::CF_YUV422:
             break;

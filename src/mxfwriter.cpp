@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <memory>
 
-#include "rationalnumber.h"
+#include "common.h"
 
 using namespace ASDCP;
 

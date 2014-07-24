@@ -1,7 +1,7 @@
 #include "j2kencoder.h"
 #include "inputstreamdecoder.h"
 #include "mxfwriter.h"
-#include "j2kframe.h"
+#include "common.h"
 
 #include <iostream>
 #include <fstream>

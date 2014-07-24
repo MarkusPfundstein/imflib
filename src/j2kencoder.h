@@ -4,10 +4,8 @@
 extern "C" {
 #include <openjpeg.h>
 }
-// forward declarations
-struct RawVideoFrame;
-struct J2kFrame;
-#include "rationalnumber.h"
+
+#include "common.h"
 
 
 class J2KEncoder

@@ -7,9 +7,8 @@
 #include <tuple>
 #include <functional>
 
-#include "rawvideoframe.h"
+#include "common.h"
 
-#include "rationalnumber.h"
 
 // forward references
 
@@ -22,8 +21,6 @@ struct AVStream;
 struct AVCodecContext;
 struct AVPacket;
 struct AVFrame;
-
-struct RawVideoFrame;
 
 struct SwsContext;
 
