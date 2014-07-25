@@ -107,6 +107,6 @@ void PCMEncoder::EncodeRawFrame(const AVFrame& rawFrame, PCMFrame &pcmFrame)
         std::copy((uint8_t*)packet.data, (uint8_t*)packet.data + packet.size, std::back_inserter(pcmFrame.data));
         av_free_packet(&packet);
 
-        of.write((char*)&pcmFrame.data[0], (int)pcmFrame.data.size());
+        of.write((char*)pcmFrame.data[0], (int)pcmFrame.data.size());
     }
 }

@@ -13,7 +13,7 @@ J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, P
     :
     _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate), _profile(profile), _useTiles(useTiles), _fps(fps),
     _componentParameter(nullptr), _widthUsed(width), _heightUsed(height), _encodingParameters(), _bigEndian(false),
-    _colorSpace(_targetColorFormat == CF_RGB444 ? OPJ_CLRSPC_SRGB : OPJ_CLRSPC_SYCC)
+    _colorSpace(_targetColorFormat == CF_RGB444 ? OPJ_CLRSPC_SRGB : OPJ_CLRSPC_SRGB)
 {
     _encodingParameters.cp_comment = nullptr;
 }
@@ -126,9 +126,23 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
     }
 }
 
+static inline float u8tofloat_trick2(uint8_t x)
+{
+    union { float f; uint32_t i; } u; u.f = 32768.0f; u.i |= x;
+    return (u.f - 32768.0f) * (256.0f / 255.0f);
+}
+
+static inline uint8_t u8fromfloat_trick(float x)
+{
+    union { float f; uint32_t i; } u;
+    u.f = 32768.0f + x * (255.0f / 256.0f);
+    return (uint8_t)u.i;
+}
+
 void J2KEncoder::WritePixel8bit(opj_image_t *image, unsigned char r, unsigned char g, unsigned char b, int jpegIndex)
 {
     unsigned char y, u, v;
+    float fr, fg, fb, fy;
     switch (_targetColorFormat) {
         case COLOR_FORMAT::CF_RGB444:
             image->comps[0].data[jpegIndex] = r;
@@ -136,23 +150,22 @@ void J2KEncoder::WritePixel8bit(opj_image_t *image, unsigned char r, unsigned ch
             image->comps[2].data[jpegIndex] = b;
             break;
         case COLOR_FORMAT::CF_YUV444:
-            /*_encodingParameters.tcp_mct = 1;
-            image->comps[0].data[jpegIndex] = r;
-            image->comps[1].data[jpegIndex] = g;
-            image->comps[2].data[jpegIndex] = b;
-            break;*/
-            //std::cout << "rgb: " << (unsigned int)r << "," << (unsigned int)g << "," << (unsigned int)b << std::endl;
-
             // FIXED POINT matrix
-            //y = (( 66 * r + 129 * g + 25  * b) >> 8) + 16;
-            //u = ((-38 * r - 74  * g + 112 * b) >> 8) + 128;
-            //v = ((112 * r - 94  * g - 18  * b) >> 8) + 128;
-            //std::cout << "yuv: " << (unsigned int)y << "," << (unsigned int)u << "," << (unsigned int)v << std::endl;
+            y = (( 66 * r + 129 * g + 25  * b) >> 8) + 16;
+            u = ((-38 * r - 74  * g + 112 * b) >> 8) + 128;
+            v = ((112 * r - 94  * g - 18  * b) >> 8) + 128;
 
             // JPEG matrix
-            y = 0   + (0.299    * r) + (0.587    * g) + (0.114    * b);
-            u = 128 - (0.168736 * r) - (0.331264 * g) + (0.5      * b);
-            v = 128 + (0.5      * r) - (0.418688 * g) - (0.081312 * b);
+            //fr = u8tofloat_trick2(r);
+            //fg = u8tofloat_trick2(g);
+            //fb = u8tofloat_trick2(b);
+            //y = u8fromfloat_trick(0   + (0.299    * fr) + (0.587    * fg) + (0.114    * fb));
+            //u = u8fromfloat_trick(128 - (0.168736 * fr) - (0.331264 * fg) + (0.5      * fb));
+            //v = u8fromfloat_trick(128 + (0.5      * fr) - (0.418688 * fg) - (0.081312 * fb));
+            //fy = (0.299f * fr + 0.587f * fg + 0.114f * fb);
+            //y = u8fromfloat_trick(fy);
+            //u = u8fromfloat_trick(0.492f * u8tofloat_trick2(b - y));
+            //v = u8fromfloat_trick(0.877f * u8tofloat_trick2(b - y));
 
             image->comps[0].data[jpegIndex] = y;// > 128 ? (unsigned char) 128 : y;
             image->comps[1].data[jpegIndex] = u;// > 128 ? (unsigned char) 128 : u;
@@ -242,7 +255,7 @@ void J2KEncoder::SetBroadcastProfile()
     strcpy(_encodingParameters.cp_comment, "ODMedia J2K");
     _encodingParameters.subsampling_dx = 1;
     _encodingParameters.subsampling_dy = 1;
-    _encodingParameters.tcp_mct = 0;
+    _encodingParameters.tcp_mct = 1;        // I really wonder what this does???
 
     // one layer only
     _encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug

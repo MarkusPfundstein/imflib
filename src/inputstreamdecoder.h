@@ -21,7 +21,7 @@ struct AVStream;
 struct AVCodecContext;
 struct AVPacket;
 struct AVFrame;
-
+struct ReSampleContext;
 struct SwsContext;
 
 class InputStreamDecoder
@@ -59,8 +59,12 @@ class InputStreamDecoder
 
     protected:
     private:
+        typedef std::shared_ptr<AVCodecContext> CodecContextPtr;
+
         void OpenFile(const std::string& file);
         void CloseFile();
+        void AddVideoStream(AVStream *stream, const CodecContextPtr &context);
+        void AddAudioStream(AVStream *stream, const CodecContextPtr &context);
 
         int DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType, int &audioStreamIndex);
 
@@ -68,7 +72,7 @@ class InputStreamDecoder
 
         AVFormatContext* _formatContext;
 
-        typedef std::shared_ptr<AVCodecContext> CodecContextPtr;
+
 
         struct VideoStreamContext {
             VideoStreamContext()
@@ -79,15 +83,34 @@ class InputStreamDecoder
 
             AVStream *stream;
             CodecContextPtr context;
-            int videoLineSize[4];
             RawVideoFrame videoFrame;
         } _videoStreamContext;
 
-        // we store the raw pointers to AVStream. because livetime of stream depends anyway on _formatContext
-        std::vector<std::tuple<AVStream*, CodecContextPtr>> _audioStreams;
-        std::vector<std::tuple<AVStream*, CodecContextPtr>> _subtitleStreams;
+        struct AudioStreamContext {
+            AudioStreamContext(AVStream *s, CodecContextPtr ptr, ReSampleContext *ctx)
+                : stream(s), context(ptr), resampleContext(ctx) {}
 
-        // Context for converting color space
+            AudioStreamContext(const AudioStreamContext& o)
+                : stream(o.stream), context(o.context), resampleContext(o.resampleContext) {}
+
+            AudioStreamContext& operator=(const AudioStreamContext& o)
+            {
+                stream = o.stream;
+                context = o.context;
+                resampleContext = o.resampleContext;
+                return *this;
+            }
+
+            AVStream *stream;
+            CodecContextPtr context;
+            ReSampleContext *resampleContext;
+        };
+
+        // we store the raw pointers to AVStream. because livetime of stream depends anyway on _formatContext
+        std::vector<AudioStreamContext> _audioStreams;
+        std::vector<AudioStreamContext> _subtitleStreams;
+
+        // Context for converting color space -> should move into VideoStreamContext
         SwsContext *_swsContext;
 
         int _targetFormat;

@@ -121,14 +121,14 @@ int main(int argc, char **argv)
 
         EncoderOptions()
         :
-        profile(J2KEncoder::PROFILE::BCP_ST_4),
+        profile(J2KEncoder::PROFILE::BCP_ST_5),
         bitsPerComponent(J2KEncoder::BIT_RATE::BR_8bit),
-        colorFormat(J2KEncoder::COLOR_FORMAT::CF_RGB444),
+        colorFormat(J2KEncoder::COLOR_FORMAT::CF_YUV444),
         yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
         useTiles(true),
-        inputFile("/home/markus/Documents/IMF/TestFiles/vidtest.wav"),
+        inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
-        finalVideoFile("/home/markus/Documents/IMF/FINAL.mxf"),
+        finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_8bit_Profile5_MCT.mxf"),
         sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000),
         tempAudioFilesPath("/home/markus/Documents/IMF/TestFiles/WAVFILES")
         {
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
         }
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
-                       [&] (AVFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavFiles, index); });
+                       [&] (AVFrame &rawFrame, int index) { return true;/*HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavFiles, index);*/ });
 
         // to-do: put all this shit in a struct
         muxerOptions["framerate"] = fps;

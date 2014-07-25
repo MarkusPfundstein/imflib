@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 #include <iostream>
+#include <fstream>
 #include <cstring>
 #include <mutex>
 #include <cmath>
@@ -22,11 +23,7 @@ InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, bo
     : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(-1)
 {
     if (bitDepth == 8) {
-        if (yuv) {
-            _targetFormat = PIX_FMT_YUV444P;
-        } else {
-            _targetFormat = PIX_FMT_RGB24;
-        }
+        _targetFormat = PIX_FMT_RGB24;
     } else if (bitDepth <= 16) {
         _targetFormat = PIX_FMT_RGB48;
     }
@@ -38,6 +35,11 @@ InputStreamDecoder::~InputStreamDecoder()
     CloseFile();
     if (_swsContext) {
         sws_freeContext(_swsContext);
+    }
+    for (AudioStreamContext& ctx : _audioStreams) {
+        if (ctx.resampleContext) {
+            audio_resample_close(ctx.resampleContext);
+        }
     }
 }
 
@@ -58,11 +60,6 @@ void InputStreamDecoder::OpenFile(const std::string& file)
         throw std::runtime_error("error reading stream info from file");
     }
 
-    // this leaks. dont know yet how to fix it
-    AVDictionary *codecOptions = nullptr;
-    //av_dict_set(&codecOptions, "refcounted_frames", "1", 0);
-
-    bool gotVideo = false;
     for (unsigned int i = 0; i < _formatContext->nb_streams; ++i) {
 
         // first , lets get codec and codec context
@@ -88,49 +85,34 @@ void InputStreamDecoder::OpenFile(const std::string& file)
 
         codecContext->extradata_size = stream->codec->extradata_size;
 
+        // BUG: MUST BE SET BEFORE avcodec_open2 IFF sound input is PCM
         codecContext->channels = 2;
 
-        if (avcodec_open2(codecContext.get(), codec, &codecOptions) < 0) {
+        if (avcodec_open2(codecContext.get(), codec, nullptr) < 0) {
             throw std::runtime_error("[InputStreamDecoder] Could not open codec");
         }
 
         switch (stream->codec->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
-                if (gotVideo) {
-                    std::cout << "second video stream detected. this is not implemented yet" << std::endl;
+                if (_videoStreamContext.context) {
+                    std::cout << "second video stream detected. this is not implemented yet [skip]" << std::endl;
+                    continue;
                 }
                 std::cout << "video stream detected: " << stream->index << std::endl;
-                if (stream->codec->codec){
-                    std::cout << "codec: " << stream->codec->codec->name << std::endl;
-                } else {
-                    std::cout << "couldn't detect codec name" << std::endl;
-                }
-                std::cout << "pix_fmt: " << av_get_pix_fmt_name(stream->codec->pix_fmt) << std::endl;
-                std::cout << "size: " << stream->codec->width << ":" << stream->codec->height << std::endl;
 
-                _videoStreamContext.context = codecContext;
-                _videoStreamContext.stream = stream;
+                AddVideoStream(stream, codecContext);
 
-                // store data for later in raw video frame
-                _videoStreamContext.videoFrame.width = stream->codec->width;
-                _videoStreamContext.videoFrame.height = stream->codec->height;
-                _videoStreamContext.videoFrame.pixelFormat = stream->codec->pix_fmt;
-                _videoStreamContext.videoFrame.fieldOrder = stream->codec->field_order;
 
-                _swsContext = sws_getContext(stream->codec->width, stream->codec->height, (PixelFormat) stream->codec->pix_fmt, stream->codec->width, stream->codec->height, (PixelFormat) _targetFormat, SWS_BILINEAR, nullptr, nullptr, nullptr);
-                if (_swsContext == nullptr) {
-                    throw std::runtime_error("Error while calling sws_getContext");
-                }
-
-                gotVideo = true;
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 std::cout << "audio stream detected: " << stream->index << std::endl;
-                _audioStreams.push_back(std::make_tuple(stream, codecContext));
+
+                AddAudioStream(stream, codecContext);
+
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 std::cout << "subtitle stream detected: " << stream->index << std::endl;
-                _subtitleStreams.push_back(std::make_tuple(stream, codecContext));
+                //_subtitleStreams.push_back(std::make_tuple(stream, codecContext));
                 break;
             case AVMEDIA_TYPE_DATA:
             case AVMEDIA_TYPE_ATTACHMENT:
@@ -142,9 +124,65 @@ void InputStreamDecoder::OpenFile(const std::string& file)
     }
 
     // unlikely
-    if ((gotVideo == false) && _audioStreams.empty() && _subtitleStreams.empty()) {
+    if ((_videoStreamContext.context == nullptr) && _audioStreams.empty() && _subtitleStreams.empty()) {
         throw std::runtime_error("no streams detected");
     }
+}
+
+void InputStreamDecoder::AddVideoStream(AVStream *stream, const CodecContextPtr &context)
+{
+    if (stream->codec->codec){
+        std::cout << "codec: " << stream->codec->codec->name << std::endl;
+    } else {
+        std::cout << "couldn't detect codec name" << std::endl;
+    }
+    std::cout << "pix_fmt: " << av_get_pix_fmt_name(stream->codec->pix_fmt) << std::endl;
+    std::cout << "size: " << stream->codec->width << ":" << stream->codec->height << std::endl;
+
+    _videoStreamContext.context = context;
+    _videoStreamContext.stream = stream;
+
+    // store data for later in raw video frame
+    _videoStreamContext.videoFrame.width = stream->codec->width;
+    _videoStreamContext.videoFrame.height = stream->codec->height;
+    _videoStreamContext.videoFrame.pixelFormat = stream->codec->pix_fmt;
+    _videoStreamContext.videoFrame.fieldOrder = stream->codec->field_order;
+
+    _swsContext = sws_getContext(stream->codec->width, stream->codec->height, (PixelFormat) stream->codec->pix_fmt, stream->codec->width, stream->codec->height, (PixelFormat) _targetFormat, SWS_BILINEAR, nullptr, nullptr, nullptr);
+    if (_swsContext == nullptr) {
+        throw std::runtime_error("Error while calling sws_getContext");
+    }
+}
+
+void InputStreamDecoder::AddAudioStream(AVStream *stream, const CodecContextPtr &context)
+{
+    std::cout << "sample_rate: " << stream->codec->sample_rate << std::endl;
+    std::cout << "channels: " << stream->codec->channels << std::endl;
+    std::cout << "format index: " << context->sample_fmt << std::endl;
+
+/*
+int output_channels, int input_channels,
+                                        int output_rate, int input_rate,
+                                        enum AVSampleFormat sample_fmt_out,
+                                        enum AVSampleFormat sample_fmt_in,
+                                        int filter_length, int log2_phase_count,
+                                        int linear, double cutoff);
+                                        */
+    ReSampleContext *resampleContext = av_audio_resample_init(2,
+                                                              stream->codec->channels,
+                                                              48000,
+                                                              stream->codec->sample_rate,
+                                                              AVSampleFormat::AV_SAMPLE_FMT_S32,
+                                                              context->sample_fmt,
+                                                              16,
+                                                              10,
+                                                              0,
+                                                              1.0);
+    if (resampleContext == nullptr) {
+        throw std::runtime_error("[InputStreamDecoder] error initializing resample context");
+    }
+
+    _audioStreams.push_back(AudioStreamContext(stream, context, resampleContext));
 }
 
 bool InputStreamDecoder::HasVideoTrack() const
@@ -289,24 +327,16 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
 bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
 {
     bool success = true;
-    (void)audioCallback;
 
     AVPicture pic;
 
+    // audio shit
+    int samplesOutput = 0;
+    char audioBuffer[4 * 1024 * 1024];
+    ReSampleContext *resampleContext;
+
     switch (frameType) {
         case FRAME_TYPE::VIDEO:
-
-            // THIS WOULD LEAVE COLOR SPACE
-            // copy whole image data into our video data array
-            /*av_image_copy(_videoStreamContext.videoFrame.videoData,
-                          _videoStreamContext.videoLineSize,
-                          (const uint8_t **)(decodedFrame.data),
-                          decodedFrame.linesize,
-                          (PixelFormat)decodedFrame.format,
-                          decodedFrame.width,
-                          decodedFrame.height);*/
-
-
 
             avpicture_alloc(&pic, (PixelFormat)_targetFormat, decodedFrame.width, decodedFrame.height);
             sws_scale(_swsContext, decodedFrame.data, decodedFrame.linesize, 0, decodedFrame.height, pic.data, pic.linesize);
@@ -328,7 +358,18 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
             }
             break;
         case FRAME_TYPE::AUDIO:
-            //audioCallback(*decodedFrame);
+            /*
+            resampleContext = _audioStreams[audioStreamIndex].resampleContext;
+            samplesOutput = audio_resample(resampleContext, (short*)audioBuffer, (short*)decodedFrame.data, decodedFrame.nb_samples * 2);
+
+            static std::ofstream of("/home/markus/Documents/IMF/TestFiles/decodedFrame.pcm");
+            of.write((char*)decodedFrame.data[0], decodedFrame.linesize[0]);
+            of.flush();
+
+            static std::ofstream of2("/home/markus/Documents/IMF/TestFiles/decodedFrameResampled.pcm");
+            of2.write((char*)audioBuffer, samplesOutput * 2);
+            of2.flush();*/
+
 
             try {
                 success = audioCallback(decodedFrame, audioStreamIndex);
@@ -365,8 +406,9 @@ int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, in
     // search for audio stream
     int j = 0;
     for (auto i = _audioStreams.begin(); i != _audioStreams.end(); ++i) {
-        AVStream* audioStream = std::get<0>(*i);
-        AVCodecContext *audioCodecContext = std::get<1>(*i).get();
+        const AudioStreamContext &ctx = *i;
+        AVStream* audioStream = ctx.stream;
+        AVCodecContext *audioCodecContext = ctx.context.get();
         if (audioStream->index == packet.stream_index) {
             int processedBytes = avcodec_decode_audio4(audioCodecContext, &decodedFrame, &gotFrame, &packet);
             std::cout << "[AUDIO] processedBytes: " << processedBytes << std::endl;
