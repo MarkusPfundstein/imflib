@@ -22,7 +22,7 @@ extern "C" {
 InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, bool yuv)
     : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(-1)
 {
-    if (bitDepth == 8) {
+    if (bitDepth == 8 || bitDepth == 10 || bitDepth == 12) {
         _targetFormat = PIX_FMT_RGB24;
     } else if (bitDepth <= 16) {
         _targetFormat = PIX_FMT_RGB48;
@@ -148,7 +148,16 @@ void InputStreamDecoder::AddVideoStream(AVStream *stream, const CodecContextPtr 
     _videoStreamContext.videoFrame.pixelFormat = stream->codec->pix_fmt;
     _videoStreamContext.videoFrame.fieldOrder = stream->codec->field_order;
 
-    _swsContext = sws_getContext(stream->codec->width, stream->codec->height, (PixelFormat) stream->codec->pix_fmt, stream->codec->width, stream->codec->height, (PixelFormat) _targetFormat, SWS_BILINEAR, nullptr, nullptr, nullptr);
+    _swsContext = sws_getContext(stream->codec->width,
+                                 stream->codec->height,
+                                 (PixelFormat) stream->codec->pix_fmt,
+                                 stream->codec->width,
+                                 stream->codec->height,
+                                 (PixelFormat) _targetFormat,
+                                 SWS_BILINEAR,
+                                 nullptr,
+                                 nullptr,
+                                 nullptr);
     if (_swsContext == nullptr) {
         throw std::runtime_error("Error while calling sws_getContext");
     }

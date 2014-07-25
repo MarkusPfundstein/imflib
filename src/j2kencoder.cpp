@@ -9,6 +9,19 @@
 #include <functional>
 #include <cmath>
 
+static inline float u8tofloat_trick2(uint8_t x)
+{
+    union { float f; uint32_t i; } u; u.f = 32768.0f; u.i |= x;
+    return (u.f - 32768.0f) * (256.0f / 255.0f);
+}
+
+static inline uint8_t u8fromfloat_trick(float x)
+{
+    union { float f; uint32_t i; } u;
+    u.f = 32768.0f + x * (255.0f / 256.0f);
+    return (uint8_t)u.i;
+}
+
 J2KEncoder::J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles, RationalNumber fps, int width, int height)
     :
     _targetColorFormat(targetColorFormat), _targetBitRate(targetBitRate), _profile(profile), _useTiles(useTiles), _fps(fps),
@@ -82,13 +95,40 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
         for (int x = 0; x < _widthUsed; ++x) {
             if (rawBitDepth == 8) {
                 int rgbIndex = x * 3;
-                unsigned char r = dataPtr[y * 3 * _widthUsed + (rgbIndex + 0)];	// R
-                unsigned char g = dataPtr[y * 3 * _widthUsed + (rgbIndex + 1)];	// G
-                unsigned char b = dataPtr[y * 3 * _widthUsed + (rgbIndex + 2)];	// B
+                ColorComponent colors;
+                colors.c1 = dataPtr[y * 3 * _widthUsed + (rgbIndex + 0)];	// R
+                colors.c2 = dataPtr[y * 3 * _widthUsed + (rgbIndex + 1)];	// G
+                colors.c3 = dataPtr[y * 3 * _widthUsed + (rgbIndex + 2)];	// B
 
-                WritePixel8bit(image, r, g, b, jpegIndex);
+                if (_targetColorFormat != CF_RGB444) {
+                    RGB24toYUV24(colors);
+                }
 
-            } else if (rawBitDepth <= 16) {
+                image->comps[0].data[jpegIndex] = colors.c1;
+                image->comps[1].data[jpegIndex] = colors.c2;
+                image->comps[2].data[jpegIndex] = colors.c3;
+
+            } else if (rawBitDepth == 10 || rawBitDepth == 12) {
+                int rgbIndex = x * 3;
+                ColorComponent colors;
+                colors.c1 = dataPtr[y * 3 * _widthUsed + (rgbIndex + 0)];	// R
+                colors.c2 = dataPtr[y * 3 * _widthUsed + (rgbIndex + 1)];	// G
+                colors.c3 = dataPtr[y * 3 * _widthUsed + (rgbIndex + 2)];	// B
+
+                if (_targetColorFormat != CF_RGB444) {
+                    RGB24toYUV24(colors);
+                }
+
+                unsigned short red = colors.c1 << (rawBitDepth - 8);
+                unsigned short green = colors.c2 << (rawBitDepth - 8);
+                unsigned short blue = colors.c3 << (rawBitDepth - 8);
+
+                image->comps[0].data[jpegIndex] = (unsigned short) red;
+                image->comps[1].data[jpegIndex] = (unsigned short) green;
+                image->comps[2].data[jpegIndex] = (unsigned short) blue;
+            }
+
+            /* else if (rawBitDepth <= 16) {
                 int rgbIndex = x * 6;
 
                 unsigned char r1 = dataPtr[y * 6 * _widthUsed + (rgbIndex + 0)];
@@ -109,10 +149,10 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
                     green = (unsigned short)((g2 << 8) + g1);
                     blue = (unsigned short)((b2 << 8) + b1);
                 }
-                image->comps[0].data[jpegIndex] = (unsigned short) red;	// R
-                image->comps[1].data[jpegIndex] = (unsigned short) green;//dataPtr[y * 3 * widthUsed + (rgbIndex + 1)];	// G
-                image->comps[2].data[jpegIndex] = (unsigned short) blue;//dataPtr[y * 3 * widthUsed + (rgbIndex + 2)];	// B
-            }
+                image->comps[0].data[jpegIndex] = (unsigned short) red;
+                image->comps[1].data[jpegIndex] = (unsigned short) green;
+                image->comps[2].data[jpegIndex] = (unsigned short) blue;
+            }*/
             jpegIndex++;
         }
     }
@@ -126,56 +166,28 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
     }
 }
 
-static inline float u8tofloat_trick2(uint8_t x)
+void J2KEncoder::RGB24toYUV24(ColorComponent &rgb)
 {
-    union { float f; uint32_t i; } u; u.f = 32768.0f; u.i |= x;
-    return (u.f - 32768.0f) * (256.0f / 255.0f);
-}
+    // FIXED POINT matrix
+    unsigned char y = (( 66 * rgb.c1 + 129 * rgb.c2 + 25  * rgb.c3) >> 8) + 16;
+    unsigned char u = ((-38 * rgb.c1 - 74  * rgb.c2 + 112 * rgb.c3) >> 8) + 128;
+    unsigned char v = ((112 * rgb.c1 - 94  * rgb.c2 - 18  * rgb.c3) >> 8) + 128;
 
-static inline uint8_t u8fromfloat_trick(float x)
-{
-    union { float f; uint32_t i; } u;
-    u.f = 32768.0f + x * (255.0f / 256.0f);
-    return (uint8_t)u.i;
-}
+    rgb.c1 = y;
+    rgb.c2 = u;
+    rgb.c3 = v;
 
-void J2KEncoder::WritePixel8bit(opj_image_t *image, unsigned char r, unsigned char g, unsigned char b, int jpegIndex)
-{
-    unsigned char y, u, v;
-    float fr, fg, fb, fy;
-    switch (_targetColorFormat) {
-        case COLOR_FORMAT::CF_RGB444:
-            image->comps[0].data[jpegIndex] = r;
-            image->comps[1].data[jpegIndex] = g;
-            image->comps[2].data[jpegIndex] = b;
-            break;
-        case COLOR_FORMAT::CF_YUV444:
-            // FIXED POINT matrix
-            y = (( 66 * r + 129 * g + 25  * b) >> 8) + 16;
-            u = ((-38 * r - 74  * g + 112 * b) >> 8) + 128;
-            v = ((112 * r - 94  * g - 18  * b) >> 8) + 128;
-
-            // JPEG matrix
-            //fr = u8tofloat_trick2(r);
-            //fg = u8tofloat_trick2(g);
-            //fb = u8tofloat_trick2(b);
-            //y = u8fromfloat_trick(0   + (0.299    * fr) + (0.587    * fg) + (0.114    * fb));
-            //u = u8fromfloat_trick(128 - (0.168736 * fr) - (0.331264 * fg) + (0.5      * fb));
-            //v = u8fromfloat_trick(128 + (0.5      * fr) - (0.418688 * fg) - (0.081312 * fb));
-            //fy = (0.299f * fr + 0.587f * fg + 0.114f * fb);
-            //y = u8fromfloat_trick(fy);
-            //u = u8fromfloat_trick(0.492f * u8tofloat_trick2(b - y));
-            //v = u8fromfloat_trick(0.877f * u8tofloat_trick2(b - y));
-
-            image->comps[0].data[jpegIndex] = y;// > 128 ? (unsigned char) 128 : y;
-            image->comps[1].data[jpegIndex] = u;// > 128 ? (unsigned char) 128 : u;
-            image->comps[2].data[jpegIndex] = v;// > 128 ? (unsigned char) 128 : v;
-            break;
-        case COLOR_FORMAT::CF_YUV422:
-            break;
-        default:
-            break;
-    }
+    // JPEG matrix
+    //fr = u8tofloat_trick2(r);
+    //fg = u8tofloat_trick2(g);
+    //fb = u8tofloat_trick2(b);
+    //y = u8fromfloat_trick(0   + (0.299    * fr) + (0.587    * fg) + (0.114    * fb));
+    //u = u8fromfloat_trick(128 - (0.168736 * fr) - (0.331264 * fg) + (0.5      * fb));
+    //v = u8fromfloat_trick(128 + (0.5      * fr) - (0.418688 * fg) - (0.081312 * fb));
+    //fy = (0.299f * fr + 0.587f * fg + 0.114f * fb);
+    //y = u8fromfloat_trick(fy);
+    //u = u8fromfloat_trick(0.492f * u8tofloat_trick2(b - y));
+    //v = u8fromfloat_trick(0.877f * u8tofloat_trick2(b - y));
 }
 
 bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame)

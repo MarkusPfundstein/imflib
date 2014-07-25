@@ -122,13 +122,13 @@ int main(int argc, char **argv)
         EncoderOptions()
         :
         profile(J2KEncoder::PROFILE::BCP_ST_5),
-        bitsPerComponent(J2KEncoder::BIT_RATE::BR_8bit),
+        bitsPerComponent(J2KEncoder::BIT_RATE::BR_10bit),
         colorFormat(J2KEncoder::COLOR_FORMAT::CF_YUV444),
         yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
         useTiles(true),
         inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
-        finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_8bit_Profile5_MCT.mxf"),
+        finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_10bit_Profile5_MCT_3.mxf"),
         sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000),
         tempAudioFilesPath("/home/markus/Documents/IMF/TestFiles/WAVFILES")
         {

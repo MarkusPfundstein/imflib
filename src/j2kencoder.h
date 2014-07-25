@@ -20,7 +20,8 @@ class J2KEncoder
         enum BIT_RATE {
             BR_8bit = 8,
             BR_10bit = 10,
-            BR_12bit = 12
+            BR_12bit = 12,
+            BR_16bit = 16
         };
 
         enum PROFILE {
@@ -45,6 +46,10 @@ class J2KEncoder
         void EncodeRawFrame(const RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame);
 
     private:
+        struct ColorComponent
+        {
+            unsigned char c1, c2, c3;
+        };
 
         bool EncodeImage(opj_image_t *image, J2kFrame& encodedFrame);
 
@@ -52,7 +57,7 @@ class J2KEncoder
 
         void SetRates(int frameSize);
 
-        void WritePixel8bit(opj_image_t *image, unsigned char r, unsigned char g, unsigned char b, int idx);
+        void RGB24toYUV24(ColorComponent &rgb);
 
         static OPJ_SIZE_T WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *userData);
 
