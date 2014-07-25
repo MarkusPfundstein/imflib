@@ -1,37 +1,34 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Debug" />
-	<File name="src/cli.cpp" open="1" top="0" tabpos="6">
-		<Cursor position="3735" topLine="99" />
+	<File name="src/cli.cpp" open="1" top="1" tabpos="17">
+		<Cursor position="2277" topLine="62" />
 	</File>
-	<File name="src/common.h" open="1" top="0" tabpos="9">
+	<File name="src/common.h" open="1" top="0" tabpos="19">
 		<Cursor position="320" topLine="3" />
 	</File>
-	<File name="src/inputstreamdecoder.cpp" open="1" top="0" tabpos="4">
-		<Cursor position="13528" topLine="350" />
+	<File name="src/inputstreamdecoder.cpp" open="1" top="0" tabpos="16">
+		<Cursor position="13868" topLine="369" />
 	</File>
-	<File name="src/inputstreamdecoder.h" open="1" top="0" tabpos="3">
-		<Cursor position="694" topLine="82" />
+	<File name="src/inputstreamdecoder.h" open="1" top="0" tabpos="15">
+		<Cursor position="3369" topLine="81" />
 	</File>
-	<File name="src/j2kencoder.cpp" open="1" top="0" tabpos="1">
-		<Cursor position="9584" topLine="306" />
+	<File name="src/j2kencoder.cpp" open="1" top="0" tabpos="13">
+		<Cursor position="7165" topLine="167" />
 	</File>
-	<File name="src/j2kencoder.h" open="1" top="0" tabpos="2">
-		<Cursor position="396" topLine="0" />
+	<File name="src/j2kencoder.h" open="1" top="0" tabpos="14">
+		<Cursor position="1273" topLine="35" />
 	</File>
-	<File name="src/mxfwriter.cpp" open="0" top="0" tabpos="6">
-		<Cursor position="2121" topLine="53" />
+	<File name="src/mxfwriter.cpp" open="1" top="0" tabpos="21">
+		<Cursor position="2121" topLine="55" />
 	</File>
-	<File name="src/mxfwriter.h" open="0" top="0" tabpos="5">
+	<File name="src/mxfwriter.h" open="1" top="0" tabpos="22">
 		<Cursor position="471" topLine="0" />
 	</File>
-	<File name="src/pcmencoder.cpp" open="1" top="0" tabpos="7">
-		<Cursor position="2822" topLine="36" />
+	<File name="src/pcmencoder.cpp" open="1" top="0" tabpos="18">
+		<Cursor position="3132" topLine="80" />
 	</File>
-	<File name="src/pcmencoder.h" open="1" top="0" tabpos="10">
+	<File name="src/pcmencoder.h" open="1" top="0" tabpos="20">
 		<Cursor position="343" topLine="2" />
-	</File>
-	<File name="src/wavmuxer.h" open="0" top="0" tabpos="0">
-		<Cursor position="188" topLine="0" />
 	</File>
 </CodeBlocks_layout_file>

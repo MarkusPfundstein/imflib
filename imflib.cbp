@@ -44,8 +44,6 @@
 			<Add option="-Wfloat-equal" />
 			<Add option="-Winline" />
 			<Add option="-Wunreachable-code" />
-			<Add option="-pedantic-errors" />
-			<Add option="-pedantic" />
 			<Add option="-Wextra" />
 			<Add option="-Wall" />
 			<Add option="-ansi" />

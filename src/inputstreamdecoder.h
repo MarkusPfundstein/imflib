@@ -42,7 +42,7 @@ class InputStreamDecoder
 
         static void RegisterAVFormat();
 
-        explicit InputStreamDecoder(const std::string& file, int depth, bool yuv);
+        explicit InputStreamDecoder(const std::string& file, int depth);
 
         InputStreamDecoder(const InputStreamDecoder& ) = delete;
         InputStreamDecoder* operator=(const InputStreamDecoder& ) = delete;

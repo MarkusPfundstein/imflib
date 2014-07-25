@@ -7,6 +7,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
 //#include <libavutil/samplefmt.h>
 //#include <libavutil/timestamp.h>
 #ifdef __cplusplus
@@ -19,7 +20,7 @@ extern "C" {
 #include <mutex>
 #include <cmath>
 
-InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, bool yuv)
+InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth)
     : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(-1)
 {
     if (bitDepth == 8 || bitDepth == 10 || bitDepth == 12) {
