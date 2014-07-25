@@ -100,13 +100,13 @@ void PCMEncoder::EncodeRawFrame(const AVFrame& rawFrame, PCMFrame &pcmFrame)
         throw std::runtime_error("[PCM] error encoding audio");
     }
 
-    static std::ofstream of("/home/markus/Documents/IMF/TestFiles/OUT.pcm");
+    //static std::ofstream of("/home/markus/Documents/IMF/TestFiles/OUT.pcm");
 
     if (gotPacket) {
-        pcmFrame.data.reserve(packet.size);
-        std::copy((uint8_t*)packet.data, (uint8_t*)packet.data + packet.size, std::back_inserter(pcmFrame.data));
-        av_free_packet(&packet);
+        //pcmFrame.data.reserve(packet.size);
+        //std::copy((uint8_t*)packet.data, (uint8_t*)packet.data + packet.size, std::back_inserter(pcmFrame.data));
+        //av_free_packet(&packet);
 
-        of.write((char*)pcmFrame.data[0], (int)pcmFrame.data.size());
+        //of.write((char*)pcmFrame.data[0], (int)pcmFrame.data.size());
     }
 }

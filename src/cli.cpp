@@ -75,6 +75,10 @@ bool HandleAudioFrame(const AVFrame &rawFrame, PCMEncoder &pcmEncoder, std::list
 {
     std::cout << "audio index [" << index << "]" << std::endl;
 
+    static std::ofstream of("/home/markus/Documents/IMF/TestFiles/decodedFrame.pcm");
+    of.write((char*)rawFrame.extended_data[0], rawFrame.linesize[0]);
+    of.flush();
+
     PCMFrame pcmFrame;
     pcmEncoder.EncodeRawFrame(rawFrame, pcmFrame);
 
@@ -126,7 +130,7 @@ int main(int argc, char **argv)
         colorFormat(J2KEncoder::COLOR_FORMAT::CF_YUV444),
         yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
         useTiles(true),
-        inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
+        inputFile("/home/markus/Documents/IMF/TestFiles/pcm_16bit.wav"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
         finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_10bit_Profile5_MCT_4_JPEG_TRANSFORM.mxf"),
         sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000),
@@ -137,7 +141,6 @@ int main(int argc, char **argv)
                 useTiles = false;
             }
         }
-
 
         /* VIDEO STUFF */
         J2KEncoder::PROFILE profile ;
@@ -221,7 +224,7 @@ int main(int argc, char **argv)
         }
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
-                       [&] (AVFrame &rawFrame, int index) { return true;/*HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavFiles, index);*/ });
+                       [&] (AVFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavFiles, index); });
 
         // to-do: put all this shit in a struct
         muxerOptions["framerate"] = fps;

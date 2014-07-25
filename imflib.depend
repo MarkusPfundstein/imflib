@@ -312,13 +312,14 @@
 
 1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/rationalnumber.h
 
-1406229798 /home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.h
+1406287959 /home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.h
 	<string>
 	<memory>
 	<vector>
 	<tuple>
 	<functional>
 	"common.h"
+	<libavformat/avformat.h>
 
 1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/rawvideoframe.h
 	<cstdint>
@@ -332,7 +333,7 @@
 1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/j2kframe.h
 	<vector>
 
-1406274907 source:/home/markus/Documents/Projects/ODMedia/imflib/src/j2kencoder.cpp
+1406285983 source:/home/markus/Documents/Projects/ODMedia/imflib/src/j2kencoder.cpp
 	"j2kencoder.h"
 	"common.h"
 	<stdexcept>
@@ -341,7 +342,7 @@
 	<functional>
 	<cmath>
 
-1406273754 source:/home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.cpp
+1406287697 source:/home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.cpp
 	"inputstreamdecoder.h"
 	<libavformat/avformat.h>
 	<libavcodec/avcodec.h>
@@ -364,7 +365,7 @@
 	<memory>
 	"common.h"
 
-1406277850 source:/home/markus/Documents/Projects/ODMedia/imflib/src/cli.cpp
+1406287695 source:/home/markus/Documents/Projects/ODMedia/imflib/src/cli.cpp
 	"j2kencoder.h"
 	"inputstreamdecoder.h"
 	"mxfwriter.h"
@@ -383,7 +384,7 @@
 	<vector>
 	<cstdint>
 
-1406237975 source:/home/markus/Documents/Projects/ODMedia/imflib/src/pcmencoder.cpp
+1406287907 source:/home/markus/Documents/Projects/ODMedia/imflib/src/pcmencoder.cpp
 	"pcmencoder.h"
 	"common.h"
 	<libavutil/opt.h>

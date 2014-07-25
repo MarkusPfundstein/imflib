@@ -333,16 +333,11 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
     } while (gotFrame);
 }
 
-bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
+bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback,
+                                      GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
 {
     bool success = true;
-
     AVPicture pic;
-
-    // audio shit
-    int samplesOutput = 0;
-    char audioBuffer[4 * 1024 * 1024];
-    ReSampleContext *resampleContext;
 
     switch (frameType) {
         case FRAME_TYPE::VIDEO:
@@ -367,24 +362,9 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
             }
             break;
         case FRAME_TYPE::AUDIO:
-            /*
-            resampleContext = _audioStreams[audioStreamIndex].resampleContext;
-            samplesOutput = audio_resample(resampleContext, (short*)audioBuffer, (short*)decodedFrame.data, decodedFrame.nb_samples * 2);
 
-            static std::ofstream of("/home/markus/Documents/IMF/TestFiles/decodedFrame.pcm");
-            of.write((char*)decodedFrame.data[0], decodedFrame.linesize[0]);
-            of.flush();
+            success = HandleAudioFrame(decodedFrame, audioCallback, audioStreamIndex);
 
-            static std::ofstream of2("/home/markus/Documents/IMF/TestFiles/decodedFrameResampled.pcm");
-            of2.write((char*)audioBuffer, samplesOutput * 2);
-            of2.flush();*/
-
-
-            try {
-                success = audioCallback(decodedFrame, audioStreamIndex);
-            } catch (...) {
-                throw;
-            }
             break;
         case FRAME_TYPE::SUBTITLES:
         case FRAME_TYPE::UNKNOWN:
@@ -393,6 +373,25 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
             throw new std::runtime_error("invalid frame type");
     }
 
+    return success;
+}
+
+bool InputStreamDecoder::HandleAudioFrame(AVFrame& decodedFrame, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
+{
+    bool success = false;
+    try {
+        //std::shared_ptr<AVFrame> newFrame(avcodec_alloc_frame(), &av_free);;
+
+        //AVCodecContext *context = _audioStreams[audioStreamIndex].context.get();
+
+        //for (int i = 0; i < context->channels; ++i) {
+
+        //}
+
+        success = audioCallback(decodedFrame, audioStreamIndex);
+    } catch (...) {
+        throw;
+    }
     return success;
 }
 

@@ -179,13 +179,15 @@ void J2KEncoder::RGB24toYUV24(ColorComponent &rgb)
 
 
 
-    // JPEG matrix
+    // floating point matrix
     float fr = u8tofloat_trick2(r);
     float fg = u8tofloat_trick2(g);
     float fb = u8tofloat_trick2(b);
     y = u8fromfloat_trick(0   + (0.299f    * fr) + (0.587f    * fg) + (0.114f    * fb));
     u = u8fromfloat_trick(128 - (0.168736f * fr) - (0.331264f * fg) + (0.5f      * fb));
     v = u8fromfloat_trick(128 + (0.5f      * fr) - (0.418688f * fg) - (0.081312f * fb));
+
+    // Some other Matrix. I think
     //fy = (0.299f * fr + 0.587f * fg + 0.114f * fb);
     //y = u8fromfloat_trick(fy);
     //u = u8fromfloat_trick(0.492f * u8tofloat_trick2(b - y));

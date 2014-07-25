@@ -9,6 +9,9 @@
 
 #include "common.h"
 
+extern "C" {
+#include <libavformat/avformat.h>
+}
 
 // forward references
 
@@ -69,6 +72,8 @@ class InputStreamDecoder
         int DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType, int &audioStreamIndex);
 
         bool HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex);
+
+        bool HandleAudioFrame(AVFrame& decodedFrame, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex);
 
         AVFormatContext* _formatContext;
 
