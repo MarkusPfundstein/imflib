@@ -168,26 +168,32 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
 
 void J2KEncoder::RGB24toYUV24(ColorComponent &rgb)
 {
+    unsigned char y, u, v;
+    unsigned char r = rgb.c1;
+    unsigned char g = rgb.c2;
+    unsigned char b = rgb.c3;
     // FIXED POINT matrix
-    unsigned char y = (( 66 * rgb.c1 + 129 * rgb.c2 + 25  * rgb.c3) >> 8) + 16;
-    unsigned char u = ((-38 * rgb.c1 - 74  * rgb.c2 + 112 * rgb.c3) >> 8) + 128;
-    unsigned char v = ((112 * rgb.c1 - 94  * rgb.c2 - 18  * rgb.c3) >> 8) + 128;
+    //y = (( 66 * r + 129 * g + 25  * b) >> 8) + 16;
+    //u = ((-38 * r - 74  * g + 112 * b) >> 8) + 128;
+    //v = ((112 * r - 94  * g - 18  * b) >> 8) + 128;
 
-    rgb.c1 = y;
-    rgb.c2 = u;
-    rgb.c3 = v;
+
 
     // JPEG matrix
-    //fr = u8tofloat_trick2(r);
-    //fg = u8tofloat_trick2(g);
-    //fb = u8tofloat_trick2(b);
-    //y = u8fromfloat_trick(0   + (0.299    * fr) + (0.587    * fg) + (0.114    * fb));
-    //u = u8fromfloat_trick(128 - (0.168736 * fr) - (0.331264 * fg) + (0.5      * fb));
-    //v = u8fromfloat_trick(128 + (0.5      * fr) - (0.418688 * fg) - (0.081312 * fb));
+    float fr = u8tofloat_trick2(r);
+    float fg = u8tofloat_trick2(g);
+    float fb = u8tofloat_trick2(b);
+    y = u8fromfloat_trick(0   + (0.299f    * fr) + (0.587f    * fg) + (0.114f    * fb));
+    u = u8fromfloat_trick(128 - (0.168736f * fr) - (0.331264f * fg) + (0.5f      * fb));
+    v = u8fromfloat_trick(128 + (0.5f      * fr) - (0.418688f * fg) - (0.081312f * fb));
     //fy = (0.299f * fr + 0.587f * fg + 0.114f * fb);
     //y = u8fromfloat_trick(fy);
     //u = u8fromfloat_trick(0.492f * u8tofloat_trick2(b - y));
     //v = u8fromfloat_trick(0.877f * u8tofloat_trick2(b - y));
+
+    rgb.c1 = y;
+    rgb.c2 = u;
+    rgb.c3 = v;
 }
 
 bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame)

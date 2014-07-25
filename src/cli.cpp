@@ -128,7 +128,7 @@ int main(int argc, char **argv)
         useTiles(true),
         inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
-        finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_10bit_Profile5_MCT_3.mxf"),
+        finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_10bit_Profile5_MCT_4_JPEG_TRANSFORM.mxf"),
         sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000),
         tempAudioFilesPath("/home/markus/Documents/IMF/TestFiles/WAVFILES")
         {
