@@ -130,7 +130,7 @@ int main(int argc, char **argv)
         colorFormat(J2KEncoder::COLOR_FORMAT::CF_YUV444),
         yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
         useTiles(true),
-        inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
+        inputFile("/home/markus/Documents/IMF/TestFiles/pcm_16bit.wav"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
         finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_10bit_Profile5_MCT_4_JPEG_TRANSFORM.mxf"),
         sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000),
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 
     try {
 
-        InputStreamDecoder decoder(options.inputFile, static_cast<int>(options.bitsPerComponent));
+        InputStreamDecoder decoder(options.inputFile, (int)options.bitsPerComponent, (int)options.sampleRate);
         // decoder knows now some metadata about the video. Attention: IT DOESN'T KNOW ASPECT RATIO!!!!
         RationalNumber fps = decoder.GetFrameRate();
 
@@ -260,6 +260,11 @@ int main(int argc, char **argv)
         }
         return 1;
     }
+
+    std::cout << "TO-DO LIST" << std::endl;
+    std::cout << "BUFFERING OF SWRESAMPLE" << std::endl;
+    std::cout << "INPUT SAMPLE RATE IS NOW FIXED TO 44100" << std::endl;
+    std::cout << "ENCODE TO pcm24le AND WRITE AS WAV" << std::endl;
 
     return 0;
 }

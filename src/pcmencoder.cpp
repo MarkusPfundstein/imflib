@@ -10,6 +10,7 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavutil/avstring.h>
 #include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
 #ifdef __cplusplus
 }
 #endif
@@ -33,6 +34,7 @@ PCMEncoder::~PCMEncoder()
         avcodec_close(_codecContext);
         av_free(_codecContext);
     }
+
 }
 
 void PCMEncoder::InitEncoder()
@@ -62,29 +64,6 @@ void PCMEncoder::InitEncoder()
     }
 
     std::cout << "[PCM] Encoder initialized" << std::endl;
-}
-
-void PCMEncoder::InitConvertedInputSamples(uint8_t ***convertedInputSamples, int frameSize)
-{
-    return;
- /*
-    if ((*convertedInputSamples = (uint8_t**)calloc(_codecContext->channels, sizeof(**convertedInputSamples))) = nullptr) {
-        throw std::runtime_error("[PCM] couldnt allocate memory for input samples");
-    }
-
-
-    int error = av_samples_alloc(*convertedInputSamples,
-                                  nullptr,
-                                  _codecContext->channels,
-                                  frameSize,
-                                  _codecContext->sample_fmt,
-                                  0);
-    if (error != 0) {
-        av_freep(&(*convertedInputSamples)[0]);
-        free(*convertedInputSamples);
-        throw std::runtime_error("could not allocate memory for converted input samples");
-    }
-    */
 }
 
 void PCMEncoder::EncodeRawFrame(const AVFrame& rawFrame, PCMFrame &pcmFrame)

@@ -24,7 +24,7 @@ struct AVStream;
 struct AVCodecContext;
 struct AVPacket;
 struct AVFrame;
-struct ReSampleContext;
+struct SwrContext;
 struct SwsContext;
 
 class InputStreamDecoder
@@ -42,7 +42,7 @@ class InputStreamDecoder
 
         static void RegisterAVFormat();
 
-        explicit InputStreamDecoder(const std::string& file, int depth);
+        explicit InputStreamDecoder(const std::string& file, int depth, int audioRate);
 
         InputStreamDecoder(const InputStreamDecoder& ) = delete;
         InputStreamDecoder* operator=(const InputStreamDecoder& ) = delete;
@@ -77,8 +77,6 @@ class InputStreamDecoder
 
         AVFormatContext* _formatContext;
 
-
-
         struct VideoStreamContext {
             VideoStreamContext()
                 : stream(nullptr), context(nullptr), videoFrame() {}
@@ -92,33 +90,35 @@ class InputStreamDecoder
         } _videoStreamContext;
 
         struct AudioStreamContext {
-            AudioStreamContext(AVStream *s, CodecContextPtr ptr, ReSampleContext *ctx)
-                : stream(s), context(ptr), resampleContext(ctx) {}
+            AudioStreamContext(AVStream *s, CodecContextPtr ptr, SwrContext *ctx)
+                : stream(s), context(ptr), resampleContext(ctx), wav() {}
 
-            AudioStreamContext(const AudioStreamContext& o)
-                : stream(o.stream), context(o.context), resampleContext(o.resampleContext) {}
-
-            AudioStreamContext& operator=(const AudioStreamContext& o)
-            {
-                stream = o.stream;
-                context = o.context;
-                resampleContext = o.resampleContext;
-                return *this;
-            }
+            AudioStreamContext(const AudioStreamContext& ) = delete;
+            AudioStreamContext& operator=(const AudioStreamContext& ) = delete;
 
             AVStream *stream;
             CodecContextPtr context;
-            ReSampleContext *resampleContext;
+            SwrContext *resampleContext;
+
+            struct Wav {
+                Wav() : channels(0), sampleRate(0), sampleSize(0), data() {}
+                short channels;
+                int sampleRate;
+                int sampleSize;
+                std::vector<unsigned char> data;
+            } wav;
         };
 
         // we store the raw pointers to AVStream. because livetime of stream depends anyway on _formatContext
-        std::vector<AudioStreamContext> _audioStreams;
+        std::vector<std::shared_ptr<AudioStreamContext>> _audioStreams;
         std::vector<AudioStreamContext> _subtitleStreams;
 
         // Context for converting color space -> should move into VideoStreamContext
         SwsContext *_swsContext;
 
         int _targetFormat;
+
+        int _audioRate;
 };
 
 #endif // INPUTSTREAMDECODER_H

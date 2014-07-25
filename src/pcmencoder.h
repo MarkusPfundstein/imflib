@@ -2,9 +2,8 @@
 #define PCMENCODER_H
 
 struct AVFrame;
-struct AVCodec;
+struct SwrContext;
 struct AVCodecContext;
-struct AVFormatContext;
 
 #include <string>
 #include <stdint.h>
@@ -31,7 +30,6 @@ class PCMEncoder
     protected:
     private:
 
-        void InitConvertedInputSamples(uint8_t ***convertedInputSamples, int frameSize);
 
         AVCodecContext *_codecContext;
         SAMPLE_RATE _sampleRate;
