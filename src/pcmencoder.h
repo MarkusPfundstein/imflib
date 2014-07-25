@@ -25,7 +25,7 @@ class PCMEncoder
 
         void InitEncoder();
 
-        void EncodeRawFrame(const AVFrame &rawFrame, PCMFrame& pcmFrame);
+        void EncodeRawFrame(const PCMFrame &rawFrame, PCMFrame& pcmFrame);
 
     protected:
     private:

@@ -38,7 +38,7 @@ class InputStreamDecoder
         };
 
         typedef std::function<bool(RawVideoFrame&)> GotVideoFrameCallbackFunction;
-        typedef std::function<bool(AVFrame&, int)> GotAudioFrameCallbackFunction;
+        typedef std::function<bool(PCMFrame&, int)> GotAudioFrameCallbackFunction;
 
         static void RegisterAVFormat();
 
@@ -68,6 +68,8 @@ class InputStreamDecoder
         void CloseFile();
         void AddVideoStream(AVStream *stream, const CodecContextPtr &context);
         void AddAudioStream(AVStream *stream, const CodecContextPtr &context);
+
+        bool HandleDelayedAudioFrames(int audioStreamIndex, GotAudioFrameCallbackFunction audioCallback);
 
         int DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType, int &audioStreamIndex);
 

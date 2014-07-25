@@ -16,13 +16,9 @@ extern "C" {
 #endif
 
 #include <iostream>
-#include <fstream>
 #include <cstring>
 #include <mutex>
 #include <cmath>
-
-
-        static std::ofstream of("/home/markus/Documents/IMF/TestFiles/resampled.pcm");
 
 InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, int audioRate)
     : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(-1), _audioRate(audioRate)
@@ -173,19 +169,18 @@ void InputStreamDecoder::AddAudioStream(AVStream *stream, const CodecContextPtr 
     std::cout << "sample_rate: " << stream->codec->sample_rate << std::endl;
     std::cout << "channels: " << stream->codec->channels << std::endl;
     std::cout << "format index: " << context->sample_fmt << std::endl;
+    std::cout << "source rate: " << stream->codec->sample_rate << std::endl;
+
 
     SwrContext *resampleContext = swr_alloc();
     if (resampleContext == nullptr) {
         throw std::runtime_error("[InputStreamDecoder] error allocating resample context");
     }
 
-    int srcRate = 44100;
-    std::cout << "source rate: " << srcRate << std::endl;
-
     av_opt_set_int(resampleContext,        "in_channel_layout",  av_get_default_channel_layout(context->channels), 0);
-    av_opt_set_int(resampleContext,        "in_sample_rate",     srcRate, 0);
+    av_opt_set_int(resampleContext,        "in_sample_rate",     stream->codec->sample_rate, 0);
     av_opt_set_sample_fmt(resampleContext, "in_sample_fmt",      context->sample_fmt, 0);
-    av_opt_set_int(resampleContext,        "out_channel_layout", av_get_channel_layout_nb_channels(2), 0);
+    av_opt_set_int(resampleContext,        "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
     av_opt_set_int(resampleContext,        "out_sample_rate",    _audioRate, 0);
     av_opt_set_sample_fmt(resampleContext, "out_sample_fmt",     AV_SAMPLE_FMT_S32, 0);
 
@@ -197,7 +192,7 @@ void InputStreamDecoder::AddAudioStream(AVStream *stream, const CodecContextPtr 
 
     ctx->wav.sampleRate = _audioRate;
     ctx->wav.sampleSize = av_get_bytes_per_sample(AV_SAMPLE_FMT_S32);
-    ctx->wav.channels = av_get_channel_layout_nb_channels(2);
+    ctx->wav.channels = 2;
 
     _audioStreams.push_back(ctx);
 }
@@ -339,6 +334,10 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
             HandleFrame(*decodedFrame, frameType, videoCallback, audioCallback, audioStreamIndex);
         }
     } while (gotFrame);
+
+    for (unsigned int i = 0; i < _audioStreams.size(); ++i) {
+        HandleDelayedAudioFrames(i, audioCallback);
+    }
 }
 
 bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback,
@@ -393,7 +392,7 @@ bool InputStreamDecoder::HandleAudioFrame(AVFrame& decodedFrame, GotAudioFrameCa
 
         unsigned char **out;
         int outLinesize;
-        int outSamples = av_rescale_rnd(decodedFrame.nb_samples, ctx->wav.sampleRate, 44100, AV_ROUND_UP);
+        int outSamples = av_rescale_rnd(decodedFrame.nb_samples, ctx->wav.sampleRate, ctx->stream->codec->sample_rate, AV_ROUND_UP);
         av_samples_alloc_array_and_samples(&out,
                                            &outLinesize,
                                            ctx->wav.channels,
@@ -404,7 +403,7 @@ bool InputStreamDecoder::HandleAudioFrame(AVFrame& decodedFrame, GotAudioFrameCa
         int newSamples = swr_convert(swrContext,
                                       out,
                                       outSamples,
-                                      (const uint8_t **)&decodedFrame.extended_data[0],
+                                      (const uint8_t **)decodedFrame.extended_data,
                                       decodedFrame.nb_samples);
         if (newSamples < 0) {
             std::cout << "Error while converting" << std::endl;
@@ -413,40 +412,65 @@ bool InputStreamDecoder::HandleAudioFrame(AVFrame& decodedFrame, GotAudioFrameCa
         }
         int bufferSize = av_samples_get_buffer_size(&outLinesize, ctx->wav.channels, newSamples, AV_SAMPLE_FMT_S32, 1);
 
-        of.write((char*)out[0], bufferSize);
+        PCMFrame frame;
+        std::copy(out[0], out[0] + bufferSize, std::back_inserter(frame.data));
+        frame.samples = newSamples;
+        audioCallback(frame, audioStreamIndex);
+
         if (out) {
             av_freep(&out[0]);
         }
         av_freep(&out);
-/*
-        ret = 0;
-        do {
-            dstData = nullptr;
-            destNbSamples = av_rescale_rnd(decodedFrame.nb_samples, ctx->wav.sampleRate, 44100, AV_ROUND_UP);
-            av_samples_alloc_array_and_samples(&dstData, &destLinesize, ctx->wav.channels,
-                                                destNbSamples, AV_SAMPLE_FMT_S32, 0);
 
-            ret = swr_convert(swrContext,
-                                  dstData,
-                                  destNbSamples,
-                                  nullptr,
-                                  0);
-            if (ret < 0) {
-                std::cout << "Error while converting" << std::endl;
-                av_freep(dstData);
-                return false;
-            }
-            dstBufSize = av_samples_get_buffer_size(&destLinesize, ctx->wav.channels, ret, AV_SAMPLE_FMT_S32, 1);
 
-            of.write((char*)dstData[0], dstBufSize);
-
-            av_freep(dstData);
-        } while (ret > 0);
-*/
     } catch (...) {
         throw;
     }
     return success;
+}
+
+bool InputStreamDecoder::HandleDelayedAudioFrames(int audioStreamIndex, GotAudioFrameCallbackFunction audioCallback)
+{
+    int newSamples = 0;
+    do {
+        std::cout << "HANDLE DELAYED RESAMPLE FRAMES" << std::endl;
+        std::shared_ptr<AudioStreamContext> ctx = _audioStreams[audioStreamIndex];
+        SwrContext *swrContext = ctx->resampleContext;
+
+        unsigned char **out;
+        int outLinesize;
+        int outSamples = av_rescale_rnd(1152, ctx->wav.sampleRate, ctx->stream->codec->sample_rate, AV_ROUND_UP);
+        av_samples_alloc_array_and_samples(&out,
+                                           &outLinesize,
+                                           ctx->wav.channels,
+                                           outSamples,
+                                           AV_SAMPLE_FMT_S32,
+                                           0);
+
+        newSamples = swr_convert(swrContext,
+                                 out,
+                                 outSamples,
+                                 nullptr,
+                                 0);
+        if (newSamples < 0) {
+            std::cout << "Error while converting" << std::endl;
+            av_freep(out);
+            return false;
+        }
+        int bufferSize = av_samples_get_buffer_size(&outLinesize, ctx->wav.channels, newSamples, AV_SAMPLE_FMT_S32, 1);
+
+        PCMFrame frame;
+        std::copy(out[0], out[0] + bufferSize, std::back_inserter(frame.data));
+        frame.samples = newSamples;
+        audioCallback(frame, audioStreamIndex);
+
+        if (out) {
+            av_freep(&out[0]);
+        }
+        av_freep(&out);
+    } while (newSamples > 0);
+
+    return true;
 }
 
 int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, int &gotFrame, FRAME_TYPE &frameType, int &index)

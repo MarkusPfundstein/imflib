@@ -54,6 +54,7 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
 
 bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
 {
+    return true;
     std::stringstream ss;
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
     std::string targetFile(ss.str());
@@ -71,13 +72,9 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
     return true;
 }
 
-bool HandleAudioFrame(const AVFrame &rawFrame, PCMEncoder &pcmEncoder, std::list<std::string> &outFiles, int index)
+bool HandleAudioFrame(const PCMFrame &rawFrame, PCMEncoder &pcmEncoder, std::list<std::string> &outFiles, int index)
 {
     std::cout << "audio index [" << index << "]" << std::endl;
-
-    static std::ofstream of("/home/markus/Documents/IMF/TestFiles/decodedFrame.pcm");
-    of.write((char*)rawFrame.extended_data[0], rawFrame.linesize[0]);
-    of.flush();
 
     PCMFrame pcmFrame;
     pcmEncoder.EncodeRawFrame(rawFrame, pcmFrame);
@@ -224,7 +221,7 @@ int main(int argc, char **argv)
         }
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
-                       [&] (AVFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavFiles, index); });
+                       [&] (PCMFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavFiles, index); });
 
         // to-do: put all this shit in a struct
         muxerOptions["framerate"] = fps;
@@ -262,9 +259,8 @@ int main(int argc, char **argv)
     }
 
     std::cout << "TO-DO LIST" << std::endl;
-    std::cout << "BUFFERING OF SWRESAMPLE" << std::endl;
-    std::cout << "INPUT SAMPLE RATE IS NOW FIXED TO 44100" << std::endl;
-    std::cout << "ENCODE TO pcm24le AND WRITE AS WAV" << std::endl;
+    std::cout << "WRITE AS WAV" << std::endl;
+    std::cout << "NO RESAMPLE FLAG FOR 24bit INPUT WITH TARGET RATE" << std::endl;
 
     return 0;
 }

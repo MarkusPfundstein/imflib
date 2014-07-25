@@ -19,15 +19,22 @@ struct RawVideoFrame
     int fieldOrder;
 };
 
-struct Frame
+struct J2kFrame
 {
-    Frame() : data(0) { };
+    J2kFrame() : data(0) { };
 
     std::vector<uint8_t> data;
 };
 
-typedef Frame PCMFrame;
-typedef Frame J2kFrame;
+struct PCMFrame
+{
+    PCMFrame() : data(0), samples(0), dataSize(0) { };
+
+    std::vector<uint8_t> data;
+    int samples;
+    int dataSize;
+};
+
 
 struct RationalNumber {
     RationalNumber(int n, int d) : num(n), denum(d) {}
