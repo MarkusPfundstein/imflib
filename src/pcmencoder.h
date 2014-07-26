@@ -17,7 +17,7 @@ class PCMEncoder
             SR_96000 = 96000
         };
 
-        PCMEncoder(SAMPLE_RATE sampleRate);
+        PCMEncoder(SAMPLE_RATE sampleRate, int channels, int channelLayout);
         ~PCMEncoder();
 
         PCMEncoder(const PCMEncoder&) = delete;
@@ -25,14 +25,16 @@ class PCMEncoder
 
         void InitEncoder();
 
-        void EncodeRawFrame(const PCMFrame &rawFrame, PCMFrame& pcmFrame);
+        void EncodeRawFrame(const RawAudioFrame &rawFrame, std::vector<uint8_t> &outData);
 
     protected:
     private:
 
-
         AVCodecContext *_codecContext;
         SAMPLE_RATE _sampleRate;
+
+        int _channels;
+        int _channelLayoutIndex;
 };
 
 #endif // PCMENCODER_H

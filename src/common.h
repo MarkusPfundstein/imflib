@@ -9,6 +9,7 @@ struct RawVideoFrame
 {
     RawVideoFrame() : pixelFormat(0), width(0), height(0), fieldOrder(0) {}
 
+    // danger. inputstreamdecoder does not transfer ownership of data (yet). it only assigns the pointer
     uint8_t *videoData[4];
     int linesize[4];
 
@@ -28,11 +29,19 @@ struct J2kFrame
 
 struct PCMFrame
 {
-    PCMFrame() : data(0), samples(0), dataSize(0) { };
+    PCMFrame() : data(0) { };
 
     std::vector<uint8_t> data;
+};
+
+struct RawAudioFrame
+{
+    RawAudioFrame() : audioData(nullptr), linesize(0), samples(0) {}
+    // danger. inputstreamdecoder does not transfer ownership of data (yet). it only assigns the pointer
+
+    uint8_t *audioData;
+    int linesize;
     int samples;
-    int dataSize;
 };
 
 

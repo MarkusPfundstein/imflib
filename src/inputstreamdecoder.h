@@ -38,7 +38,7 @@ class InputStreamDecoder
         };
 
         typedef std::function<bool(RawVideoFrame&)> GotVideoFrameCallbackFunction;
-        typedef std::function<bool(PCMFrame&, int)> GotAudioFrameCallbackFunction;
+        typedef std::function<bool(RawAudioFrame&, int)> GotAudioFrameCallbackFunction;
 
         static void RegisterAVFormat();
 
@@ -57,6 +57,9 @@ class InputStreamDecoder
         int GetVideoHeight() const;
 
         int GetNumberAudioTracks() const;
+        int GetChannelLayoutIndex(int audioTrack) const;
+        int GetChannels(int audioTrack) const;
+        int GetBytesPerSample(int audioTrack) const;
 
         bool HasVideoTrack() const;
 
@@ -92,8 +95,8 @@ class InputStreamDecoder
         } _videoStreamContext;
 
         struct AudioStreamContext {
-            AudioStreamContext(AVStream *s, CodecContextPtr ptr, SwrContext *ctx)
-                : stream(s), context(ptr), resampleContext(ctx), wav() {}
+            AudioStreamContext(AVStream *s, CodecContextPtr ptr, SwrContext *ctx, int layout)
+                : stream(s), context(ptr), resampleContext(ctx), channelLayout(layout) {}
 
             AudioStreamContext(const AudioStreamContext& ) = delete;
             AudioStreamContext& operator=(const AudioStreamContext& ) = delete;
@@ -102,13 +105,7 @@ class InputStreamDecoder
             CodecContextPtr context;
             SwrContext *resampleContext;
 
-            struct Wav {
-                Wav() : channels(0), sampleRate(0), sampleSize(0), data() {}
-                short channels;
-                int sampleRate;
-                int sampleSize;
-                std::vector<unsigned char> data;
-            } wav;
+            int channelLayout;
         };
 
         // we store the raw pointers to AVStream. because livetime of stream depends anyway on _formatContext
@@ -118,9 +115,9 @@ class InputStreamDecoder
         // Context for converting color space -> should move into VideoStreamContext
         SwsContext *_swsContext;
 
-        int _targetFormat;
+        int _targetVideoPixelFormat;
 
-        int _audioRate;
+        int _targetAudioSampleRate;
 };
 
 #endif // INPUTSTREAMDECODER_H

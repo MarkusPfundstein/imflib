@@ -21,12 +21,12 @@ extern "C" {
 #include <cmath>
 
 InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, int audioRate)
-    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetFormat(-1), _audioRate(audioRate)
+    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetVideoPixelFormat(-1), _targetAudioSampleRate(audioRate)
 {
     if (bitDepth == 8 || bitDepth == 10 || bitDepth == 12) {
-        _targetFormat = PIX_FMT_RGB24;
+        _targetVideoPixelFormat = PIX_FMT_RGB24;
     } else if (bitDepth <= 16) {
-        _targetFormat = PIX_FMT_RGB48;
+        _targetVideoPixelFormat = PIX_FMT_RGB48;
     }
     OpenFile(file);
 }
@@ -86,8 +86,11 @@ void InputStreamDecoder::OpenFile(const std::string& file)
 
         codecContext->extradata_size = stream->codec->extradata_size;
 
-        // BUG: MUST BE SET BEFORE avcodec_open2 IFF sound input is PCM
-        codecContext->channels = 2;
+
+        if (stream->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            // must be set before avcodec_open2 if sound input is PCM
+            codecContext->channels = stream->codec->channels;
+        }
 
         if (avcodec_open2(codecContext.get(), codec, nullptr) < 0) {
             throw std::runtime_error("[InputStreamDecoder] Could not open codec");
@@ -148,13 +151,14 @@ void InputStreamDecoder::AddVideoStream(AVStream *stream, const CodecContextPtr 
     _videoStreamContext.videoFrame.height = stream->codec->height;
     _videoStreamContext.videoFrame.pixelFormat = stream->codec->pix_fmt;
     _videoStreamContext.videoFrame.fieldOrder = stream->codec->field_order;
+    _videoStreamContext.videoFrame.pixelFormat = _targetVideoPixelFormat;
 
     _swsContext = sws_getContext(stream->codec->width,
                                  stream->codec->height,
                                  (PixelFormat) stream->codec->pix_fmt,
                                  stream->codec->width,
                                  stream->codec->height,
-                                 (PixelFormat) _targetFormat,
+                                 (PixelFormat) _targetVideoPixelFormat,
                                  SWS_BILINEAR,
                                  nullptr,
                                  nullptr,
@@ -177,24 +181,23 @@ void InputStreamDecoder::AddAudioStream(AVStream *stream, const CodecContextPtr 
         throw std::runtime_error("[InputStreamDecoder] error allocating resample context");
     }
 
-    av_opt_set_int(resampleContext,        "in_channel_layout",  av_get_default_channel_layout(context->channels), 0);
+    int channelLayout = stream->codec->channel_layout;
+    if (channelLayout == 0) {
+        channelLayout = av_get_default_channel_layout(context->channels);
+    }
+
+    av_opt_set_int(resampleContext,        "in_channel_layout",  channelLayout/*av_get_default_channel_layout(context->channels)*/, 0);
     av_opt_set_int(resampleContext,        "in_sample_rate",     stream->codec->sample_rate, 0);
     av_opt_set_sample_fmt(resampleContext, "in_sample_fmt",      context->sample_fmt, 0);
-    av_opt_set_int(resampleContext,        "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
-    av_opt_set_int(resampleContext,        "out_sample_rate",    _audioRate, 0);
+    av_opt_set_int(resampleContext,        "out_channel_layout", channelLayout, 0);
+    av_opt_set_int(resampleContext,        "out_sample_rate",    _targetAudioSampleRate, 0);
     av_opt_set_sample_fmt(resampleContext, "out_sample_fmt",     AV_SAMPLE_FMT_S32, 0);
 
     if (swr_init(resampleContext) != 0) {
         throw std::runtime_error("[InputStreamDecoder] error initializing resample context");
     }
 
-    std::shared_ptr<AudioStreamContext> ctx(new AudioStreamContext(stream, context, resampleContext));
-
-    ctx->wav.sampleRate = _audioRate;
-    ctx->wav.sampleSize = av_get_bytes_per_sample(AV_SAMPLE_FMT_S32);
-    ctx->wav.channels = 2;
-
-    _audioStreams.push_back(ctx);
+    _audioStreams.push_back(std::shared_ptr<AudioStreamContext>(new AudioStreamContext(stream, context, resampleContext, channelLayout)));
 }
 
 bool InputStreamDecoder::HasVideoTrack() const
@@ -263,6 +266,20 @@ int InputStreamDecoder::GetVideoHeight() const
         return 0;
     }
     return stream->codec->height;
+}
+
+int InputStreamDecoder::GetChannelLayoutIndex(int audioTrack) const
+{
+    return _audioStreams[audioTrack]->channelLayout;
+}
+
+int InputStreamDecoder::GetChannels(int audioTrack) const
+{
+    return _audioStreams[audioTrack]->context->channels;
+}
+
+int InputStreamDecoder::GetBytesPerSample(int) const {
+    return av_get_bytes_per_sample(AV_SAMPLE_FMT_S32);
 }
 
 void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback)
@@ -349,11 +366,10 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
     switch (frameType) {
         case FRAME_TYPE::VIDEO:
 
-            avpicture_alloc(&pic, (PixelFormat)_targetFormat, decodedFrame.width, decodedFrame.height);
+            avpicture_alloc(&pic, (PixelFormat)_targetVideoPixelFormat, decodedFrame.width, decodedFrame.height);
             sws_scale(_swsContext, decodedFrame.data, decodedFrame.linesize, 0, decodedFrame.height, pic.data, pic.linesize);
 
             // TO-DO: Give owhership over data to _videoStreamContext
-            _videoStreamContext.videoFrame.pixelFormat = _targetFormat;
             for (int i = 0; i < 4; ++i) {
                 _videoStreamContext.videoFrame.videoData[i] = pic.data[i];
                 _videoStreamContext.videoFrame.linesize[i] = pic.linesize[i];
@@ -386,46 +402,52 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
 bool InputStreamDecoder::HandleAudioFrame(AVFrame& decodedFrame, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
 {
     bool success = true;
+
+    std::shared_ptr<AudioStreamContext> ctx = _audioStreams[audioStreamIndex];
+    SwrContext *swrContext = ctx->resampleContext;
+
+    unsigned char **out;
+    int outLinesize;
+    int outSamples = av_rescale_rnd(decodedFrame.nb_samples, _targetAudioSampleRate, ctx->stream->codec->sample_rate, AV_ROUND_UP);
+    av_samples_alloc_array_and_samples(&out,
+                                       &outLinesize,
+                                       ctx->context->channels,
+                                       outSamples,
+                                       AV_SAMPLE_FMT_S32,
+                                       0);
+
+    int newSamples = swr_convert(swrContext,
+                                  out,
+                                  outSamples,
+                                  (const uint8_t **)decodedFrame.extended_data,
+                                  decodedFrame.nb_samples);
+    if (newSamples < 0) {
+        std::cout << "Error while converting" << std::endl;
+        av_freep(out);
+        return false;
+    }
+    int bufferSize = av_samples_get_buffer_size(&outLinesize, ctx->context->channels, newSamples, AV_SAMPLE_FMT_S32, 1);
+
+    RawAudioFrame frame;
+    // no ownership transfer here
+    frame.audioData = out[0];
+    frame.linesize = bufferSize;
+    frame.samples = newSamples;
     try {
-        std::shared_ptr<AudioStreamContext> ctx = _audioStreams[audioStreamIndex];
-        SwrContext *swrContext = ctx->resampleContext;
-
-        unsigned char **out;
-        int outLinesize;
-        int outSamples = av_rescale_rnd(decodedFrame.nb_samples, ctx->wav.sampleRate, ctx->stream->codec->sample_rate, AV_ROUND_UP);
-        av_samples_alloc_array_and_samples(&out,
-                                           &outLinesize,
-                                           ctx->wav.channels,
-                                           outSamples,
-                                           AV_SAMPLE_FMT_S32,
-                                           0);
-
-        int newSamples = swr_convert(swrContext,
-                                      out,
-                                      outSamples,
-                                      (const uint8_t **)decodedFrame.extended_data,
-                                      decodedFrame.nb_samples);
-        if (newSamples < 0) {
-            std::cout << "Error while converting" << std::endl;
-            av_freep(out);
-            return false;
-        }
-        int bufferSize = av_samples_get_buffer_size(&outLinesize, ctx->wav.channels, newSamples, AV_SAMPLE_FMT_S32, 1);
-
-        PCMFrame frame;
-        std::copy(out[0], out[0] + bufferSize, std::back_inserter(frame.data));
-        frame.samples = newSamples;
         audioCallback(frame, audioStreamIndex);
-
+    } catch (...) {
         if (out) {
             av_freep(&out[0]);
         }
         av_freep(&out);
-
-
-    } catch (...) {
         throw;
     }
+
+    if (out) {
+        av_freep(&out[0]);
+    }
+    av_freep(&out);
+
     return success;
 }
 
@@ -439,10 +461,10 @@ bool InputStreamDecoder::HandleDelayedAudioFrames(int audioStreamIndex, GotAudio
 
         unsigned char **out;
         int outLinesize;
-        int outSamples = av_rescale_rnd(1152, ctx->wav.sampleRate, ctx->stream->codec->sample_rate, AV_ROUND_UP);
+        int outSamples = av_rescale_rnd(1152, _targetAudioSampleRate, ctx->stream->codec->sample_rate, AV_ROUND_UP);
         av_samples_alloc_array_and_samples(&out,
                                            &outLinesize,
-                                           ctx->wav.channels,
+                                           ctx->context->channels,
                                            outSamples,
                                            AV_SAMPLE_FMT_S32,
                                            0);
@@ -457,12 +479,22 @@ bool InputStreamDecoder::HandleDelayedAudioFrames(int audioStreamIndex, GotAudio
             av_freep(out);
             return false;
         }
-        int bufferSize = av_samples_get_buffer_size(&outLinesize, ctx->wav.channels, newSamples, AV_SAMPLE_FMT_S32, 1);
+        int bufferSize = av_samples_get_buffer_size(&outLinesize, ctx->context->channels, newSamples, AV_SAMPLE_FMT_S32, 1);
 
-        PCMFrame frame;
-        std::copy(out[0], out[0] + bufferSize, std::back_inserter(frame.data));
+        RawAudioFrame frame;
+        // no ownership transfer here
+        frame.audioData = out[0];
+        frame.linesize = bufferSize;
         frame.samples = newSamples;
-        audioCallback(frame, audioStreamIndex);
+        try {
+            audioCallback(frame, audioStreamIndex);
+        } catch (...) {
+            if (out) {
+                av_freep(&out[0]);
+            }
+            av_freep(&out);
+            throw;
+        }
 
         if (out) {
             av_freep(&out[0]);
@@ -497,11 +529,12 @@ int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, in
         AVCodecContext *audioCodecContext = ctx->context.get();
         if (audioStream->index == packet.stream_index) {
             int processedBytes = avcodec_decode_audio4(audioCodecContext, &decodedFrame, &gotFrame, &packet);
-            std::cout << "[AUDIO] processedBytes: " << processedBytes << std::endl;
+            std::cout << "[AUDIO] (" << j << ") processedBytes: " << processedBytes << std::endl;
             frameType = FRAME_TYPE::AUDIO;
-            index = j++;
+            index = j;
             return processedBytes;
         }
+        j++;
     }
 
     // very unlikely

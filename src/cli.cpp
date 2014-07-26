@@ -3,6 +3,7 @@
 #include "mxfwriter.h"
 #include "common.h"
 #include "pcmencoder.h"
+#include "wavmuxer.h"
 
 #include <iostream>
 #include <fstream>
@@ -72,12 +73,12 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
     return true;
 }
 
-bool HandleAudioFrame(const PCMFrame &rawFrame, PCMEncoder &pcmEncoder, std::list<std::string> &outFiles, int index)
+bool HandleAudioFrame(const RawAudioFrame &rawFrame, PCMEncoder &pcmEncoder, std::vector<uint8_t> &wavData, int index)
 {
     std::cout << "audio index [" << index << "]" << std::endl;
 
     PCMFrame pcmFrame;
-    pcmEncoder.EncodeRawFrame(rawFrame, pcmFrame);
+    pcmEncoder.EncodeRawFrame(rawFrame, wavData);
 
     return true;
 }
@@ -127,7 +128,7 @@ int main(int argc, char **argv)
         colorFormat(J2KEncoder::COLOR_FORMAT::CF_YUV444),
         yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
         useTiles(true),
-        inputFile("/home/markus/Documents/IMF/TestFiles/pcm_16bit.wav"),
+        inputFile("/home/markus/Documents/IMF/TestFiles/stomp.mpeg"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
         finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_10bit_Profile5_MCT_4_JPEG_TRANSFORM.mxf"),
         sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000),
@@ -187,8 +188,6 @@ int main(int argc, char **argv)
         //return 1;
     }
 
-    std::map<std::string, boost::any> muxerOptions;
-
     signal(SIGINT, SignalHandler);
     signal(SIGTERM, SignalHandler);
     signal(SIGQUIT, SignalHandler);
@@ -199,51 +198,82 @@ int main(int argc, char **argv)
         // decoder knows now some metadata about the video. Attention: IT DOESN'T KNOW ASPECT RATIO!!!!
         RationalNumber fps = decoder.GetFrameRate();
 
-        // create one j2k encoder -> we assume only one video track
 
+        // create one j2k encoder -> we assume only one video track
         J2KEncoder j2kEncoder(options.colorFormat, options.bitsPerComponent, options.profile, options.useTiles, fps, decoder.GetVideoWidth(), decoder.GetVideoHeight());
         if (decoder.HasVideoTrack()) {
             // j2kEncoder will throw here if video width or video height are 0. which is most likely if we push audio only
             j2kEncoder.InitEncoder();
         }
 
+        int numberAudioTracks = decoder.GetNumberAudioTracks();
+
         // create one pcm encoder foreach audio track
         std::vector<std::shared_ptr<PCMEncoder>> pcmEncoders;
-        for (int i = 0; i < decoder.GetNumberAudioTracks(); ++i) {
+        // storage for all pcm data
+        std::vector<std::vector<uint8_t>> wavData;
+        wavData.reserve(numberAudioTracks);
+        for (int i = 0; i < numberAudioTracks; ++i) {
             std::stringstream ss;
             ss << options.tempAudioFilesPath << "/AUDIO_" << (i + 1) << ".wav";
             std::string wavFile = ss.str();
             wavFiles.push_back(wavFile);
-            std::shared_ptr<PCMEncoder> pcmEncoder(new PCMEncoder(options.sampleRate));
+
+            int channelLayout = decoder.GetChannelLayoutIndex(i);
+            int channels = decoder.GetChannels(i);
+
+            std::shared_ptr<PCMEncoder> pcmEncoder(new PCMEncoder(options.sampleRate, channels, channelLayout));
             pcmEncoder->InitEncoder();
             pcmEncoders.push_back(pcmEncoder);
 
+            wavData.push_back(std::vector<uint8_t>());
         }
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
-                       [&] (PCMFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavFiles, index); });
+                       [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
 
-        // to-do: put all this shit in a struct
-        muxerOptions["framerate"] = fps;
-        // Aspect Ratio is now known.
-        muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
-        muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
-        muxerOptions["yuv_essence"] = options.yuvEssence;
-        muxerOptions["subsampling_dx"] = 1;
-        muxerOptions["subsampling_dy"] = 1;
-        muxerOptions["encrypt_header"] = false;
-        muxerOptions["bits"] = static_cast<int>(options.bitsPerComponent);
-        muxerOptions["broadcast_profile"] = static_cast<int>(options.profile);
 
-        // write video
-        MXFWriter videoMxfWriter(muxerOptions);
         if (j2kFiles.empty() == false) {
+            std::map<std::string, boost::any> muxerOptions;
+            // to-do: put all this shit in a struct
+            muxerOptions["framerate"] = fps;
+            // Aspect Ratio is now known.
+            muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
+            muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
+            muxerOptions["yuv_essence"] = options.yuvEssence;
+            muxerOptions["subsampling_dx"] = 1;
+            muxerOptions["subsampling_dy"] = 1;
+            muxerOptions["encrypt_header"] = false;
+            muxerOptions["bits"] = static_cast<int>(options.bitsPerComponent);
+            muxerOptions["broadcast_profile"] = static_cast<int>(options.profile);
+
+            // write video
+            MXFWriter videoMxfWriter(muxerOptions);
             videoMxfWriter.MuxVideoFiles(j2kFiles, options.finalVideoFile);
+        }
+
+
+        // write wav files to disk
+        for (unsigned int i = 0; i < wavData.size(); ++i) {
+            std::vector<uint8_t> &data = wavData[i];
+            std::cout << "write pcm with " << data.size() << std::endl;
+
+            short channels = (short)decoder.GetChannels(i);
+            int sampleRate = (int)options.sampleRate;
+
+            std::stringstream ss;
+            ss << options.tempAudioFilesPath << "/" << std::setw( 7 ) << std::setfill( '0' ) << i << ".wav";
+
+            std::string wavFileName = ss.str();
+
+            WavMuxer wavMuxer;
+            wavMuxer.MuxToFile(wavFileName, data, channels, sampleRate, 24);
         }
 
         // write audio
         // MXFWriter audioMxfWriter(...)
         // audioMxfWriter.MuxAudioFiles(wavFiles, ...);
+
 
         CleanFiles(j2kFiles);
         CleanFiles(wavFiles);

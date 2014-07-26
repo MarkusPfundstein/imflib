@@ -1,16 +1,16 @@
 #ifndef WAVMUXER_H
 #define WAVMUXER_H
 
+#include <string>
+#include <vector>
 
-class WAVMuxer
+class WavMuxer
 {
     public:
-        WAVMuxer();
+        WavMuxer();
+        virtual ~WavMuxer();
 
-        WAVMuxer(const WAVMuxer&) = delete;
-        WAVMuxer* operator=(const WAVMuxer&) = delete;
-
-        virtual ~WAVMuxer();
+        void MuxToFile(const std::string &file, const std::vector<uint8_t> &data, short channels, int sampleRate, short bitsPerSample) const;
     protected:
     private:
 };
