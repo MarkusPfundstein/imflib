@@ -5,9 +5,15 @@
 
 #include <cstdint>
 
+enum COLOR_FORMAT {
+    CF_RGB444 = 0,
+    CF_YUV444 = 1,
+    CF_YUV422 = 2
+};
+
 struct RawVideoFrame
 {
-    RawVideoFrame() : pixelFormat(0), width(0), height(0), fieldOrder(0) {}
+    RawVideoFrame() : pixelFormat(0), width(0), height(0), fieldOrder(0), planar(false), yuv(false) {}
 
     // danger. inputstreamdecoder does not transfer ownership of data (yet). it only assigns the pointer
     uint8_t *videoData[4];
@@ -18,18 +24,14 @@ struct RawVideoFrame
     int height;
 
     int fieldOrder;
+
+    bool planar;
+    bool yuv;
 };
 
 struct J2kFrame
 {
     J2kFrame() : data(0) { };
-
-    std::vector<uint8_t> data;
-};
-
-struct PCMFrame
-{
-    PCMFrame() : data(0) { };
 
     std::vector<uint8_t> data;
 };

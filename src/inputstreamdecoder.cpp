@@ -20,13 +20,28 @@ extern "C" {
 #include <mutex>
 #include <cmath>
 
-InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, int audioRate)
+InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, COLOR_FORMAT targetColorFormat, int audioRate)
     : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetVideoPixelFormat(-1), _targetAudioSampleRate(audioRate)
 {
-    if (bitDepth == 8 || bitDepth == 10 || bitDepth == 12) {
-        _targetVideoPixelFormat = PIX_FMT_RGB24;
-    } else if (bitDepth <= 16) {
-        _targetVideoPixelFormat = PIX_FMT_RGB48;
+
+    if (bitDepth == 8) {
+        if (targetColorFormat == CF_RGB444) {
+            _targetVideoPixelFormat = AV_PIX_FMT_RGB24;
+        } else if (targetColorFormat == CF_YUV444) {
+            _targetVideoPixelFormat = AV_PIX_FMT_YUV444P;
+        }
+    } else if (bitDepth == 10) {
+        if (targetColorFormat == CF_RGB444) {
+            _targetVideoPixelFormat = AV_PIX_FMT_GBRP10;
+        } else if (targetColorFormat == CF_YUV444) {
+            _targetVideoPixelFormat = AV_PIX_FMT_YUV444P10;
+        }
+    } else if (bitDepth == 12) {
+        if (targetColorFormat == CF_RGB444) {
+            _targetVideoPixelFormat = AV_PIX_FMT_GBRP12;
+        } else if (targetColorFormat == CF_YUV444) {
+            _targetVideoPixelFormat = AV_PIX_FMT_YUV444P12;
+        }
     }
     OpenFile(file);
 }
@@ -145,13 +160,6 @@ void InputStreamDecoder::AddVideoStream(AVStream *stream, const CodecContextPtr 
 
     _videoStreamContext.context = context;
     _videoStreamContext.stream = stream;
-
-    // store data for later in raw video frame
-    _videoStreamContext.videoFrame.width = stream->codec->width;
-    _videoStreamContext.videoFrame.height = stream->codec->height;
-    _videoStreamContext.videoFrame.pixelFormat = stream->codec->pix_fmt;
-    _videoStreamContext.videoFrame.fieldOrder = stream->codec->field_order;
-    _videoStreamContext.videoFrame.pixelFormat = _targetVideoPixelFormat;
 
     _swsContext = sws_getContext(stream->codec->width,
                                  stream->codec->height,
@@ -368,28 +376,12 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
                                       GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
 {
     bool success = true;
-    AVPicture pic;
 
     switch (frameType) {
         case FRAME_TYPE::VIDEO:
 
-            avpicture_alloc(&pic, (PixelFormat)_targetVideoPixelFormat, decodedFrame.width, decodedFrame.height);
-            sws_scale(_swsContext, decodedFrame.data, decodedFrame.linesize, 0, decodedFrame.height, pic.data, pic.linesize);
+            success = HandleVideoFrame(decodedFrame, videoCallback);
 
-            // TO-DO: Give owhership over data to _videoStreamContext
-            for (int i = 0; i < 4; ++i) {
-                _videoStreamContext.videoFrame.videoData[i] = pic.data[i];
-                _videoStreamContext.videoFrame.linesize[i] = pic.linesize[i];
-            }
-
-            // pass RawVideoFrame to user so that she can do what she wants.
-            try {
-                success = videoCallback(_videoStreamContext.videoFrame);
-                avpicture_free(&pic);
-            } catch (...) {
-                avpicture_free(&pic);
-                throw;
-            }
             break;
         case FRAME_TYPE::AUDIO:
 
@@ -403,6 +395,44 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
             throw new std::runtime_error("invalid frame type");
     }
 
+    return success;
+}
+
+bool InputStreamDecoder::HandleVideoFrame(AVFrame& decodedFrame, GotVideoFrameCallbackFunction videoCallback)
+{
+    bool success = true;
+
+    AVStream *stream = _videoStreamContext.stream;
+    AVPicture pic;
+
+    avpicture_alloc(&pic, (PixelFormat)_targetVideoPixelFormat, decodedFrame.width, decodedFrame.height);
+    sws_scale(_swsContext, decodedFrame.data, decodedFrame.linesize, 0, decodedFrame.height, pic.data, pic.linesize);
+
+    RawVideoFrame videoFrame;
+    videoFrame.width = stream->codec->width;
+    videoFrame.height = stream->codec->height;
+    videoFrame.pixelFormat = stream->codec->pix_fmt;
+    videoFrame.fieldOrder = stream->codec->field_order;
+    videoFrame.pixelFormat = _targetVideoPixelFormat;
+    videoFrame.planar = _targetVideoPixelFormat != AV_PIX_FMT_RGB24;   // PIX_FMT_24 is only packed format (here)
+    videoFrame.yuv = _targetVideoPixelFormat != AV_PIX_FMT_RGB24 &&
+                     _targetVideoPixelFormat != AV_PIX_FMT_GBRP10 &&
+                     _targetVideoPixelFormat != AV_PIX_FMT_GBRP12;
+
+    // TO-DO: Give owhership over data to _videoStreamContext
+    for (int i = 0; i < 4; ++i) {
+        videoFrame.videoData[i] = pic.data[i];
+        videoFrame.linesize[i] = pic.linesize[i];
+    }
+
+    // pass RawVideoFrame to user so that she can do what she wants.
+    try {
+        success = videoCallback(videoFrame);
+        avpicture_free(&pic);
+    } catch (...) {
+        avpicture_free(&pic);
+        throw;
+    }
     return success;
 }
 

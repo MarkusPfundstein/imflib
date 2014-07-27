@@ -42,7 +42,7 @@ class InputStreamDecoder
 
         static void RegisterAVFormat();
 
-        explicit InputStreamDecoder(const std::string& file, int depth, int audioRate);
+        explicit InputStreamDecoder(const std::string& file, int depth, COLOR_FORMAT targetColorFormat, int audioRate);
 
         InputStreamDecoder(const InputStreamDecoder& ) = delete;
         InputStreamDecoder* operator=(const InputStreamDecoder& ) = delete;
@@ -78,20 +78,20 @@ class InputStreamDecoder
 
         bool HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex);
 
+        bool HandleVideoFrame(AVFrame& decodedFrame, GotVideoFrameCallbackFunction videoCallback);
         bool HandleAudioFrame(AVFrame& decodedFrame, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex);
 
         AVFormatContext* _formatContext;
 
         struct VideoStreamContext {
             VideoStreamContext()
-                : stream(nullptr), context(nullptr), videoFrame() {}
+                : stream(nullptr), context(nullptr) {}
 
             VideoStreamContext(const VideoStreamContext& ) = delete;
             VideoStreamContext* operator=(const VideoStreamContext& ) = delete;
 
             AVStream *stream;
             CodecContextPtr context;
-            RawVideoFrame videoFrame;
         } _videoStreamContext;
 
         struct AudioStreamContext {

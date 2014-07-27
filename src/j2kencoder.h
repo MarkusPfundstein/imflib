@@ -11,17 +11,12 @@ extern "C" {
 class J2KEncoder
 {
     public:
-        enum COLOR_FORMAT {
-            CF_RGB444 = 0,
-            CF_YUV444 = 1,
-            CF_YUV422 = 2
-        };
+
 
         enum BIT_RATE {
             BR_8bit = 8,
             BR_10bit = 10,
-            BR_12bit = 12,
-            BR_16bit = 16
+            BR_12bit = 12
         };
 
         enum PROFILE {
@@ -34,7 +29,7 @@ class J2KEncoder
             BCP_MT_7
         };
 
-        explicit J2KEncoder(COLOR_FORMAT targetColorFormat, BIT_RATE targetBitRate, PROFILE profile, bool useTiles, RationalNumber fps, int widthUsed, int heightUsed);
+        explicit J2KEncoder(BIT_RATE targetBitRate, PROFILE profile, bool useTiles, RationalNumber fps, int widthUsed, int heightUsed);
 
         J2KEncoder(const J2KEncoder& ) = delete;
         J2KEncoder* operator=(const J2KEncoder& ) = delete;
@@ -46,23 +41,18 @@ class J2KEncoder
         void EncodeRawFrame(const RawVideoFrame &rawVideoFrame, J2kFrame& encodedFrame);
 
     private:
-        struct ColorComponent
-        {
-            unsigned char c1, c2, c3;
-        };
-
         bool EncodeImage(opj_image_t *image, J2kFrame& encodedFrame);
 
         void SetBroadcastProfile();
 
         void SetRates(int frameSize);
 
-        void RGB24toYUV24(ColorComponent &rgb);
+        void FillImagePacked(opj_image_t *image, const RawVideoFrame &rawFrame);
+        void FillImagePlanar(opj_image_t *image, const RawVideoFrame &rawFrame);
 
         static OPJ_SIZE_T WriteJ2kFrame(void *data, OPJ_SIZE_T bufferSize, void *userData);
 
-        COLOR_FORMAT _targetColorFormat;
-        BIT_RATE _targetBitRate;
+        BIT_RATE _targetBitDepth;
         PROFILE _profile;
         bool _useTiles;
         RationalNumber _fps;

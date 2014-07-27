@@ -55,7 +55,6 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
 
 bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
 {
-    return true;
     std::stringstream ss;
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
     std::string targetFile(ss.str());
@@ -77,7 +76,6 @@ bool HandleAudioFrame(const RawAudioFrame &rawFrame, PCMEncoder &pcmEncoder, std
 {
     std::cout << "audio index [" << index << "]" << std::endl;
 
-    PCMFrame pcmFrame;
     pcmEncoder.EncodeRawFrame(rawFrame, wavData);
 
     return true;
@@ -124,13 +122,12 @@ int main(int argc, char **argv)
         EncoderOptions()
         :
         profile(J2KEncoder::PROFILE::BCP_ST_5),
-        bitsPerComponent(J2KEncoder::BIT_RATE::BR_10bit),
-        colorFormat(J2KEncoder::COLOR_FORMAT::CF_YUV444),
-        yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
+        bitsPerComponent(J2KEncoder::BIT_RATE::BR_8bit),
+        colorFormat(COLOR_FORMAT::CF_YUV444),
         useTiles(true),
-        inputFile("/home/markus/Documents/IMF/TestFiles/A.ac3"),
+        inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
-        finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_10bit_Profile5_MCT_4_JPEG_TRANSFORM.mxf"),
+        finalVideoFile("/home/markus/Documents/IMF/NEW/blueberries_8bit_yuv444.mxf"),
         sampleRate(PCMEncoder::SAMPLE_RATE::SR_96000),
         tempAudioFilesPath("/home/markus/Documents/IMF/TestFiles/WAVFILES")
         {
@@ -143,8 +140,7 @@ int main(int argc, char **argv)
         /* VIDEO STUFF */
         J2KEncoder::PROFILE profile ;
         J2KEncoder::BIT_RATE bitsPerComponent;
-        J2KEncoder::COLOR_FORMAT colorFormat;
-        bool yuvEssence;
+        COLOR_FORMAT colorFormat;
         bool useTiles;
 
         std::string inputFile;
@@ -194,13 +190,13 @@ int main(int argc, char **argv)
 
     try {
 
-        InputStreamDecoder decoder(options.inputFile, (int)options.bitsPerComponent, (int)options.sampleRate);
+        InputStreamDecoder decoder(options.inputFile, (int)options.bitsPerComponent, options.colorFormat, (int)options.sampleRate);
         // decoder knows now some metadata about the video. Attention: IT DOESN'T KNOW ASPECT RATIO!!!!
         RationalNumber fps = decoder.GetFrameRate();
 
 
         // create one j2k encoder -> we assume only one video track
-        J2KEncoder j2kEncoder(options.colorFormat, options.bitsPerComponent, options.profile, options.useTiles, fps, decoder.GetVideoWidth(), decoder.GetVideoHeight());
+        J2KEncoder j2kEncoder(options.bitsPerComponent, options.profile, options.useTiles, fps, decoder.GetVideoWidth(), decoder.GetVideoHeight());
         if (decoder.HasVideoTrack()) {
             // j2kEncoder will throw here if video width or video height are 0. which is most likely if we push audio only
             j2kEncoder.InitEncoder();
@@ -240,7 +236,7 @@ int main(int argc, char **argv)
             // Aspect Ratio is now known.
             muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
             muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
-            muxerOptions["yuv_essence"] = options.yuvEssence;
+            muxerOptions["yuv_essence"] = options.colorFormat != COLOR_FORMAT::CF_RGB444;
             muxerOptions["subsampling_dx"] = 1;
             muxerOptions["subsampling_dy"] = 1;
             muxerOptions["encrypt_header"] = false;
@@ -269,7 +265,7 @@ int main(int argc, char **argv)
             WavMuxer wavMuxer;
             wavMuxer.MuxToFile(wavFileName, data, channels, sampleRate, 24);
 
-            //wavFiles.push_back(wavFileName);
+            wavFiles.push_back(wavFileName);
         }
 
         // write audio
