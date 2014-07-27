@@ -128,10 +128,10 @@ int main(int argc, char **argv)
         colorFormat(J2KEncoder::COLOR_FORMAT::CF_YUV444),
         yuvEssence(colorFormat != J2KEncoder::COLOR_FORMAT::CF_RGB444),
         useTiles(true),
-        inputFile("/home/markus/Documents/IMF/TestFiles/stomp.mpeg"),
+        inputFile("/home/markus/Documents/IMF/TestFiles/A.ac3"),
         tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
         finalVideoFile("/home/markus/Documents/IMF/FINAL_YUV444_10bit_Profile5_MCT_4_JPEG_TRANSFORM.mxf"),
-        sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000),
+        sampleRate(PCMEncoder::SAMPLE_RATE::SR_96000),
         tempAudioFilesPath("/home/markus/Documents/IMF/TestFiles/WAVFILES")
         {
             if (useTiles && profile != J2KEncoder::PROFILE::BCP_MT_6 && profile != J2KEncoder::PROFILE::BCP_MT_7) {
@@ -268,6 +268,8 @@ int main(int argc, char **argv)
 
             WavMuxer wavMuxer;
             wavMuxer.MuxToFile(wavFileName, data, channels, sampleRate, 24);
+
+            //wavFiles.push_back(wavFileName);
         }
 
         // write audio

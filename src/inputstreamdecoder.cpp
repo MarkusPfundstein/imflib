@@ -314,7 +314,14 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
             FRAME_TYPE frameType;
             int processedBytes = DecodePacket(packet, *decodedFrame, gotFrame, frameType, audioStreamIndex);
             if (processedBytes < 0) {
-                noError = false;
+                std::cout << "error processing frame" << std::endl;
+
+                // WE COULD BREAK HERE OR GO ON.. maybe I make this a user setting
+                // ignore errors or something like this
+
+                // maybe it should only be for audio ??? I dont know. We will see
+                //noError = false;
+
                 break;
             }
             // awesome. we got a full frame
