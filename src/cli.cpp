@@ -33,7 +33,7 @@ struct EncoderOptions {
     bitsPerComponent(J2KEncoder::BIT_RATE::BR_10bit),
     colorFormat(COLOR_FORMAT::CF_YUV444),
     useTiles(true),
-    inputFile("/home/markus/Documents/IMF/TestFiles/stomp.wav"),
+    inputFile("/home/markus/Documents/IMF/TestFiles/argon.mpeg"),
     tempFilePath("/home/markus/Documents/IMF/TestFiles/TEMP"),
     outputPath("/home/markus/Documents/IMF/TestFiles/OUTPUT"),
     sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000)
@@ -222,10 +222,8 @@ int main(int argc, char **argv)
     try {
 
         InputStreamDecoder decoder(options.inputFile, (int)options.bitsPerComponent, options.colorFormat, (int)options.sampleRate);
-        // decoder knows now some metadata about the video. Attention: IT DOESN'T KNOW ASPECT RATIO!!!!
+        // decoder knows now some metadata about the video. Attention: IT DOESN'T KNOW ASPECT RATIO AT THIS PLACE!!!!
 
-
-        // get filename for video file.
         std::string finalVideoFile;
 
         // create one j2k encoder -> we assume only one video track
@@ -250,15 +248,17 @@ int main(int argc, char **argv)
         }
 
         int numberAudioTracks = decoder.GetNumberAudioTracks();
-        if (numberAudioTracks > 0 && decoder.HasVideoTrack() == false && options.editRate.num == 0) {
-            std::cerr << "No Video Track found. Please set edit rate for audio files with -r option" << std::endl;
-            return 1;
-        }
+        // PROBABLY NOT NECESSARY. Edit_rate is SampleRate / 1
+        //if (numberAudioTracks > 0 && decoder.HasVideoTrack() == false && options.editRate.num == 0) {
+            //std::cerr << "No Video Track found. Please set edit rate for audio files with -r option" << std::endl;
+            //return 1;
+        //}
 
         // create one pcm encoder foreach audio track
         std::vector<std::shared_ptr<PCMEncoder>> pcmEncoders;
         // storage for all pcm data
         std::vector<std::vector<uint8_t>> wavData;
+        std::vector<std::string> audioFiles;
         wavData.reserve(numberAudioTracks);
         for (int i = 0; i < numberAudioTracks; ++i) {
             int channelLayout = decoder.GetChannelLayoutIndex(i);
@@ -269,11 +269,23 @@ int main(int argc, char **argv)
             pcmEncoders.push_back(pcmEncoder);
 
             wavData.push_back(std::vector<uint8_t>());
+
+            std::string audioFilePath = GetAudioFileName(options, channels, 24, i);
+            if (filesystem::exists(audioFilePath)) {
+                if (options.overwriteFiles) {
+                    const filesystem::path path(audioFilePath);
+                    filesystem::remove(path);
+                } else {
+                    std::cerr << audioFilePath << " exists already. Run with -f to overwrite!" << std::endl;
+                    return 1;
+                }
+            }
+
+            audioFiles.push_back(audioFilePath);
         }
 
         decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
                        [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
-
 
         if (decoder.HasVideoTrack() && j2kFiles.empty() == false) {
             std::map<std::string, boost::any> muxerOptions;
@@ -312,11 +324,10 @@ int main(int argc, char **argv)
             wavFiles.push_back(wavFileName);
 
             std::map<std::string, boost::any> muxerOptions;
-            muxerOptions["framerate"] = options.editRate;
+            muxerOptions["framerate"] = RationalNumber(sampleRate, 1);
 
-            std::string finalFile = GetAudioFileName(options, channels, 24, i);
             MXFWriter audioMxfWriter(muxerOptions);
-            audioMxfWriter.MuxAudioFile(wavFileName, finalFile);
+            audioMxfWriter.MuxAudioFile(wavFileName, audioFiles[i]);
         }
 
         CleanFiles(j2kFiles);
