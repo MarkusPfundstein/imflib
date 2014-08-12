@@ -33,13 +33,6 @@ void WavMuxer::MuxToFile(const std::string &filename, const std::vector<uint8_t>
     int byteRate = channels * sampleRate * bytesPerSample;
     short blockAlign = channels * bytesPerSample;
 
-    std::cout << "channels: " << channels << std::endl;
-    std::cout << "sampleRate: " << sampleRate << std::endl;
-    std::cout << "byteRate: " << byteRate << std::endl;
-    std::cout << "blockAlign: " << blockAlign << std::endl;
-    std::cout << "bitsPerSample: " << bitsPerSample << std::endl;
-    std::cout << "bytesPerSample: " << bytesPerSample << std::endl;
-
     // Write the second header
     file.write(chunkId, 4);
     file.write((char*)&chunkSize, 4);

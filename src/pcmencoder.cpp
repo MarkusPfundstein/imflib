@@ -67,7 +67,6 @@ void PCMEncoder::InitEncoder()
 void PCMEncoder::EncodeRawFrame(const RawAudioFrame& rawFrame, std::vector<uint8_t> &outData)
 {
     if (rawFrame.samples == 0) {
-        std::cout << "[PCM] got empty frame" << std::endl;
         return;
     }
     std::shared_ptr<AVFrame> frame(av_frame_alloc(), &av_free);
@@ -92,10 +91,7 @@ void PCMEncoder::EncodeRawFrame(const RawAudioFrame& rawFrame, std::vector<uint8
     }
 
     if (gotPacket) {
-        std::cout << "[PCM] got raw pcm data: " << packet.size << std::endl;
-
         std::copy((uint8_t*)packet.data, (uint8_t*)packet.data + packet.size, std::back_inserter(outData));
-
         av_free_packet(&packet);
     }
 }

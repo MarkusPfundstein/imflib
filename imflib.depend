@@ -324,7 +324,7 @@
 1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/rawvideoframe.h
 	<cstdint>
 
-1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/mxfwriter.h
+1407851622 /home/markus/Documents/Projects/ODMedia/imflib/src/mxfwriter.h
 	<string>
 	<map>
 	<boost/any.hpp>
@@ -333,7 +333,7 @@
 1406110334 /home/markus/Documents/Projects/ODMedia/imflib/src/j2kframe.h
 	<vector>
 
-1406471857 source:/home/markus/Documents/Projects/ODMedia/imflib/src/j2kencoder.cpp
+1407850290 source:/home/markus/Documents/Projects/ODMedia/imflib/src/j2kencoder.cpp
 	"j2kencoder.h"
 	"common.h"
 	<stdexcept>
@@ -342,7 +342,7 @@
 	<functional>
 	<cmath>
 
-1406472770 source:/home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.cpp
+1407854506 source:/home/markus/Documents/Projects/ODMedia/imflib/src/inputstreamdecoder.cpp
 	"inputstreamdecoder.h"
 	<libavutil/opt.h>
 	<libavformat/avformat.h>
@@ -356,18 +356,19 @@
 	<mutex>
 	<cmath>
 
-1406272371 source:/home/markus/Documents/Projects/ODMedia/imflib/src/mxfwriter.cpp
+1407856759 source:/home/markus/Documents/Projects/ODMedia/imflib/src/mxfwriter.cpp
 	"mxfwriter.h"
 	<KM_fileio.h>
 	<KM_prng.h>
 	<AS_02.h>
 	<Metadata.h>
+	<PCMParserList.h>
 	<iostream>
 	<stdexcept>
 	<memory>
 	"common.h"
 
-1406472645 source:/home/markus/Documents/Projects/ODMedia/imflib/src/cli.cpp
+1407854601 source:/home/markus/Documents/Projects/ODMedia/imflib/src/cli.cpp
 	"j2kencoder.h"
 	"inputstreamdecoder.h"
 	"mxfwriter.h"
@@ -375,6 +376,7 @@
 	"pcmencoder.h"
 	"wavmuxer.h"
 	<iostream>
+	<sstream>
 	<fstream>
 	<stdexcept>
 	<sstream>
@@ -383,11 +385,11 @@
 	<boost/filesystem.hpp>
 	<signal.h>
 
-1406471750 /home/markus/Documents/Projects/ODMedia/imflib/src/common.h
+1406489255 /home/markus/Documents/Projects/ODMedia/imflib/src/common.h
 	<vector>
 	<cstdint>
 
-1406407900 source:/home/markus/Documents/Projects/ODMedia/imflib/src/pcmencoder.cpp
+1407850789 source:/home/markus/Documents/Projects/ODMedia/imflib/src/pcmencoder.cpp
 	"pcmencoder.h"
 	"common.h"
 	<libavutil/opt.h>
@@ -408,7 +410,7 @@
 	<stdint.h>
 	"common.h"
 
-1406409684 source:/home/markus/Documents/Projects/ODMedia/imflib/src/wavmuxer.cpp
+1407856825 source:/home/markus/Documents/Projects/ODMedia/imflib/src/wavmuxer.cpp
 	"wavmuxer.h"
 	<fstream>
 	<iostream>

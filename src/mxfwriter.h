@@ -12,6 +12,7 @@ class MXFWriter
         MXFWriter(const std::map<std::string, boost::any> &muxerOptions);
         virtual ~MXFWriter();
 
+        void MuxAudioFile(const std::string& file, const std::string &finalFile);
         void MuxVideoFiles(const std::list<std::string> &files, const std::string &finalFile);
     protected:
     private:

@@ -1,0 +1,1 @@
+LD_LIBRARY_PATH=:.:/home/markus/Documents/Projects/ODMedia/imflib/third-party/asdcplib-2.1.4/build/lib:/home/markus/Documents/Projects/ODMedia/imflib/third-party/openjpeg-2.0.0/build/usr/local/lib:/home/markus/Documents/Projects/ODMedia/imflib/third-party/ffmpeg/build/lib valgrind --leak-check=full  bin/Debug/imflib

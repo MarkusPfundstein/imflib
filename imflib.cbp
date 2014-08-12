@@ -59,6 +59,8 @@
 		<Unit filename="src/mxfwriter.h" />
 		<Unit filename="src/pcmencoder.cpp" />
 		<Unit filename="src/pcmencoder.h" />
+		<Unit filename="src/wavmuxer.cpp" />
+		<Unit filename="src/wavmuxer.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

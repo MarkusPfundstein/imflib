@@ -6,6 +6,7 @@
 #include "wavmuxer.h"
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <stdexcept>
 #include <sstream>
@@ -21,6 +22,46 @@ using namespace boost;
 std::list<std::string> j2kFiles;
 // storage for all wav files
 std::list<std::string> wavFiles;
+
+struct EncoderOptions {
+
+    EncoderOptions()
+    :
+    overwriteFiles(true),
+    editRate(0, 0),
+    profile(J2KEncoder::PROFILE::BCP_ST_5),
+    bitsPerComponent(J2KEncoder::BIT_RATE::BR_10bit),
+    colorFormat(COLOR_FORMAT::CF_YUV444),
+    useTiles(true),
+    inputFile("/home/markus/Documents/IMF/TestFiles/stomp.wav"),
+    tempFilePath("/home/markus/Documents/IMF/TestFiles/TEMP"),
+    outputPath("/home/markus/Documents/IMF/TestFiles/OUTPUT"),
+    sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000)
+    {
+        if (useTiles && profile != J2KEncoder::PROFILE::BCP_MT_6 && profile != J2KEncoder::PROFILE::BCP_MT_7) {
+            std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
+            useTiles = false;
+        }
+    }
+
+    /* cmd line stuff */
+    bool overwriteFiles;
+    RationalNumber editRate;
+
+    /* VIDEO STUFF */
+    J2KEncoder::PROFILE profile ;
+    J2KEncoder::BIT_RATE bitsPerComponent;
+    COLOR_FORMAT colorFormat;
+    bool useTiles;
+
+    std::string inputFile;
+    std::string tempFilePath;
+
+    std::string outputPath;
+
+    /* AUDIO STUFF */
+    PCMEncoder::SAMPLE_RATE sampleRate;
+};
 
 /*
 void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
@@ -50,7 +91,6 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
 {
     std::ofstream of(targetFile, std::ios::binary | std::ios::out);
     of.write((const char*)&encodedFrame.data[0], encodedFrame.data.size());
-    std::cout << "[WRITE] wrote " << encodedFrame.data.size() << " Bytes to: " << targetFile << std::endl;
 }
 
 bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
@@ -59,25 +99,22 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
     std::string targetFile(ss.str());
 
-    //WriteRawFrameToFile(rawFrame);
-
     J2kFrame j2kFrame;
     j2kEncoder.EncodeRawFrame(rawFrame, j2kFrame);
 
     WriteToFile(j2kFrame, targetFile);
     outFiles.push_back(targetFile);
 
-    std::cout << std::endl;
+    std::cout << "Frame: " << outFiles.size() << '\xd';
+    std::cout.flush();
 
     return true;
 }
 
 bool HandleAudioFrame(const RawAudioFrame &rawFrame, PCMEncoder &pcmEncoder, std::vector<uint8_t> &wavData, int index)
 {
-    std::cout << "audio index [" << index << "]" << std::endl;
-
+    (void)index;
     pcmEncoder.EncodeRawFrame(rawFrame, wavData);
-
     return true;
 }
 
@@ -103,11 +140,54 @@ void CleanFiles(const std::list<std::string>& files)
 void SignalHandler(int sig)
 {
     if (sig == SIGINT || sig == SIGQUIT || sig == SIGTERM) {
-        std::cerr << "[CLEANUP]" << std::endl;
         CleanFiles(j2kFiles);
         CleanFiles(wavFiles);
         exit(1);
     }
+}
+
+std::string GetAudioFileName(const EncoderOptions &options, int channels, int bitsPerSample, int index)
+{
+    std::stringstream ss;
+
+    ss << options.outputPath << "/IMF_ODM_PCM_" << (int)options.sampleRate << "_" << channels << "ch" << "_" << bitsPerSample << "bits_" << index << ".mxf";
+    return ss.str();
+}
+
+std::string GetVideoFileName(const EncoderOptions &options, int width, int height)
+{
+    std::stringstream ss;
+
+    ss << options.outputPath << "/IMF_ODM_JPEG2000_" << width << "x" << height << "_";
+    switch (options.colorFormat) {
+        case COLOR_FORMAT::CF_RGB444:
+            ss << "RGB444";
+            break;
+        case COLOR_FORMAT::CF_YUV444:
+            ss << "YUV444";
+            break;
+        case COLOR_FORMAT::CF_YUV422:
+            ss << "YUV422";
+            break;
+        default:
+            throw new std::runtime_error("unknown colorformat");
+    }
+
+    std::stringstream fpsStream;
+    if (options.editRate.denum != 1) {
+        fpsStream << std::fixed << std::setprecision(2) << (float)options.editRate.num / options.editRate.denum;
+    } else {
+        fpsStream << (float)options.editRate.num;
+    }
+    std::string fpsString = fpsStream.str();
+
+    // replace any dot that could occur in framerate calculations. for instance 23.97
+    fpsString.erase(std::remove_if(std::begin(fpsString), std::end(fpsString), [](char c) { return (c == '.');}),
+                    std::end(fpsString));
+
+    ss << "_BCPL" << (int) options.profile << "_" << fpsString << "fps_" << options.bitsPerComponent << "bits.mxf";
+
+    return ss.str();
 }
 
 int main(int argc, char **argv)
@@ -117,43 +197,7 @@ int main(int argc, char **argv)
 
     InputStreamDecoder::RegisterAVFormat();
 
-    struct EncoderOptions {
-
-        EncoderOptions()
-        :
-        profile(J2KEncoder::PROFILE::BCP_ST_5),
-        bitsPerComponent(J2KEncoder::BIT_RATE::BR_8bit),
-        colorFormat(COLOR_FORMAT::CF_YUV444),
-        useTiles(true),
-        inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
-        tempFilePath("/home/markus/Documents/IMF/TestFiles/J2KFILES"),
-        finalVideoFile("/home/markus/Documents/IMF/NEW/blueberries_8bit_yuv444.mxf"),
-        sampleRate(PCMEncoder::SAMPLE_RATE::SR_96000),
-        tempAudioFilesPath("/home/markus/Documents/IMF/TestFiles/WAVFILES")
-        {
-            if (useTiles && profile != J2KEncoder::PROFILE::BCP_MT_6 && profile != J2KEncoder::PROFILE::BCP_MT_7) {
-                std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
-                useTiles = false;
-            }
-        }
-
-        /* VIDEO STUFF */
-        J2KEncoder::PROFILE profile ;
-        J2KEncoder::BIT_RATE bitsPerComponent;
-        COLOR_FORMAT colorFormat;
-        bool useTiles;
-
-        std::string inputFile;
-        std::string tempFilePath;
-        std::string finalVideoFile;
-
-        /* AUDIO STUFF */
-        PCMEncoder::SAMPLE_RATE sampleRate;
-        std::string tempAudioFilesPath;
-    };
-
     EncoderOptions options;
-
 
     std::cout << "encode with " << options.bitsPerComponent * 3 << " bpp" << std::endl;
     if (!filesystem::is_directory(options.tempFilePath)) {
@@ -161,27 +205,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // FOR DEBUG
-    /*
-    CleanDirectory(tempFilePath);
-
-    // check if temp directory is empty. this is important.
-    if (!filesystem::is_empty(tempFilePath)) {
-        std::cerr << tempFilePath << " is not empty. Use -r option to empty it before encoding" << std::endl;
+    if (!filesystem::is_directory(options.outputPath)) {
+        std::cerr << options.outputPath << " is not a directory" << std::endl;
         return 1;
-    }*/
+    }
 
     if (!filesystem::is_regular_file(options.inputFile)) {
         std::cerr << options.inputFile << " is not a file" << std::endl;
         return 1;
-    }
-
-    if (filesystem::exists(options.finalVideoFile)) {
-        std::cerr << options.finalVideoFile << " exists already. Use -f option to override" << std::endl;
-
-        std::cout << "REMOVE FOR DEBUG MODE" << std::endl;
-        filesystem::remove(filesystem::path(options.finalVideoFile));
-        //return 1;
     }
 
     signal(SIGINT, SignalHandler);
@@ -192,17 +223,37 @@ int main(int argc, char **argv)
 
         InputStreamDecoder decoder(options.inputFile, (int)options.bitsPerComponent, options.colorFormat, (int)options.sampleRate);
         // decoder knows now some metadata about the video. Attention: IT DOESN'T KNOW ASPECT RATIO!!!!
-        RationalNumber fps = decoder.GetFrameRate();
 
+
+        // get filename for video file.
+        std::string finalVideoFile;
 
         // create one j2k encoder -> we assume only one video track
-        J2KEncoder j2kEncoder(options.bitsPerComponent, options.profile, options.useTiles, fps, decoder.GetVideoWidth(), decoder.GetVideoHeight());
+        J2KEncoder j2kEncoder(options.bitsPerComponent, options.profile, options.useTiles, options.editRate, decoder.GetVideoWidth(), decoder.GetVideoHeight());
         if (decoder.HasVideoTrack()) {
+            finalVideoFile = GetVideoFileName(options, decoder.GetVideoWidth(), decoder.GetVideoHeight());
+
+            options.editRate = decoder.GetFrameRate();
+
+            // TO-DO: Add check if user really wants to delete file. otherwise abort if exists
+            if (filesystem::exists(finalVideoFile)) {
+                if (options.overwriteFiles) {
+                    const filesystem::path path(finalVideoFile);
+                    filesystem::remove(path);
+                } else {
+                    std::cerr << finalVideoFile << " exists already. Run with -f to overwrite!" << std::endl;
+                    return 1;
+                }
+            }
             // j2kEncoder will throw here if video width or video height are 0. which is most likely if we push audio only
             j2kEncoder.InitEncoder();
         }
 
         int numberAudioTracks = decoder.GetNumberAudioTracks();
+        if (numberAudioTracks > 0 && decoder.HasVideoTrack() == false && options.editRate.num == 0) {
+            std::cerr << "No Video Track found. Please set edit rate for audio files with -r option" << std::endl;
+            return 1;
+        }
 
         // create one pcm encoder foreach audio track
         std::vector<std::shared_ptr<PCMEncoder>> pcmEncoders;
@@ -210,11 +261,6 @@ int main(int argc, char **argv)
         std::vector<std::vector<uint8_t>> wavData;
         wavData.reserve(numberAudioTracks);
         for (int i = 0; i < numberAudioTracks; ++i) {
-            std::stringstream ss;
-            ss << options.tempAudioFilesPath << "/AUDIO_" << (i + 1) << ".wav";
-            std::string wavFile = ss.str();
-            wavFiles.push_back(wavFile);
-
             int channelLayout = decoder.GetChannelLayoutIndex(i);
             int channels = decoder.GetChannels(i);
 
@@ -229,10 +275,10 @@ int main(int argc, char **argv)
                        [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
 
 
-        if (j2kFiles.empty() == false) {
+        if (decoder.HasVideoTrack() && j2kFiles.empty() == false) {
             std::map<std::string, boost::any> muxerOptions;
             // to-do: put all this shit in a struct
-            muxerOptions["framerate"] = fps;
+            muxerOptions["framerate"] = options.editRate;
             // Aspect Ratio is now known.
             muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
             muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
@@ -245,20 +291,18 @@ int main(int argc, char **argv)
 
             // write video
             MXFWriter videoMxfWriter(muxerOptions);
-            videoMxfWriter.MuxVideoFiles(j2kFiles, options.finalVideoFile);
+            videoMxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile);
         }
-
 
         // write wav files to disk
         for (unsigned int i = 0; i < wavData.size(); ++i) {
             std::vector<uint8_t> &data = wavData[i];
-            std::cout << "write pcm with " << data.size() << std::endl;
 
             short channels = (short)decoder.GetChannels(i);
             int sampleRate = (int)options.sampleRate;
 
             std::stringstream ss;
-            ss << options.tempAudioFilesPath << "/" << std::setw( 7 ) << std::setfill( '0' ) << i << ".wav";
+            ss << options.tempFilePath << "/AUDIO_" << std::setw( 7 ) << std::setfill( '0' ) << i << ".wav";
 
             std::string wavFileName = ss.str();
 
@@ -266,12 +310,14 @@ int main(int argc, char **argv)
             wavMuxer.MuxToFile(wavFileName, data, channels, sampleRate, 24);
 
             wavFiles.push_back(wavFileName);
+
+            std::map<std::string, boost::any> muxerOptions;
+            muxerOptions["framerate"] = options.editRate;
+
+            std::string finalFile = GetAudioFileName(options, channels, 24, i);
+            MXFWriter audioMxfWriter(muxerOptions);
+            audioMxfWriter.MuxAudioFile(wavFileName, finalFile);
         }
-
-        // write audio
-        // MXFWriter audioMxfWriter(...)
-        // audioMxfWriter.MuxAudioFiles(wavFiles, ...);
-
 
         CleanFiles(j2kFiles);
         CleanFiles(wavFiles);
@@ -279,16 +325,8 @@ int main(int argc, char **argv)
         std::cerr << "[EXCEPTION CAUGHT - Aborting]: " << ex.what() << std::endl;
         CleanFiles(j2kFiles);
         CleanFiles(wavFiles);
-        if (filesystem::exists(options.finalVideoFile)) {
-            const filesystem::path path(options.finalVideoFile);
-            filesystem::remove(path);
-        }
         return 1;
     }
-
-    std::cout << "TO-DO LIST" << std::endl;
-    std::cout << "WRITE AS WAV" << std::endl;
-    std::cout << "NO RESAMPLE FLAG FOR 24bit INPUT WITH TARGET RATE" << std::endl;
 
     return 0;
 }

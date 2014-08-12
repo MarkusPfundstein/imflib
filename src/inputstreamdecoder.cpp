@@ -29,20 +29,31 @@ InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, CO
             _targetVideoPixelFormat = AV_PIX_FMT_RGB24;
         } else if (targetColorFormat == CF_YUV444) {
             _targetVideoPixelFormat = AV_PIX_FMT_YUV444P;
+        } else if (targetColorFormat == CF_YUV422) {
+            //_targetVideoPixelFormat = AV_PIX_FMT_YUV422P;
         }
     } else if (bitDepth == 10) {
         if (targetColorFormat == CF_RGB444) {
             _targetVideoPixelFormat = AV_PIX_FMT_GBRP10;
         } else if (targetColorFormat == CF_YUV444) {
             _targetVideoPixelFormat = AV_PIX_FMT_YUV444P10;
+        } else if (targetColorFormat == CF_YUV422) {
+            //_targetVideoPixelFormat = AV_PIX_FMT_YUV422P10;
         }
     } else if (bitDepth == 12) {
         if (targetColorFormat == CF_RGB444) {
             _targetVideoPixelFormat = AV_PIX_FMT_GBRP12;
         } else if (targetColorFormat == CF_YUV444) {
             _targetVideoPixelFormat = AV_PIX_FMT_YUV444P12;
+        } else if (targetColorFormat == CF_YUV422) {
+            //_targetVideoPixelFormat = AV_PIX_FMT_YUV422P12;
         }
     }
+
+    if (_targetVideoPixelFormat == -1) {
+        throw std::runtime_error("unsupported pixel format");
+    }
+
     OpenFile(file);
 }
 
@@ -69,11 +80,11 @@ void InputStreamDecoder::CloseFile()
 void InputStreamDecoder::OpenFile(const std::string& file)
 {
     if (avformat_open_input(&_formatContext, file.c_str(), nullptr, nullptr) != 0) {
-        throw std::runtime_error("error opening file");
+        throw std::runtime_error("[InputStreamDecoder] error opening file");
     }
 
     if (avformat_find_stream_info(_formatContext, nullptr) < 0) {
-        throw std::runtime_error("error reading stream info from file");
+        throw std::runtime_error("[InputStreamDecoder] error reading stream info from file");
     }
 
     for (unsigned int i = 0; i < _formatContext->nb_streams; ++i) {
@@ -83,7 +94,8 @@ void InputStreamDecoder::OpenFile(const std::string& file)
 
         AVCodec *codec = avcodec_find_decoder(stream->codec->codec_id);
         if (codec == nullptr) {
-            throw std::runtime_error("couldn't find codec for stream: " + stream->index);
+            //throw std::runtime_error("couldn't find codec for stream: " + stream->index);
+            continue;
         }
 
         CodecContextPtr codecContext(avcodec_alloc_context3(codec),
@@ -114,23 +126,23 @@ void InputStreamDecoder::OpenFile(const std::string& file)
         switch (stream->codec->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
                 if (_videoStreamContext.context) {
-                    std::cout << "second video stream detected. this is not implemented yet [skip]" << std::endl;
+                    std::cerr << "[InputStreamDecoder] second video stream detected. this is not implemented yet [skip]" << std::endl;
                     continue;
                 }
-                std::cout << "video stream detected: " << stream->index << std::endl;
+                std::cout << "[InputStreamDecoder] Video stream detected: " << stream->index << std::endl;
 
                 AddVideoStream(stream, codecContext);
 
 
                 break;
             case AVMEDIA_TYPE_AUDIO:
-                std::cout << "audio stream detected: " << stream->index << std::endl;
+                std::cout << "[InputStreamDecoder] Audio stream detected: " << stream->index << std::endl;
 
                 AddAudioStream(stream, codecContext);
 
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
-                std::cout << "subtitle stream detected: " << stream->index << std::endl;
+                std::cout << "[InputStreamDecoder] Subtitle stream detected: " << stream->index << std::endl;
                 //_subtitleStreams.push_back(std::make_tuple(stream, codecContext));
                 break;
             case AVMEDIA_TYPE_DATA:
@@ -138,7 +150,7 @@ void InputStreamDecoder::OpenFile(const std::string& file)
             case AVMEDIA_TYPE_NB:
             case AVMEDIA_TYPE_UNKNOWN:
             default:
-                std::cout << "invalid stream detected: " << stream->index << std::endl;
+                std::cerr << "[InputStreamDecoder] Invalid stream detected: " << stream->index << std::endl;
         }
     }
 
@@ -151,15 +163,17 @@ void InputStreamDecoder::OpenFile(const std::string& file)
 void InputStreamDecoder::AddVideoStream(AVStream *stream, const CodecContextPtr &context)
 {
     if (stream->codec->codec){
-        std::cout << "codec: " << stream->codec->codec->name << std::endl;
+        std::cout << "[InputStreamDecoder] Codec: " << stream->codec->codec->name << std::endl;
     } else {
-        std::cout << "couldn't detect codec name" << std::endl;
+        std::cout << "[InputStreamDecoder] Couldn't detect codec name" << std::endl;
     }
-    std::cout << "pix_fmt: " << av_get_pix_fmt_name(stream->codec->pix_fmt) << std::endl;
-    std::cout << "size: " << stream->codec->width << ":" << stream->codec->height << std::endl;
+    std::cout << "[InputStreamDecoder] Size: " << stream->codec->width << ":" << stream->codec->height << std::endl;
 
     _videoStreamContext.context = context;
     _videoStreamContext.stream = stream;
+    // important for prores
+    _videoStreamContext.context->width = stream->codec->width;
+    _videoStreamContext.context->height = stream->codec->height;
 
     _swsContext = sws_getContext(stream->codec->width,
                                  stream->codec->height,
@@ -178,11 +192,10 @@ void InputStreamDecoder::AddVideoStream(AVStream *stream, const CodecContextPtr 
 
 void InputStreamDecoder::AddAudioStream(AVStream *stream, const CodecContextPtr &context)
 {
-    std::cout << "sample_rate: " << stream->codec->sample_rate << std::endl;
-    std::cout << "channels: " << stream->codec->channels << std::endl;
-    std::cout << "format index: " << context->sample_fmt << std::endl;
-    std::cout << "source rate: " << stream->codec->sample_rate << std::endl;
-
+    std::cout << "[InputStreamDecoder] sample_rate: " << stream->codec->sample_rate << std::endl;
+    std::cout << "[InputStreamDecoder] channels: " << stream->codec->channels << std::endl;
+    std::cout << "[InputStreamDecoder] format index: " << context->sample_fmt << std::endl;
+    std::cout << "[InputStreamDecoder] source rate: " << stream->codec->sample_rate << std::endl;
 
     SwrContext *resampleContext = swr_alloc();
     if (resampleContext == nullptr) {
@@ -238,10 +251,8 @@ RationalNumber InputStreamDecoder::GetAspectRatio() const
         return RationalNumber(0, 0);
     }
     if (context->sample_aspect_ratio.num) {
-        std::cout << "here" << std::endl;
         sar = &context->sample_aspect_ratio;
     } else if (stream->sample_aspect_ratio.num) {
-        std::cout << "or here" << std::endl;
         sar = &stream->sample_aspect_ratio;
     }
     AVRational source;
@@ -307,7 +318,6 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
         // NOTE: FROM HERE ON av_free_packet must be called somewhere.
         // so dont just leave the loop
         if (av_read_frame(_formatContext, &packet) < 0) {
-            std::cout << "done" << std::endl;
             break;
         }
 
@@ -322,7 +332,7 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
             FRAME_TYPE frameType;
             int processedBytes = DecodePacket(packet, *decodedFrame, gotFrame, frameType, audioStreamIndex);
             if (processedBytes < 0) {
-                std::cout << "error processing frame" << std::endl;
+                std::cerr << "[InputStreamDecoder] error processing frame -> CONTINUE" << std::endl;
 
                 // WE COULD BREAK HERE OR GO ON.. maybe I make this a user setting
                 // ignore errors or something like this
@@ -418,6 +428,9 @@ bool InputStreamDecoder::HandleVideoFrame(AVFrame& decodedFrame, GotVideoFrameCa
     videoFrame.yuv = _targetVideoPixelFormat != AV_PIX_FMT_RGB24 &&
                      _targetVideoPixelFormat != AV_PIX_FMT_GBRP10 &&
                      _targetVideoPixelFormat != AV_PIX_FMT_GBRP12;
+    videoFrame.subsampled = _targetVideoPixelFormat == AV_PIX_FMT_YUV422P ||
+                            _targetVideoPixelFormat == AV_PIX_FMT_YUV422P10 ||
+                            _targetVideoPixelFormat == AV_PIX_FMT_YUV422P12;
 
     // TO-DO: Give owhership over data to _videoStreamContext
     for (int i = 0; i < 4; ++i) {
@@ -459,7 +472,7 @@ bool InputStreamDecoder::HandleAudioFrame(AVFrame& decodedFrame, GotAudioFrameCa
                                   (const uint8_t **)decodedFrame.extended_data,
                                   decodedFrame.nb_samples);
     if (newSamples < 0) {
-        std::cout << "Error while converting" << std::endl;
+        std::cerr << "[InputStreamDecoder] Error while converting [swr_convert]" << std::endl;
         av_freep(out);
         return false;
     }
@@ -492,7 +505,6 @@ bool InputStreamDecoder::HandleDelayedAudioFrames(int audioStreamIndex, GotAudio
 {
     int newSamples = 0;
     do {
-        std::cout << "HANDLE DELAYED RESAMPLE FRAMES" << std::endl;
         std::shared_ptr<AudioStreamContext> ctx = _audioStreams[audioStreamIndex];
         SwrContext *swrContext = ctx->resampleContext;
 
@@ -512,7 +524,7 @@ bool InputStreamDecoder::HandleDelayedAudioFrames(int audioStreamIndex, GotAudio
                                  nullptr,
                                  0);
         if (newSamples < 0) {
-            std::cout << "Error while converting" << std::endl;
+            std::cout << "[InputStreamDecoder] Error while converting - swr_convert" << std::endl;
             av_freep(out);
             return false;
         }
@@ -552,7 +564,7 @@ int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, in
         AVCodecContext *codecContext = _videoStreamContext.context.get();
         if (stream->index == packet.stream_index) {
             int processedBytes = avcodec_decode_video2(codecContext, &decodedFrame, &gotFrame, &packet);
-            std::cout << "[VIDEO] processedBytes: " << processedBytes << std::endl;
+            //std::cout << "[VIDEO] processedBytes: " << processedBytes << std::endl;
             frameType = FRAME_TYPE::VIDEO;
             return processedBytes;
         }
@@ -566,7 +578,7 @@ int InputStreamDecoder::DecodePacket(AVPacket& packet, AVFrame& decodedFrame, in
         AVCodecContext *audioCodecContext = ctx->context.get();
         if (audioStream->index == packet.stream_index) {
             int processedBytes = avcodec_decode_audio4(audioCodecContext, &decodedFrame, &gotFrame, &packet);
-            std::cout << "[AUDIO] (" << j << ") processedBytes: " << processedBytes << std::endl;
+            //std::cout << "[AUDIO] (" << j << ") processedBytes: " << processedBytes << std::endl;
             frameType = FRAME_TYPE::AUDIO;
             index = j;
             return processedBytes;

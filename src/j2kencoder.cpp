@@ -31,10 +31,10 @@ J2KEncoder::~J2KEncoder()
 void J2KEncoder::InitEncoder()
 {
     if (_widthUsed <= 0 || _heightUsed <= 0) {
-        throw std::runtime_error("[J2K ERROR] Width or Height must be bigger than 0");
+        throw std::runtime_error("[J2K] Width or Height must be bigger than 0");
     }
     if (_fps.num == 0) {
-        throw std::runtime_error("[J2K ERROR] Invalid framerate");
+        throw std::runtime_error("[J2K] Invalid framerate");
     }
 
     // will probably always be 3
@@ -84,13 +84,12 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
     opj_image_destroy(image);
 
     if (success == false) {
-        throw std::runtime_error("error encoding image");
+        throw std::runtime_error("[J2K] Error encoding image");
     }
 }
 
 void J2KEncoder::FillImagePacked(opj_image_t *image, const RawVideoFrame &rawFrame)
 {
-    std::cout << "PACKED ENCODING" << std::endl;
     int jpegIndex = 0;
     unsigned char* dataPtr = rawFrame.videoData[0];
     for (int y = 0; y < _heightUsed; ++y) {
@@ -112,7 +111,6 @@ void J2KEncoder::FillImagePacked(opj_image_t *image, const RawVideoFrame &rawFra
 
 void J2KEncoder::FillImagePlanar(opj_image_t *image, const RawVideoFrame &rawFrame)
 {
-    std::cout << "PLANAR ENCODING" << std::endl;
     int bgrTable[3];
     if (rawFrame.yuv) {
         bgrTable[0] = 0;
@@ -123,8 +121,6 @@ void J2KEncoder::FillImagePlanar(opj_image_t *image, const RawVideoFrame &rawFra
         bgrTable[1] = 0;
         bgrTable[2] = 1;
     }
-    //const int bgrTable[3] = {2,0,1};
-    //const int bgrTable[3] = {0, 1, 2};
     for (int i = 0; i < 3; ++i) {
         int jpegIndex = 0;
         unsigned char *dataPtr = rawFrame.videoData[bgrTable[i]];
@@ -152,13 +148,15 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame)
 
     opj_codec_t* codec = opj_create_compress((OPJ_CODEC_FORMAT) 0);
     if (codec == nullptr) {
-        std::cout << "error creating j2k codec" << std::endl;
+        std::cerr << "[J2K] error creating j2k codec" << std::endl;
         return false;
     }
 
-    opj_set_info_handler(codec, [](const char* s, void *) { std::cout << "[J2K INFO] " << s; }, nullptr);
-    opj_set_warning_handler(codec, [](const char* s, void *) { std::cout << "[J2K WARNING] " << s; }, nullptr);
-    opj_set_error_handler(codec, [](const char* s, void *) { std::cout << "[J2K ERROR] " << s; }, nullptr);
+    if (_useTiles) {
+        opj_set_info_handler(codec, [](const char* s, void *) { std::cout << "[J2K] " << s; }, nullptr);
+    }
+    opj_set_warning_handler(codec, [](const char* s, void *) { std::cerr << "[J2K] " << s; }, nullptr);
+    opj_set_error_handler(codec, [](const char* s, void *) { std::cerr << "[J2K] " << s; }, nullptr);
 
     opj_setup_encoder(codec, &_encodingParameters, image);
 
@@ -173,7 +171,7 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame)
 
     bool success = opj_start_compress(codec, image, stream);
     if (success == false)  {
-        std::cout << "ERROR opj_start_compress" << std::endl;
+        std::cerr << "[J2K] ERROR opj_start_compress" << std::endl;
     } else {
         /* this routine doesnt work. seems to be experimental
         if (false && _useTiles && (_profile == PROFILE::BCP_MT_6 || _profile == PROFILE::BCP_MT_7)) {
@@ -194,13 +192,13 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame)
         */
             success = success && opj_encode(codec, stream);
             if (success == false) {
-                std::cout << "ERROR opj_encode" << std::endl;
+                std::cerr << "[J2K] ERROR opj_encode" << std::endl;
             }
         //}
     }
     success = success && opj_end_compress(codec, stream);
     if (success == false)  {
-        std::cout << "failed to encode image: opj_end_compress" << std::endl;
+        std::cerr << "[J2K] failed to encode image: opj_end_compress" << std::endl;
     }
 
     opj_stream_destroy(stream);
@@ -328,6 +326,7 @@ void J2KEncoder::SetRates(int frameSize)
             _encodingParameters.tcp_rates[0] = (OPJ_FLOAT32) frameSize / (OPJ_FLOAT32) (((OPJ_UINT32)_encodingParameters.max_cs_size) * 8);
         }
         std::cout << "[J2K] max_cs_size: " << _encodingParameters.max_cs_size << std::endl;
+        std::cout << "[J2K] tcp_rates[0]: " << _encodingParameters.tcp_rates[0] << std::endl;
     } else {
         std::cout << "[J2K] lossless compression" << std::endl;
     }

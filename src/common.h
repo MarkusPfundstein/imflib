@@ -13,7 +13,7 @@ enum COLOR_FORMAT {
 
 struct RawVideoFrame
 {
-    RawVideoFrame() : pixelFormat(0), width(0), height(0), fieldOrder(0), planar(false), yuv(false) {}
+    RawVideoFrame() : pixelFormat(0), width(0), height(0), fieldOrder(0), planar(false), yuv(false), subsampled(false) {}
 
     // danger. inputstreamdecoder does not transfer ownership of data (yet). it only assigns the pointer
     uint8_t *videoData[4];
@@ -27,6 +27,7 @@ struct RawVideoFrame
 
     bool planar;
     bool yuv;
+    bool subsampled;
 };
 
 struct J2kFrame
