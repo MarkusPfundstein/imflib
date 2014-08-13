@@ -1,10 +1,11 @@
 #ifndef IMFPACKAGEVIEW_H
 #define IMFPACKAGEVIEW_H
 
-#include <QWidget>
-#include <QObject>
+#include <QMainWindow>
+#include <QMenu>
+//#include <QObject>
 
-class IMFPackageView : public QWidget
+class IMFPackageView : public QMainWindow
 {
     Q_OBJECT
 
@@ -12,7 +13,20 @@ class IMFPackageView : public QWidget
         IMFPackageView();
         virtual ~IMFPackageView();
     protected:
+    private slots:
+        void NewFile();
+        void OpenFile();
+        void SaveFile();
+
     private:
+        void CreateActions();
+        void CreateMenus();
+
+        QMenu *_fileMenu;
+
+        QAction *_newFileAction;
+        QAction *_openFileAction;
+        QAction *_saveFileAction;
 };
 
 #endif // IMFPACKAGEVIEW_H
