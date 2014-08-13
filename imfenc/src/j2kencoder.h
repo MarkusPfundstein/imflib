@@ -2,7 +2,7 @@
 #define J2KENCODER_H
 
 extern "C" {
-#include <openjpeg.h>
+#include <openjpeg-2.1/openjpeg.h>
 }
 
 #include "common.h"
