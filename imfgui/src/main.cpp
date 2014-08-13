@@ -1,4 +1,10 @@
-int main()
+#include <QApplication>
+#include <QTextEdit>
+
+int main(int argv, char **args)
 {
-	return 1;
-}
+    QApplication app(argv, args);
+    QTextEdit textEdit;
+    textEdit.show();
+    return app.exec();
+ }

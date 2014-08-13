@@ -3,6 +3,8 @@
 AM_CXXFLAGS = 
 AM_LDFLAGS = 
 
+LIBS += $(QT4_LIBS)
+
 bin_PROGRAMS = imfgui
 
 imfgui_SOURCES = \
@@ -11,4 +13,4 @@ imfgui_SOURCES = \
 imfgui_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code
 imfgui_CXXFLAGS += $(QT4_CFLAGS)
 
-imfgui_LDFLAGS = $(QT4_LIBS)
+imfgui_LDFLAGS = 
