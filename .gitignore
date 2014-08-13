@@ -17,3 +17,6 @@ config.sub
 depcomp
 *.scan
 config.h.in~
+*.cache
+*.log
+*.status
