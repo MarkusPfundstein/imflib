@@ -19,6 +19,8 @@ imfgui_SOURCES = \
 	application.cpp \
 	applicationsettings.cpp \
 	utils/mxfreader.cpp \
+	qtmodels/imfpackagemodel.cpp \
+	model/imfpackageitem.cpp \
 	model/imftrack.cpp \
 	model/imfvideotrack.cpp \
 	model/imfaudiotrack.cpp \

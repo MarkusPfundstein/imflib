@@ -2,7 +2,7 @@
 
 IMFTrack::IMFTrack(const std::string& filename)
     :
-    _filename(filename)
+    IMFPackageItem(filename)
 {
     //ctor
 }

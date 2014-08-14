@@ -8,29 +8,32 @@
 #include "../utils/mxfreader.h"
 
 #include <QWidget>
-#include <QBoxLayout>
+#include <QGridLayout>
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMessageBox>
+#include <QTableView>
 
 #include <iostream>
 
 IMFPackageView::IMFPackageView()
+    :
+    QMainWindow()
 {
     QWidget *mainWidget = new QWidget();
     setCentralWidget(mainWidget);
 
-    QWidget *topFiller = new QWidget();
-    topFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    //QWidget *bottomFiller = new QWidget();
+    //bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QWidget *bottomFiller = new QWidget;
-    bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QTableView *packageTableView = new QTableView();
+    packageTableView->setModel(&_packageModel);
 
-    QVBoxLayout *layout = new QVBoxLayout;
+    QGridLayout *layout = new QGridLayout();
     layout->setMargin(5);
-    layout->addWidget(topFiller);
-    layout->addWidget(bottomFiller);
+    layout->addWidget(packageTableView, 0, 0, 1, 1);
+    //layout->addWidget(bottomFiller);
     mainWidget->setLayout(layout);
 
     CreateActions();
@@ -45,6 +48,7 @@ IMFPackageView::IMFPackageView()
 IMFPackageView::~IMFPackageView()
 {
     //dtor
+    std::cout << "delete package view" << std::endl;
 }
 
 void IMFPackageView::CreateActions()
@@ -96,6 +100,7 @@ void IMFPackageView::NewFile()
     app->SetWorkingPackage(new IMFPackage());
 
     UpdateMenu();
+    _packageModel.Clear();
 }
 
 void IMFPackageView::OpenFile()
@@ -141,10 +146,20 @@ void IMFPackageView::AddTrackFile()
 
     if (essenceType == MXFReader::ESSENCE_TYPE::VIDEO) {
         std::shared_ptr<IMFVideoTrack> videoTrack(new IMFVideoTrack(fileStdString));
+
+        // add to abstract working model
         workingPackage->AddVideoTrack(videoTrack);
+
+        // add to display model
+        _packageModel.AppendItem(videoTrack);
     } else if (essenceType == MXFReader::ESSENCE_TYPE::AUDIO) {
         std::shared_ptr<IMFAudioTrack> audioTrack(new IMFAudioTrack(fileStdString));
+
+        // add to abstract working model
         workingPackage->AddAudioTrack(audioTrack);
+
+        // add to display model
+        _packageModel.AppendItem(audioTrack);
     } else {
         QMessageBox::information(this,
                                  tr("Sorry"),

@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QMenu>
-//#include <QObject>
+#include "qtmodels/imfpackagemodel.h"
 
 class IMFPackageView : public QMainWindow
 {
@@ -15,6 +15,7 @@ class IMFPackageView : public QMainWindow
 
         // disables and enables all menus according to state of program
         void UpdateMenu();
+
     protected:
     private slots:
         // File Menu
@@ -37,6 +38,8 @@ class IMFPackageView : public QMainWindow
         QAction *_saveFileAction;
 
         QAction *_addTrackFileAction;
+
+        IMFPackageModel _packageModel;
 };
 
 #endif // IMFPACKAGEVIEW_H

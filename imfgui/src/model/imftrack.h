@@ -1,20 +1,17 @@
 #ifndef IMFTRACK_H
 #define IMFTRACK_H
 
-#include <string>
+#include "imfpackageitem.h"
 
-class IMFTrack
+class IMFTrack : public IMFPackageItem
 {
     public:
         IMFTrack(const std::string& filename);
         virtual ~IMFTrack();
 
-        const std::string& GetFileName() const
-        { return _filename; }
-
     protected:
 
-        std::string _filename;
+
 };
 
 #endif // IMFTRACK_H
