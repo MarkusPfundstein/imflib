@@ -12,6 +12,9 @@ class IMFPackageView : public QMainWindow
     public:
         IMFPackageView();
         virtual ~IMFPackageView();
+
+        // disables and enables all menus according to state of program
+        void UpdateMenu();
     protected:
     private slots:
         // File Menu

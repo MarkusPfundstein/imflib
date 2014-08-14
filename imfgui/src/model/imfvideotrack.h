@@ -6,7 +6,7 @@
 class IMFVideoTrack : public IMFTrack
 {
     public:
-        IMFVideoTrack();
+        IMFVideoTrack(const std::string& filename);
         virtual ~IMFVideoTrack();
         IMFVideoTrack(const IMFVideoTrack& other);
         IMFVideoTrack& operator=(const IMFVideoTrack& other);

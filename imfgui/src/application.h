@@ -17,6 +17,7 @@ class Application : public QApplication
         virtual ~Application();
 
         void SetWorkingPackage(IMFPackage *package);
+        IMFPackage *GetWorkingPackage() const;
 
         ApplicationSettings* Settings();
 

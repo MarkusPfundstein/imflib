@@ -1,6 +1,8 @@
 #include "imftrack.h"
 
-IMFTrack::IMFTrack()
+IMFTrack::IMFTrack(const std::string& filename)
+    :
+    _filename(filename)
 {
     //ctor
 }

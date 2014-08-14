@@ -19,8 +19,20 @@ class IMFPackage
         IMFPackage(const IMFPackage& other) = delete;
         IMFPackage& operator=(const IMFPackage& other) = delete;
 
+        // adds a new video track to the package
         void AddVideoTrack(const std::shared_ptr<IMFVideoTrack> &track);
+
+        // adds a new audio track to the package
         void AddAudioTrack(const std::shared_ptr<IMFAudioTrack> &track);
+
+        // checks if a track file is already contained in the package
+        bool HasTrackFile(const std::string &file) const;
+
+        // checks if a video track file is already contained in the package
+        bool HasVideoTrackFile(const std::string &file) const;
+
+        // checks if a audio track file is already contained in the package
+        bool HasAudioTrackFile(const std::string &file) const;
     protected:
     private:
 

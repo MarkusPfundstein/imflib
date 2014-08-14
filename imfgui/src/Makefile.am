@@ -18,6 +18,7 @@ imfgui_SOURCES = \
 	main.cpp \
 	application.cpp \
 	applicationsettings.cpp \
+	utils/mxfreader.cpp \
 	model/imftrack.cpp \
 	model/imfvideotrack.cpp \
 	model/imfaudiotrack.cpp \
@@ -26,7 +27,7 @@ imfgui_SOURCES = \
 	model/imfoutputprofile.cpp \
 	views/imfpackageview.cpp
 
-imfgui_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code
+imfgui_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wunreachable-code
 imfgui_CXXFLAGS += $(QT4_CFLAGS)
 
 imfgui_LDFLAGS = 

@@ -2,12 +2,17 @@
 
 #include "../application.h"
 #include "../model/imfpackage.h"
+#include "../model/imfvideotrack.h"
+#include "../model/imfaudiotrack.h"
+
+#include "../utils/mxfreader.h"
 
 #include <QWidget>
 #include <QBoxLayout>
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QMessageBox>
 
 #include <iostream>
 
@@ -30,6 +35,7 @@ IMFPackageView::IMFPackageView()
 
     CreateActions();
     CreateMenus();
+    UpdateMenu();
 
     setWindowTitle(tr("ODMedia IMF Gui"));
     setMinimumSize(160, 160);
@@ -74,6 +80,13 @@ void IMFPackageView::CreateMenus()
     _imfMenu->addAction(_addTrackFileAction);
 }
 
+void IMFPackageView::UpdateMenu()
+{
+    Application *app = static_cast<Application*>(Application::instance());
+
+    _addTrackFileAction->setEnabled(app->GetWorkingPackage() ? true : false);
+}
+
 void IMFPackageView::NewFile()
 {
     std::cout << "new file" << std::endl;
@@ -81,11 +94,15 @@ void IMFPackageView::NewFile()
     Application *app = static_cast<Application*>(Application::instance());
 
     app->SetWorkingPackage(new IMFPackage());
+
+    UpdateMenu();
 }
 
 void IMFPackageView::OpenFile()
 {
     std::cout << "open file" << std::endl;
+
+    UpdateMenu();
 }
 
 void IMFPackageView::SaveFile()
@@ -107,6 +124,32 @@ void IMFPackageView::AddTrackFile()
     QFileInfo fileInfo(fileName);
     app->Settings()->SetLastOpenedTrackDir(fileInfo.absolutePath());
     app->Settings()->SaveSettings();
+
+    IMFPackage *workingPackage = app->GetWorkingPackage();
+
+    std::string fileStdString = fileName.toStdString();
+    if (workingPackage->HasTrackFile(fileStdString)) {
+        QMessageBox::information(this,
+                                 tr("Sorry"),
+                                 tr("Track file already in package"));
+        return;
+    }
+
+    MXFReader mxfReader(fileStdString);
+
+    MXFReader::ESSENCE_TYPE essenceType = mxfReader.GetEssenceType();
+
+    if (essenceType == MXFReader::ESSENCE_TYPE::VIDEO) {
+        std::shared_ptr<IMFVideoTrack> videoTrack(new IMFVideoTrack(fileStdString));
+        workingPackage->AddVideoTrack(videoTrack);
+    } else if (essenceType == MXFReader::ESSENCE_TYPE::AUDIO) {
+        std::shared_ptr<IMFAudioTrack> audioTrack(new IMFAudioTrack(fileStdString));
+        workingPackage->AddAudioTrack(audioTrack);
+    } else {
+        QMessageBox::information(this,
+                                 tr("Sorry"),
+                                 tr("Invalid essence type (not JPEG2000 or PCM24bit)"));
+    }
 }
 
 #include "../moc_imfpackageview.cpp"

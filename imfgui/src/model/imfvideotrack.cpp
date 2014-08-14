@@ -1,6 +1,8 @@
 #include "imfvideotrack.h"
 
-IMFVideoTrack::IMFVideoTrack()
+IMFVideoTrack::IMFVideoTrack(const std::string& filename)
+    :
+    IMFTrack(filename)
 {
     //ctor
 }
@@ -11,6 +13,8 @@ IMFVideoTrack::~IMFVideoTrack()
 }
 
 IMFVideoTrack::IMFVideoTrack(const IMFVideoTrack& other)
+    :
+    IMFTrack(other._filename)
 {
     //copy ctor
 }

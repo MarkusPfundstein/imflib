@@ -30,3 +30,8 @@ ApplicationSettings* Application::Settings()
 {
     return &_settings;
 }
+
+IMFPackage* Application::GetWorkingPackage() const
+{
+    return _workingPackage.get();
+}

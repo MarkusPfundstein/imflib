@@ -1,6 +1,8 @@
 #include "imfaudiotrack.h"
 
-IMFAudioTrack::IMFAudioTrack()
+IMFAudioTrack::IMFAudioTrack(const std::string& filename)
+    :
+    IMFTrack(filename)
 {
     //ctor
 }
@@ -11,6 +13,8 @@ IMFAudioTrack::~IMFAudioTrack()
 }
 
 IMFAudioTrack::IMFAudioTrack(const IMFAudioTrack& other)
+    :
+    IMFTrack(other._filename)
 {
     //copy ctor
 }
