@@ -17,6 +17,11 @@ $(imfgui_OBJECTS) : $(imfgui_MOC_FILES)
 imfgui_SOURCES = \
 	main.cpp \
 	model/imftrack.cpp \
+	model/imfvideotrack.cpp \
+	model/imfaudiotrack.cpp \
+	model/imfpackage.cpp \
+	model/imfcompositionplaylist.cpp \
+	model/imfoutputprofile.cpp \
 	views/imfpackageview.cpp
 
 imfgui_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code
