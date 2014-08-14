@@ -16,7 +16,8 @@ $(imfgui_OBJECTS) : $(imfgui_MOC_FILES)
 
 imfgui_SOURCES = \
 	main.cpp \
-	imfpackageview.cpp
+	model/imftrack.cpp \
+	views/imfpackageview.cpp
 
 imfgui_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code
 imfgui_CXXFLAGS += $(QT4_CFLAGS)

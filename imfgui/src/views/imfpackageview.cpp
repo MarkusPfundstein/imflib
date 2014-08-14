@@ -77,4 +77,4 @@ void IMFPackageView::SaveFile()
 {
     std::cout << "save file" << std::endl;
 }
-#include "moc_imfpackageview.cpp"
+#include "../moc_imfpackageview.cpp"
