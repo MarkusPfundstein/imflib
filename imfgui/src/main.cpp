@@ -1,5 +1,5 @@
 #include <QApplication>
-#include "views/imfpackageview.hpp"
+#include "views/imfpackageview.h"
 
 int main(int argv, char **args)
 {

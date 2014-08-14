@@ -1,4 +1,4 @@
-#include "imfpackageview.hpp"
+#include "imfpackageview.h"
 
 #include <QWidget>
 #include <QBoxLayout>

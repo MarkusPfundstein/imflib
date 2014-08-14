@@ -1,4 +1,4 @@
 
 # would be great to figure out how to "automate" this the make way
 moc_imfpackageview.cpp:  
-	$(MOC) -i -o $@ views/imfpackageview.hpp
+	$(MOC) -i -o $@ views/imfpackageview.h
