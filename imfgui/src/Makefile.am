@@ -16,6 +16,8 @@ $(imfgui_OBJECTS) : $(imfgui_MOC_FILES)
 
 imfgui_SOURCES = \
 	main.cpp \
+	application.cpp \
+	applicationsettings.cpp \
 	model/imftrack.cpp \
 	model/imfvideotrack.cpp \
 	model/imfaudiotrack.cpp \

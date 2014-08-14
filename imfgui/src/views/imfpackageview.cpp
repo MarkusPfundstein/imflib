@@ -1,8 +1,13 @@
 #include "imfpackageview.h"
 
+#include "../application.h"
+#include "../model/imfpackage.h"
+
 #include <QWidget>
 #include <QBoxLayout>
 #include <QMenuBar>
+#include <QFileDialog>
+#include <QFileInfo>
 
 #include <iostream>
 
@@ -53,6 +58,9 @@ void IMFPackageView::CreateActions()
     _saveFileAction->setStatusTip(tr("Save a File"));
     connect(_saveFileAction, SIGNAL(triggered()), this, SLOT(SaveFile()));
 
+    _addTrackFileAction = new QAction(tr("&Add File"), this);
+    _addTrackFileAction->setStatusTip(tr("Adds a file to the project"));
+    connect(_addTrackFileAction, SIGNAL(triggered()), this, SLOT(AddTrackFile()));
 }
 
 void IMFPackageView::CreateMenus()
@@ -61,11 +69,18 @@ void IMFPackageView::CreateMenus()
     _fileMenu->addAction(_newFileAction);
     _fileMenu->addAction(_openFileAction);
     _fileMenu->addAction(_saveFileAction);
+
+    _imfMenu = menuBar()->addMenu(tr("&IMF"));
+    _imfMenu->addAction(_addTrackFileAction);
 }
 
 void IMFPackageView::NewFile()
 {
     std::cout << "new file" << std::endl;
+
+    Application *app = static_cast<Application*>(Application::instance());
+
+    app->SetWorkingPackage(new IMFPackage());
 }
 
 void IMFPackageView::OpenFile()
@@ -77,4 +92,21 @@ void IMFPackageView::SaveFile()
 {
     std::cout << "save file" << std::endl;
 }
+
+void IMFPackageView::AddTrackFile()
+{
+    std::cout << "add track file" << std::endl;
+
+    Application *app = static_cast<Application*>(Application::instance());
+
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                                    tr("Add Track File"),
+                                                    app->Settings()->GetLastOpenedTrackDir(),
+                                                    tr("MXF Files (*.mxf)"));
+
+    QFileInfo fileInfo(fileName);
+    app->Settings()->SetLastOpenedTrackDir(fileInfo.absolutePath());
+    app->Settings()->SaveSettings();
+}
+
 #include "../moc_imfpackageview.cpp"
