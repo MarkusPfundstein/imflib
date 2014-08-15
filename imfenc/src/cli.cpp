@@ -30,10 +30,10 @@ struct EncoderOptions {
     overwriteFiles(true),
     editRate(0, 0),
     profile(J2KEncoder::PROFILE::BCP_ST_5),
-    bitsPerComponent(J2KEncoder::BIT_RATE::BR_10bit),
-    colorFormat(COLOR_FORMAT::CF_YUV444),
+    bitsPerComponent(J2KEncoder::BIT_RATE::BR_8bit),
+    colorFormat(COLOR_FORMAT::CF_RGB444),
     useTiles(true),
-    inputFile("/home/markus/Documents/IMF/TestFiles/argon.mpeg"),
+    inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
     tempFilePath("/home/markus/Documents/IMF/TestFiles/TEMP"),
     outputPath("/home/markus/Documents/IMF/TestFiles/OUTPUT"),
     sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000)
@@ -227,11 +227,12 @@ int main(int argc, char **argv)
         std::string finalVideoFile;
 
         // create one j2k encoder -> we assume only one video track
+
+        options.editRate = decoder.GetFrameRate();
+
         J2KEncoder j2kEncoder(options.bitsPerComponent, options.profile, options.useTiles, options.editRate, decoder.GetVideoWidth(), decoder.GetVideoHeight());
         if (decoder.HasVideoTrack()) {
             finalVideoFile = GetVideoFileName(options, decoder.GetVideoWidth(), decoder.GetVideoHeight());
-
-            options.editRate = decoder.GetFrameRate();
 
             // TO-DO: Add check if user really wants to delete file. otherwise abort if exists
             if (filesystem::exists(finalVideoFile)) {
@@ -296,7 +297,6 @@ int main(int argc, char **argv)
             muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
             muxerOptions["yuv_essence"] = options.colorFormat != COLOR_FORMAT::CF_RGB444;
             muxerOptions["subsampling_dx"] = 1;
-            muxerOptions["subsampling_dy"] = 1;
             muxerOptions["encrypt_header"] = false;
             muxerOptions["bits"] = static_cast<int>(options.bitsPerComponent);
             muxerOptions["broadcast_profile"] = static_cast<int>(options.profile);

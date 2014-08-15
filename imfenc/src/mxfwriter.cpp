@@ -233,7 +233,7 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
         if (ASDCP_SUCCESS(result)) {
             cdciDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
             cdciDescriptor->HorizontalSubsampling = boost::any_cast<int>(_muxerOptions["subsampling_dx"]);
-            cdciDescriptor->VerticalSubsampling = boost::any_cast<int>(_muxerOptions["subsampling_dy"]);
+            cdciDescriptor->VerticalSubsampling = 1; // no vertical subsampling in IMF
             cdciDescriptor->ComponentDepth = boost::any_cast<int>(_muxerOptions["bits"]);
             cdciDescriptor->FrameLayout = 0;    // no interlaced shit
             cdciDescriptor->AspectRatio = pictureDescriptor.AspectRatio;
