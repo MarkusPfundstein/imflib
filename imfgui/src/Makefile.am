@@ -19,6 +19,7 @@ imfgui_SOURCES = \
 	application.cpp \
 	applicationsettings.cpp \
 	utils/mxfreader.cpp \
+	utils/uuidgenerator.cpp \
 	qtmodels/imfpackagemodel.cpp \
 	model/imfpackageitem.cpp \
 	model/imftrack.cpp \

@@ -39,7 +39,6 @@ class MXFReader
         void ParseMetadata(const std::shared_ptr<IMFAudioTrack> &track);
     protected:
     private:
-
         std::string _filename;
 };
 

@@ -18,12 +18,24 @@ struct ApplicationSettings
         void LoadSettings();
         void SaveSettings();
 
-        QString GetLastOpenedTrackDir() const;
-        void SetLastOpenedTrackDir(QString dir);
+        QString GetLastOpenedTrackDir() const
+        { return _lastOpenedTrackDir; }
+
+        QString GetLastSaveDir() const
+        { return _lastSaveDir; };
+
+        void SetLastOpenedTrackDir(QString dir)
+        { _lastOpenedTrackDir = dir; };
+
+        void SetLastSaveDir(QString dir)
+        { _lastSaveDir = dir; };
 
     private:
         // last directory where user opened a track file
         QString _lastOpenedTrackDir;
+
+        // last directory where user saved a file
+        QString _lastSaveDir;
 };
 
 #endif // APPLICATIONSETTINGS_H

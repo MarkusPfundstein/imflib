@@ -23,6 +23,6 @@ std::string IMFPackageItem::TypeString() const
         case AUDIO: return "Audio";
         case CPL: return "CPL";
         case OPL: return "OPL";
-        default: return "";
+        default: return "ERR_TYPE";
     }
 }

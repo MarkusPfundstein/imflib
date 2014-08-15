@@ -5,7 +5,8 @@
 
 ApplicationSettings::ApplicationSettings()
     :
-    _lastOpenedTrackDir(QDir::homePath())
+    _lastOpenedTrackDir(QDir::homePath()),
+    _lastSaveDir(QDir::homePath())
 {
     //ctor
 }
@@ -28,6 +29,7 @@ void ApplicationSettings::LoadSettings()
     QSettings settings(settingsFile, QSettings::NativeFormat);
 
     _lastOpenedTrackDir = settings.value("last_opened_track_dir", _lastOpenedTrackDir).toString();
+    _lastSaveDir = settings.value("last_save_dir", _lastSaveDir).toString();
 }
 
 void ApplicationSettings::SaveSettings()
@@ -37,14 +39,5 @@ void ApplicationSettings::SaveSettings()
     QSettings settings(settingsFile, QSettings::NativeFormat);
 
     settings.setValue("last_opened_track_dir", _lastOpenedTrackDir);
-}
-
-QString ApplicationSettings::GetLastOpenedTrackDir() const
-{
-    return _lastOpenedTrackDir;
-}
-
-void ApplicationSettings::SetLastOpenedTrackDir(QString dir)
-{
-    _lastOpenedTrackDir = dir;
+    settings.setValue("last_save_dir", _lastSaveDir);
 }

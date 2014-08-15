@@ -6,10 +6,12 @@
 #include "../model/imfaudiotrack.h"
 
 #include "../utils/mxfreader.h"
+#include "../utils/uuidgenerator.h"
 
 #include <QWidget>
 #include <QGridLayout>
 #include <QFormLayout>
+#include <QInputDialog>
 #include <QHeaderView>
 #include <QGroupBox>
 #include <QLabel>
@@ -21,6 +23,8 @@
 #include <QTableView>
 
 #include <iostream>
+
+static const QString BaseWindowTitle("ODMedia IMF Suite");
 
 IMFPackageView::IMFPackageView()
     :
@@ -75,7 +79,7 @@ IMFPackageView::IMFPackageView()
     UpdateMenu();
 
     mainWidget->setLayout(mainLayout);
-    setWindowTitle(tr("ODMedia IMF Gui"));
+    setWindowTitle(BaseWindowTitle + tr(" - New File"));
     setMinimumSize(640, 480);
     resize(1024, 768);
 
@@ -138,6 +142,8 @@ void IMFPackageView::NewFile()
 
     UpdateMenu();
     _packageModel.Clear();
+
+    setWindowTitle(BaseWindowTitle + tr(" - New File"));
 }
 
 void IMFPackageView::OpenFile()
@@ -150,6 +156,56 @@ void IMFPackageView::OpenFile()
 void IMFPackageView::SaveFile()
 {
     std::cout << "save file" << std::endl;
+
+    QString finalLocation;
+    QString directory;
+    QString name;
+
+    Application *app = static_cast<Application*>(Application::instance());
+
+    IMFPackage *workingPackage = app->GetWorkingPackage();
+
+    // completely new save. do all the tedious work
+    if (workingPackage->GetLocation().empty() && workingPackage->GetName().empty()) {
+        directory = QFileDialog::getExistingDirectory(this,
+                                                      tr("Where?"),
+                                                      app->Settings()->GetLastSaveDir());
+
+        name = QInputDialog::getText(this,
+                                     tr("Name of IMF package?"),
+                                     tr("Name: "));
+
+        QString finalLocation = directory + tr("/") + name;
+
+        if (QDir(finalLocation).exists()) {
+            QMessageBox::information(this,
+                                     tr("Sorry"),
+                                     tr("Directory with that name exists already at location"));
+            return;
+        }
+
+        if (QDir().mkdir(finalLocation) == false) {
+            QMessageBox::information(this,
+                                     tr("Sorry"),
+                                     tr("Error creating directory (rights?)"));
+            return;
+        }
+
+        UUIDGenerator uuidGenerator;
+
+        workingPackage->SetLocation(directory.toStdString());
+        workingPackage->SetName(name.toStdString());
+        workingPackage->SetUUID(uuidGenerator.MakeUUID());
+        setWindowTitle(BaseWindowTitle + tr(" - ") + name);
+
+        app->Settings()->SetLastSaveDir(directory);
+        app->Settings()->SaveSettings();
+    } else {
+        directory = QString::fromStdString(workingPackage->GetLocation());
+        name = QString::fromStdString(workingPackage->GetName());
+    }
+
+    workingPackage->Write();
 }
 
 void IMFPackageView::AddTrackFile()

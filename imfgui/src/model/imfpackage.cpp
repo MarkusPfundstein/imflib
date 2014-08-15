@@ -4,12 +4,18 @@
 #include "imfaudiotrack.h"
 #include "imfcompositionplaylist.h"
 #include "imfoutputprofile.h"
+#include "../utils/xmlwriter.h"
 
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 
 IMFPackage::IMFPackage()
     :
+    _name(""),
+    _saved(false),
+    _location(""),
+    _uuid(""),
     _videoTracks(),
     _audioTracks(),
     _compositionPlaylists(),
@@ -52,4 +58,26 @@ bool IMFPackage::HasAudioTrackFile(const std::string &file) const
 {
     auto it = std::find_if(_audioTracks.begin(), _audioTracks.end(), [&file](const std::shared_ptr<IMFAudioTrack> &vt) { return vt->GetFileName() == file; });
     return it != _audioTracks.end();
+}
+
+void IMFPackage::Write() const
+{
+    WriteAssetMap(_location + "/" + _name + "/ASSETMAP.xml");
+}
+
+void IMFPackage::WriteAssetMap(const std::string& filename) const
+{
+    using namespace xmlw;
+
+    std::ofstream assetMapStream(filename, std::ios::out);
+
+    XmlStream stream(assetMapStream);
+
+    stream << prolog()
+        << tag("AssetMap")
+            << attr("xmlns") << "http://www.smpte-ra.org/schemas/429-9/2007/AM"
+            << tag("Id")
+                << chardata() << "urn:uuid:" << _uuid
+            << endtag()
+        << endtag();
 }

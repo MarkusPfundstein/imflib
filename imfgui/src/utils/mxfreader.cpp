@@ -64,18 +64,23 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFAudioTrack> &track)
         throw MXFReaderException("No essence descriptor found");
     }
 
+
     int duration = 0;
     if (waveDescriptor->ContainerDuration.get() == 0 ) {
         std::cout << "[Warning] ContainerDuration not set in file descriptor, attempting to use index duration." << std::endl;
         duration = reader.AS02IndexReader().GetDuration();
     } else {
         duration = waveDescriptor->ContainerDuration;
+
     }
     if (duration == 0) {
         std::cout << "[Warning] Couldn't get duration" << std::endl;
         duration = -1;
     }
 
+    int bits = waveDescriptor->QuantizationBits;
+
+    track->SetBits(bits);
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(waveDescriptor->SampleRate.Numerator, waveDescriptor->SampleRate.Denominator));
     reader.Close();
@@ -124,7 +129,6 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
 							 reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&cdciDescriptor));
 
         if (KM_SUCCESS(result)) {
-            // TO-DO: check subsampling
             if ((cdciDescriptor->HorizontalSubsampling == 1)) {
                 colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::YUV444;
             } else if (cdciDescriptor->HorizontalSubsampling == 2) {
