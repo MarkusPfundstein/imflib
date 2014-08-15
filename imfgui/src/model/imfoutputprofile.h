@@ -7,8 +7,7 @@ class IMFOutputProfile
     public:
         IMFOutputProfile();
         virtual ~IMFOutputProfile();
-        IMFOutputProfile(const IMFOutputProfile& other);
-        IMFOutputProfile& operator=(const IMFOutputProfile& other);
+
     protected:
     private:
 };

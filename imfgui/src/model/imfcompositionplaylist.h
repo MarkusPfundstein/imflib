@@ -7,8 +7,7 @@ class IMFCompositionPlaylist
     public:
         IMFCompositionPlaylist();
         virtual ~IMFCompositionPlaylist();
-        IMFCompositionPlaylist(const IMFCompositionPlaylist& other);
-        IMFCompositionPlaylist& operator=(const IMFCompositionPlaylist& other);
+
     protected:
     private:
 };

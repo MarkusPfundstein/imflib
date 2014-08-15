@@ -1,8 +1,10 @@
 #include "imftrack.h"
 
-IMFTrack::IMFTrack(const std::string& filename)
+IMFTrack::IMFTrack(const std::string& filename, TYPE type)
     :
-    IMFPackageItem(filename)
+    IMFPackageItem(filename, type),
+    _duration(0),
+    _editRate(0, 0)
 {
     //ctor
 }

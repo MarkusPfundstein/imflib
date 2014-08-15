@@ -9,8 +9,6 @@ class IMFAudioTrack : public IMFTrack
     public:
         IMFAudioTrack(const std::string& filename);
         virtual ~IMFAudioTrack();
-        IMFAudioTrack(const IMFAudioTrack& other);
-        IMFAudioTrack& operator=(const IMFAudioTrack& other);
     protected:
     private:
 };

@@ -2,6 +2,19 @@
 #define MXFREADER_H
 
 #include <string>
+#include <memory>
+#include <stdexcept>
+
+// forward declarations
+class IMFVideoTrack;
+class IMFAudioTrack;
+
+class MXFReaderException : public std::runtime_error
+{
+    public:
+        MXFReaderException(std::string const& error)
+        : std::runtime_error(error) {};
+};
 
 class MXFReader
 {
@@ -20,6 +33,10 @@ class MXFReader
 
         // parses mxf file _filename and returns essence type
         ESSENCE_TYPE GetEssenceType() const;
+
+        // parses headers in track
+        void ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track);
+        void ParseMetadata(const std::shared_ptr<IMFAudioTrack> &track);
     protected:
     private:
 

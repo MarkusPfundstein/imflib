@@ -9,6 +9,11 @@
 
 #include <QWidget>
 #include <QGridLayout>
+#include <QFormLayout>
+#include <QHeaderView>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -24,25 +29,57 @@ IMFPackageView::IMFPackageView()
     QWidget *mainWidget = new QWidget();
     setCentralWidget(mainWidget);
 
-    //QWidget *bottomFiller = new QWidget();
-    //bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QWidget *bottomFiller = new QWidget();
+    bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    QWidget *rightTopFiller = new QWidget();
+    rightTopFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     QTableView *packageTableView = new QTableView();
+
     packageTableView->setModel(&_packageModel);
 
-    QGridLayout *layout = new QGridLayout();
-    layout->setMargin(5);
-    layout->addWidget(packageTableView, 0, 0, 1, 1);
-    //layout->addWidget(bottomFiller);
-    mainWidget->setLayout(layout);
+    //packageTableView->horizontalHeader()->setStretchLastSection(true);
+    packageTableView->horizontalHeader()->setResizeMode(QHeaderView::Interactive);
+    packageTableView->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
+    packageTableView->horizontalHeader()->setResizeMode(1, QHeaderView::ResizeToContents);
+    packageTableView->horizontalHeader()->setResizeMode(2, QHeaderView::ResizeToContents);
+    packageTableView->horizontalHeader()->setResizeMode(3, QHeaderView::ResizeToContents);
+    packageTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    packageTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    // adjust tableview after new data gets inserted so that column width
+    // fits to new data.
+
+    //connect(&_packageModel,
+      //      SIGNAL(rowsInserted(const QModelIndex&, int, int)),
+        //    packageTableView,
+          //  SLOT(resizeColumnsToContents()));
+
+
+    QVBoxLayout *mainLayout = new QVBoxLayout();
+
+    QGroupBox *topFileBox= new QGroupBox();
+
+
+    QHBoxLayout *fileViewLayout = new QHBoxLayout();
+    fileViewLayout->addWidget(packageTableView);
+    fileViewLayout->addWidget(rightTopFiller);
+    topFileBox->setLayout(fileViewLayout);
+
+    mainLayout->addWidget(topFileBox);
+    mainLayout->addWidget(bottomFiller);
 
     CreateActions();
     CreateMenus();
     UpdateMenu();
 
+    mainWidget->setLayout(mainLayout);
     setWindowTitle(tr("ODMedia IMF Gui"));
-    setMinimumSize(160, 160);
-    resize(640, 480);
+    setMinimumSize(640, 480);
+    resize(1024, 768);
+
+    NewFile();
 }
 
 IMFPackageView::~IMFPackageView()
@@ -147,6 +184,16 @@ void IMFPackageView::AddTrackFile()
     if (essenceType == MXFReader::ESSENCE_TYPE::VIDEO) {
         std::shared_ptr<IMFVideoTrack> videoTrack(new IMFVideoTrack(fileStdString));
 
+        // parse header to get metadata for videotrack
+        try {
+            mxfReader.ParseMetadata(videoTrack);
+        } catch (MXFReaderException &ex) {
+            QMessageBox::information(this,
+                                 tr("Sorry"),
+                                 tr(ex.what()));
+            return;
+        }
+
         // add to abstract working model
         workingPackage->AddVideoTrack(videoTrack);
 
@@ -155,11 +202,23 @@ void IMFPackageView::AddTrackFile()
     } else if (essenceType == MXFReader::ESSENCE_TYPE::AUDIO) {
         std::shared_ptr<IMFAudioTrack> audioTrack(new IMFAudioTrack(fileStdString));
 
+        // parse header to get metadata for audiotrack
+        try {
+            mxfReader.ParseMetadata(audioTrack);
+        } catch (MXFReaderException &ex) {
+            QMessageBox::information(this,
+                                 tr("Sorry"),
+                                 tr(ex.what()));
+            return;
+        }
+
         // add to abstract working model
         workingPackage->AddAudioTrack(audioTrack);
 
         // add to display model
         _packageModel.AppendItem(audioTrack);
+
+
     } else {
         QMessageBox::information(this,
                                  tr("Sorry"),
