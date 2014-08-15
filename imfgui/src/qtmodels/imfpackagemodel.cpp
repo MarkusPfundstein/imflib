@@ -84,9 +84,7 @@ QString IMFPackageModel::GetItemDurationString(const IMFPackageItem &item) const
 
 QString IMFPackageModel::GetDisplayFileName(const IMFPackageItem &item) const
 {
-    QString path = QString::fromStdString(item.GetFileName());
-
-    return QFileInfo(path).fileName();
+    return QString::fromStdString(item.GetFileName());
 }
 
 QVariant IMFPackageModel::headerData(int section, Qt::Orientation orientation, int role) const

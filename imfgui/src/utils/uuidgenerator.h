@@ -16,4 +16,8 @@ class UUIDGenerator
     private:
 };
 
+static std::string UUIDStr(const std::string &uuid) {
+    return std::string("urn:uuid:") + uuid;
+}
+
 #endif // UUIDGENERATOR_H

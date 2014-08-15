@@ -17,7 +17,9 @@ AC_PROG_INSTALL
 
 AC_CHECK_LIB([as02], [main], [], [AC_MSG_ERROR([libas02 was not found])])
 AC_CHECK_LIB([asdcp], [main], [], [AC_MSG_ERROR([libasdcp was not found])])
+AC_CHECK_LIB([boost_system], [main], [], [AC_MSG_ERROR([boost_system not installed])])
 
+# check qt stuff
 PKG_CHECK_MODULES(QT4, [QtCore QtGui >= 4.4.0], [
   AC_PATH_PROGS(MOC, [moc-qt4 moc], moc,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
   AC_PATH_PROG(RCC, rcc, rcc,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
@@ -25,6 +27,9 @@ PKG_CHECK_MODULES(QT4, [QtCore QtGui >= 4.4.0], [
 ], [
   AC_MSG_ERROR([Qt 4 library not found])
 ])
+
+# check xerces-c
+PKG_CHECK_MODULES([XERCES], [xerces-c >= 3.0], [], [AC_MSG_ERROR([Xerces > 3.0 not found])])
 
 AC_CHECK_HEADERS([AS\_02.h], [], [AC_MSG_ERROR([AS\_02.h was not found])])
 AC_CHECK_HEADERS([KLV.h], [], [AC_MSG_ERROR([KLV.h was not found])]) 

@@ -157,23 +157,18 @@ void IMFPackageView::SaveFile()
 {
     std::cout << "save file" << std::endl;
 
-    QString finalLocation;
-    QString directory;
-    QString name;
-
     Application *app = static_cast<Application*>(Application::instance());
-
     IMFPackage *workingPackage = app->GetWorkingPackage();
 
     // completely new save. do all the tedious work
     if (workingPackage->GetLocation().empty() && workingPackage->GetName().empty()) {
-        directory = QFileDialog::getExistingDirectory(this,
-                                                      tr("Where?"),
-                                                      app->Settings()->GetLastSaveDir());
+        QString directory = QFileDialog::getExistingDirectory(this,
+                                                              tr("Where?"),
+                                                              app->Settings()->GetLastSaveDir());
 
-        name = QInputDialog::getText(this,
-                                     tr("Name of IMF package?"),
-                                     tr("Name: "));
+        QString name = QInputDialog::getText(this,
+                                             tr("Name of IMF package?"),
+                                             tr("Name: "));
 
         QString finalLocation = directory + tr("/") + name;
 
@@ -200,11 +195,9 @@ void IMFPackageView::SaveFile()
 
         app->Settings()->SetLastSaveDir(directory);
         app->Settings()->SaveSettings();
-    } else {
-        directory = QString::fromStdString(workingPackage->GetLocation());
-        name = QString::fromStdString(workingPackage->GetName());
     }
 
+    workingPackage->CopyTrackFiles();
     workingPackage->Write();
 }
 
@@ -232,6 +225,7 @@ void IMFPackageView::AddTrackFile()
                                  tr("Track file already in package"));
         return;
     }
+
 
     MXFReader mxfReader(fileStdString);
 

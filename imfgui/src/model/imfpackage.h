@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 
+
 // forward references
 class IMFVideoTrack;
 class IMFAudioTrack;
@@ -46,6 +47,9 @@ class IMFPackage
 
         // writes whole package to disk
         void Write() const;
+
+        // copies all files into package directory
+        void CopyTrackFiles() const;
 
         std::string GetName() const
         { return _name; }

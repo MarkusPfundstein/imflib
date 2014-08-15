@@ -2,6 +2,7 @@
 
 #include <AS_02.h>
 #include <iostream>
+#include <sstream>
 
 #include "../model/imfvideotrack.h"
 #include "../model/imfaudiotrack.h"
@@ -45,7 +46,7 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFAudioTrack> &track)
     AS_02::PCM::MXFReader reader;
     ASDCP::MXF::WaveAudioDescriptor *waveDescriptor = nullptr;
 
-    ASDCP::Result_t result = reader.OpenRead(track->GetFileName());
+    ASDCP::Result_t result = reader.OpenRead(track->GetPath());
     if (KM_FAILURE(result)) {
         throw MXFReaderException("Error opening file");
     }
@@ -78,8 +79,21 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFAudioTrack> &track)
         duration = -1;
     }
 
+    ASDCP::WriterInfo info;
+    result = reader.FillWriterInfo(info);
+    if (KM_FAILURE(result)) {
+        reader.Close();
+        throw MXFReaderException("Couldn't get UUID");
+    }
+
+
     int bits = waveDescriptor->QuantizationBits;
 
+    char strBuf[41];
+    std::stringstream ss;
+    ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
+
+    track->SetUUID(ss.str());
     track->SetBits(bits);
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(waveDescriptor->SampleRate.Numerator, waveDescriptor->SampleRate.Denominator));
@@ -92,7 +106,7 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
     ASDCP::MXF::RGBAEssenceDescriptor *rgbaDescriptor = nullptr;
     ASDCP::MXF::CDCIEssenceDescriptor *cdciDescriptor = nullptr;
 
-    ASDCP::Result_t result = reader.OpenRead(track->GetFileName());
+    ASDCP::Result_t result = reader.OpenRead(track->GetPath());
     if (KM_FAILURE(result)) {
         throw MXFReaderException("Error opening file");
     }
@@ -143,12 +157,26 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
         }
     }
 
+    ASDCP::WriterInfo info;
+    result = reader.FillWriterInfo(info);
+    if (KM_FAILURE(result)) {
+        reader.Close();
+        throw MXFReaderException("Couldn't get UUID");
+    }
+
+    char strBuf[41];
+    std::stringstream ss;
+    ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
+
+    track->SetUUID(ss.str());
     track->SetBits(bits);
     track->SetColorSpace(colorSpace);
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(editRate.Numerator, editRate.Denominator));
 
     reader.Close();
+
+    std::cout << "CLOSEDXXXXX" << std::endl;
 }
 
 //void MXFReader::ReadHeader()

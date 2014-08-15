@@ -18,8 +18,7 @@ std::string UUIDGenerator::MakeUUID() const
     ASDCP::WriterInfo info;
     Kumu::GenRandomUUID(info.AssetUUID);
 
-
-    char strBuf[40];
+    char strBuf[41];
     std::stringstream ss;
     ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
     return ss.str();

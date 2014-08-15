@@ -6,6 +6,8 @@ AM_CXXFLAGS =
 AM_LDFLAGS = 
 
 LIBS += $(QT4_LIBS)
+LIBS += $(XERCES_LIBS)
+LIBS += -lboost_filesystem
 
 bin_PROGRAMS = imfgui
 
