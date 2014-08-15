@@ -13,6 +13,12 @@ class IMFTrack : public IMFPackageItem
 
         virtual ~IMFTrack();
 
+        void SetBits(int bits)
+        { _bits = bits; }
+
+        int GetBits() const
+        { return _bits; }
+
         void SetDuration(int duration)
         { _duration = duration; }
 
@@ -26,6 +32,7 @@ class IMFTrack : public IMFPackageItem
         { return _editRate; }
 
     protected:
+        int _bits;
         int _duration;
         RationalNumber _editRate;
 

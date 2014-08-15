@@ -2,7 +2,8 @@
 
 IMFVideoTrack::IMFVideoTrack(const std::string& filename)
     :
-    IMFTrack(filename, TYPE::VIDEO)
+    IMFTrack(filename, TYPE::VIDEO),
+    _colorSpace(IMF_COLOR_SPACE::INVALID)
 {
     //ctor
 }
@@ -10,4 +11,19 @@ IMFVideoTrack::IMFVideoTrack(const std::string& filename)
 IMFVideoTrack::~IMFVideoTrack()
 {
     //dtor
+}
+
+std::string IMFVideoTrack::TypeString() const
+{
+    switch (_colorSpace) {
+        case RGB444:
+            return "RGB444";
+        case YUV444:
+            return "YUV444";
+        case YUV422:
+            return "YUV422";
+        case INVALID:
+        default:
+            return "INVALID";
+    }
 }

@@ -30,10 +30,21 @@ QVariant IMFPackageModel::data(const QModelIndex &index, int role) const
     switch (index.column()) {
         case 0: return GetDisplayFileName(*item);
         case 1: return QString::fromStdString(item->TypeString());
-        case 2: return trackItem ? GetItemDuration(*item) : QVariant();
-        case 3: return trackItem ? GetItemDurationString(*item) : QVariant();
+        case 2: return trackItem ? GetItemBitDepth(*item) : QVariant();
+        case 3: return trackItem ? GetItemDuration(*item) : QVariant();
+        case 4: return trackItem ? GetItemDurationString(*item) : QVariant();
         default: return QVariant();
     };
+}
+
+QString IMFPackageModel::GetItemBitDepth(const IMFPackageItem &item) const
+{
+    try {
+        const IMFTrack& track = dynamic_cast<const IMFTrack&>(item);
+        return QString::number(track.GetBits());
+    } catch (std::bad_cast e) {
+        return QString(-1);
+    }
 }
 
 QString IMFPackageModel::GetItemDuration(const IMFPackageItem &item) const
@@ -42,7 +53,7 @@ QString IMFPackageModel::GetItemDuration(const IMFPackageItem &item) const
         const IMFTrack& track = dynamic_cast<const IMFTrack&>(item);
         return QString::number(track.GetDuration());
     } catch (std::bad_cast e) {
-        return QString("0");
+        return QString("-1");
     }
 }
 
@@ -87,8 +98,9 @@ QVariant IMFPackageModel::headerData(int section, Qt::Orientation orientation, i
     switch (section) {
         case 0: return "Filename";
         case 1: return "Type";
-        case 2: return "Frames";
-        case 3: return "Duration";
+        case 2: return "BitDepth";
+        case 3: return "Frames";
+        case 4: return "Duration";
         default: return QVariant();
     }
 }

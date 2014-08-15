@@ -18,7 +18,7 @@ class IMFPackageModel : public QAbstractTableModel
 
         // OVERWRITE
         int columnCount(const QModelIndex &) const
-        { return 4; }
+        { return 5; }
 
         // OVERWRITE
         QVariant headerData(int section, Qt::Orientation orientation, int role) const;
@@ -40,9 +40,13 @@ class IMFPackageModel : public QAbstractTableModel
         // returns duration as time string
         QString GetItemDurationString(const IMFPackageItem &item) const;
 
+        // returns bit depth of item as string
+        QString GetItemBitDepth(const IMFPackageItem &item) const;
+
         // returns file name from file path from IMFPackageItem
         QString GetDisplayFileName(const IMFPackageItem &item) const;
 
+        // model data
         QList<std::shared_ptr<IMFPackageItem>> _data;
 };
 

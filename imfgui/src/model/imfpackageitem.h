@@ -22,7 +22,7 @@ class IMFPackageItem
         TYPE GetType() const
         { return _type; }
 
-        std::string TypeString() const;
+        virtual std::string TypeString() const;
 
     protected:
         std::string _filename;

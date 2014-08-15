@@ -95,26 +95,52 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
     result = reader.OP1aHeader().GetMDObjectByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_RGBAEssenceDescriptor),
 						     reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&rgbaDescriptor));
 
-    int duration = 0;
+    // get used down below to set color space etc
+    int bits = -1;
+    int duration = -1;
     ASDCP::Rational editRate;
+    IMFVideoTrack::IMF_COLOR_SPACE colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::INVALID;
+
     if (KM_SUCCESS(result)) {
         // we have a rgba descriptor
+        colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::RGB444;
         duration = rgbaDescriptor->ContainerDuration;
         editRate = rgbaDescriptor->SampleRate;
+        //rgbaDescriptor->Dump();
+        //reader.OP1aHeader().Dump();
+        /*
+        ASDCP::MXF::FileDescriptor *file;
+
+
+        result = reader.OP1aHeader().GetMDObjectByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_FileDescriptor),
+							 reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&file));
+        if (KM_SUCCESS(result)) {
+            file->Dump();
+        }
+        */
     } else {
         // check if we have a cdci (yuv) descriptor
         result = reader.OP1aHeader().GetMDObjectByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_CDCIEssenceDescriptor),
 							 reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&cdciDescriptor));
 
         if (KM_SUCCESS(result)) {
+            // TO-DO: check subsampling
+            if ((cdciDescriptor->HorizontalSubsampling == 1)) {
+                colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::YUV444;
+            } else if (cdciDescriptor->HorizontalSubsampling == 2) {
+                colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::YUV422;
+            }
             duration = cdciDescriptor->ContainerDuration;
             editRate = cdciDescriptor->SampleRate;
+            bits = cdciDescriptor->ComponentDepth;
         } else {
             reader.Close();
             throw MXFReaderException("No essence descriptor found");
         }
     }
 
+    track->SetBits(bits);
+    track->SetColorSpace(colorSpace);
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(editRate.Numerator, editRate.Denominator));
 
