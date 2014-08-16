@@ -18,88 +18,6 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/exceptions.hpp>
 
-#include <xercesc/util/PlatformUtils.hpp>
-#include <xercesc/dom/DOMAttr.hpp>
-#include <xercesc/framework/StdOutFormatTarget.hpp>
-#include <xercesc/framework/LocalFileFormatTarget.hpp>
-#include <xercesc/dom/DOM.hpp>
-
-static xercesc::DOMElement* AppendElement(xercesc::DOMDocument *document, xercesc::DOMElement *parent, const std::string &text)
-{
-    XERCES_CPP_NAMESPACE_USE
-
-    XMLCh *tempStr = new XMLCh[text.size() + 1];
-    XMLString::transcode(text.c_str(), tempStr, text.size());
-    DOMElement *element = document->createElement(tempStr);
-    parent->appendChild(element);
-    delete [] tempStr;
-    return element;
-}
-
-static xercesc::DOMElement* AppendElementWithText(xercesc::DOMDocument *document, xercesc::DOMElement *parent, const std::string &text, const std::string &content)
-{
-    XERCES_CPP_NAMESPACE_USE
-
-    DOMElement *element = AppendElement(document, parent, text);
-
-    XMLCh *tempStr = new XMLCh[content.size() + 1];
-
-    XMLString::transcode(content.c_str(), tempStr, content.size());
-    DOMText *textNode = document->createTextNode(tempStr);
-    element->appendChild(textNode);
-
-    delete [] tempStr;
-
-    return element;
-}
-
-static void AddAsset(xercesc::DOMDocument *document, xercesc::DOMElement *assetList, const IMFPackageItem &item)
-{
-    XERCES_CPP_NAMESPACE_USE
-
-    DOMElement *asset = AppendElement(document, assetList, "Asset");
-    AppendElementWithText(document, asset, "Id", UUIDStr(item.GetUUID()));
-
-    DOMElement *chunkList = AppendElement(document, asset, "ChunkList");
-    DOMElement *chunk = AppendElement(document, chunkList, "Chunk");
-
-    AppendElementWithText(document, chunk, "Path", item.GetFileName());
-    AppendElementWithText(document, chunk, "VolumeIndex", "1");
-    AppendElementWithText(document, chunk, "Offset", "0");
-    AppendElementWithText(document, chunk, "Length", boost::lexical_cast<std::string>(item.GetFileSize()));
-}
-
-static void DumpXmlToDisk(xercesc::DOMDocument *document, const std::string& filename)
-{
-    XERCES_CPP_NAMESPACE_USE
-
-    XMLCh tempStr[3];
-
-    XMLString::transcode("LS", tempStr, sizeof(tempStr));
-    DOMImplementation *implementation = DOMImplementationRegistry::getDOMImplementation(tempStr);
-
-    DOMLSSerializer *serializer = ((DOMImplementationLS*)implementation)->createLSSerializer();
-    if (serializer->getDomConfig()->canSetParameter(XMLUni::fgDOMWRTDiscardDefaultContent, true)) {
-        serializer->getDomConfig()->setParameter(XMLUni::fgDOMWRTDiscardDefaultContent, true);
-    }
-
-    if (serializer->getDomConfig()->canSetParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true)) {
-        serializer->getDomConfig()->setParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true);
-    }
-
-    DOMLSOutput *output = ((DOMImplementationLS*)implementation)->createLSOutput();
-
-    LocalFileFormatTarget *target = new LocalFileFormatTarget(filename.c_str());
-
-    output->setByteStream(target);
-    serializer->write(document, output);
-
-    delete target;
-    output->release();
-    serializer->release();
-}
-
-
 IMFPackage::IMFPackage()
     :
     _name(""),
@@ -295,47 +213,50 @@ void IMFPackage::Write() const
 
 void IMFPackage::WriteAssetMap(const std::string& filename) const
 {
-    XERCES_CPP_NAMESPACE_USE
+    using boost::property_tree::ptree;
+    ptree pt;
 
-    XMLPlatformUtils::Initialize();
-    // http://www.w3.org/TR/2000/REC-DOM-Level-2-Core-20001113/core.html
-    DOMImplementation *domImplementation =
-        DOMImplementationRegistry::getDOMImplementation(XMLString::transcode("core"));
+    ptree rootNode;
 
-    // pretty unsafe actually -.-
-    XMLCh tempStr[256];
+    rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/429-9/2007/AM");
+    rootNode.put("Id", UUIDStr(_uuid));
+    rootNode.put("AnnotationText", "For testing purposes only");
+    rootNode.put("Creator", "ODMedia IMF Suite PRE-PRE-alpha-0.1 2014");
+    rootNode.put("VolumeCount", "1");
+    rootNode.put("IssueDate", "");
+    rootNode.put("Issuer", "ODMedia");
 
-    XMLString::transcode("AssetMap", tempStr, sizeof(tempStr));
-    DOMDocument *document = domImplementation->createDocument(0, tempStr, 0);
+    ptree assetListNode;
 
-    DOMElement *root = document->getDocumentElement();
+    std::vector<std::shared_ptr<IMFPackageItem>> assets;
+    assets.insert(assets.end(), _videoTracks.begin(), _videoTracks.end());
+    assets.insert(assets.end(), _audioTracks.begin(), _audioTracks.end());
+    // are no subclasses yet
+    //assets.insert(assets.end(), _compositionPlaylists.begin(), _compositionPlaylists.end());
+    //assets.insert(assets.end(), _outputProfiles.begin(), _outputProfiles.end());
 
-    XMLString::transcode("xmlns", tempStr, sizeof(tempStr));
-    DOMAttr *attr = document->createAttribute(tempStr);
+    for (const std::shared_ptr<IMFPackageItem>& item : assets) {
+        ptree chunkNode;
+        chunkNode.put("Path", item->GetFileName());
+        chunkNode.put("VolumeIndex", "1");
+        chunkNode.put("Offset", "0");
+        chunkNode.put("Length", boost::lexical_cast<std::string>(item->GetFileSize()));
 
-    XMLString::transcode("http://www.smpte-ra.org/schemas/429-9/2007/AM", tempStr, sizeof(tempStr));
-    attr->setValue(tempStr);
-    root->setAttributeNode(attr);
+        ptree chunkListNode;
+        chunkListNode.add_child("Chunk", chunkNode);
 
-    AppendElementWithText(document, root, "Id", UUIDStr(_uuid));
-    AppendElementWithText(document, root, "Creator", "ODMedia IMF Suite PRE-PRE-alpha-0.1 2014");
-    AppendElementWithText(document, root, "VolumeCount", "1");
-    AppendElementWithText(document, root, "IssueDate", "To-be-implemented");
-    AppendElementWithText(document, root, "Issuer", "ODMedia");
-    DOMElement *assetList = AppendElement(document, root, "AssetList");
+        ptree assetNode;
+        assetNode.put("Id", UUIDStr(item->GetUUID()));
+        assetNode.add_child("ChunkList", chunkListNode);
 
-    for (std::shared_ptr<IMFVideoTrack> asset : _videoTracks) {
-        AddAsset(document, assetList, *asset);
+        assetListNode.add_child("Asset", assetNode);
     }
 
-    for (std::shared_ptr<IMFAudioTrack> asset : _audioTracks) {
-        AddAsset(document, assetList, *asset);
-    }
+    rootNode.add_child("AssetList", assetListNode);
+    pt.add_child("AssetMap", rootNode);
 
-    // Write shit to disk: TO-DO -> CAN THROW
-    DumpXmlToDisk(document, filename);
+    boost::property_tree::xml_writer_settings<char> settings('\t', 1);
+    write_xml(filename, pt, std::locale(), settings);
 
-    document->release();
-
-    XMLPlatformUtils::Terminate();
+    return;
 }

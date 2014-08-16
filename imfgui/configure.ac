@@ -28,9 +28,6 @@ PKG_CHECK_MODULES(QT4, [QtCore QtGui >= 4.4.0], [
   AC_MSG_ERROR([Qt 4 library not found])
 ])
 
-# check xerces-c
-PKG_CHECK_MODULES([XERCES], [xerces-c >= 3.0], [], [AC_MSG_ERROR([Xerces > 3.0 not found])])
-
 AC_CHECK_HEADERS([AS\_02.h], [], [AC_MSG_ERROR([AS\_02.h was not found])])
 AC_CHECK_HEADERS([KLV.h], [], [AC_MSG_ERROR([KLV.h was not found])]) 
 AC_CHECK_HEADERS([KM_fileio.h], [], [AC_MSG_ERROR([KM_fileio.h was not found])]) 
