@@ -31,18 +31,14 @@ struct EncoderOptions {
     editRate(0, 0),
     profile(J2KEncoder::PROFILE::BCP_ST_5),
     bitsPerComponent(J2KEncoder::BIT_RATE::BR_10bit),
-    colorFormat(COLOR_FORMAT::CF_YUV444),
+    colorFormat(COLOR_FORMAT::CF_RGB444),
     useTiles(true),
+    doMct(colorFormat == COLOR_FORMAT::CF_RGB444),
     inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
     tempFilePath("/home/markus/Documents/IMF/TestFiles/TEMP"),
     outputPath("/home/markus/Documents/IMF/TestFiles/OUTPUT"),
     sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000)
-    {
-        if (useTiles && profile != J2KEncoder::PROFILE::BCP_MT_6 && profile != J2KEncoder::PROFILE::BCP_MT_7) {
-            std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
-            useTiles = false;
-        }
-    }
+    { }
 
     /* cmd line stuff */
     bool overwriteFiles;
@@ -53,6 +49,7 @@ struct EncoderOptions {
     J2KEncoder::BIT_RATE bitsPerComponent;
     COLOR_FORMAT colorFormat;
     bool useTiles;
+    bool doMct;
 
     std::string inputFile;
     std::string tempFilePath;
@@ -199,6 +196,11 @@ int main(int argc, char **argv)
 
     EncoderOptions options;
 
+    if ( options.useTiles &&  options.profile != J2KEncoder::PROFILE::BCP_MT_6 && options.profile != J2KEncoder::PROFILE::BCP_MT_7) {
+        std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
+        options.useTiles = false;
+    }
+
     std::cout << "encode with " << options.bitsPerComponent * 3 << " bpp" << std::endl;
     if (!filesystem::is_directory(options.tempFilePath)) {
         std::cerr << options.tempFilePath << " is not a directory" << std::endl;
@@ -230,7 +232,14 @@ int main(int argc, char **argv)
 
         options.editRate = decoder.GetFrameRate();
 
-        J2KEncoder j2kEncoder(options.bitsPerComponent, options.profile, options.useTiles, options.editRate, decoder.GetVideoWidth(), decoder.GetVideoHeight());
+        J2KEncoder j2kEncoder(options.bitsPerComponent,
+                              options.profile,
+                              options.useTiles,
+                              options.editRate,
+                              decoder.GetVideoWidth(),
+                              decoder.GetVideoHeight(),
+                              options.doMct);
+
         if (decoder.HasVideoTrack()) {
             finalVideoFile = GetVideoFileName(options, decoder.GetVideoWidth(), decoder.GetVideoHeight());
 

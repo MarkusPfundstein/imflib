@@ -29,7 +29,7 @@ class J2KEncoder
             BCP_MT_7
         };
 
-        explicit J2KEncoder(BIT_RATE targetBitRate, PROFILE profile, bool useTiles, RationalNumber fps, int widthUsed, int heightUsed);
+        explicit J2KEncoder(BIT_RATE targetBitRate, PROFILE profile, bool useTiles, RationalNumber fps, int widthUsed, int heightUsed, bool doMct);
 
         J2KEncoder(const J2KEncoder& ) = delete;
         J2KEncoder* operator=(const J2KEncoder& ) = delete;
@@ -62,6 +62,7 @@ class J2KEncoder
         opj_cparameters_t _encodingParameters;
         bool _bigEndian;
         OPJ_COLOR_SPACE _colorSpace;
+        bool _mct;
 };
 
 #endif // J2KENCODER_H

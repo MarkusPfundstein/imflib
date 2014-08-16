@@ -9,11 +9,11 @@
 #include <functional>
 #include <cmath>
 
-J2KEncoder::J2KEncoder(BIT_RATE targetBitDepth, PROFILE profile, bool useTiles, RationalNumber fps, int width, int height)
+J2KEncoder::J2KEncoder(BIT_RATE targetBitDepth, PROFILE profile, bool useTiles, RationalNumber fps, int width, int height, bool doMct)
     :
     _targetBitDepth(targetBitDepth), _profile(profile), _useTiles(useTiles), _fps(fps),
     _componentParameter(nullptr), _widthUsed(width), _heightUsed(height), _encodingParameters(), _bigEndian(false),
-    _colorSpace(OPJ_CLRSPC_SRGB)
+    _colorSpace(OPJ_CLRSPC_SRGB), _mct(doMct)
 {
     _encodingParameters.cp_comment = nullptr;
 }
@@ -222,7 +222,7 @@ void J2KEncoder::SetBroadcastProfile()
     strcpy(_encodingParameters.cp_comment, "ODMedia J2K");
     _encodingParameters.subsampling_dx = 1;
     _encodingParameters.subsampling_dy = 1;
-    _encodingParameters.tcp_mct = 1;        // I really wonder what this does???
+    _encodingParameters.tcp_mct = (int)_mct;        // I really wonder what this does???
 
     // one layer only
     _encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug
