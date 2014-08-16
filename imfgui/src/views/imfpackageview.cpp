@@ -150,7 +150,42 @@ void IMFPackageView::OpenFile()
 {
     std::cout << "open file" << std::endl;
 
-    UpdateMenu();
+    Application *app = static_cast<Application*>(Application::instance());
+
+    QString directory = QFileDialog::getExistingDirectory(this,
+                                                          tr("Where?"),
+                                                          app->Settings()->GetLastOpenDir());
+    if (directory.isEmpty()) {
+        return;
+    }
+
+    app->Settings()->SetLastOpenDir(directory);
+    app->Settings()->SaveSettings();
+
+    _packageModel.Clear();
+
+    IMFPackage *newPackage = new IMFPackage();
+    app->SetWorkingPackage(newPackage);
+
+    try {
+        newPackage->Load(directory.toStdString());
+        for (const std::shared_ptr<IMFVideoTrack> &vt : newPackage->GetVideoTracks()) {
+            if (_packageModel.HasItem(vt) == false) {
+                _packageModel.AppendItem(vt);
+            }
+        }
+        for (const std::shared_ptr<IMFAudioTrack> &at : newPackage->GetAudioTracks()) {
+            if (_packageModel.HasItem(at) == false) {
+                _packageModel.AppendItem(at);
+            }
+        }
+        UpdateMenu();
+    } catch (IMFPackageException &e) {
+        QMessageBox::information(this, tr("Sorry"), tr(e.what()));
+        NewFile();
+    }
+
+
 }
 
 void IMFPackageView::SaveFile()
@@ -165,6 +200,10 @@ void IMFPackageView::SaveFile()
         QString directory = QFileDialog::getExistingDirectory(this,
                                                               tr("Where?"),
                                                               app->Settings()->GetLastSaveDir());
+        if (directory.isEmpty()) {
+            return;
+        }
+
 
         QString name = QInputDialog::getText(this,
                                              tr("Name of IMF package?"),
@@ -197,8 +236,12 @@ void IMFPackageView::SaveFile()
         app->Settings()->SaveSettings();
     }
 
-    workingPackage->CopyTrackFiles();
-    workingPackage->Write();
+    try {
+        workingPackage->CopyTrackFiles();
+        workingPackage->Write();
+    } catch (IMFPackageException &e) {
+        QMessageBox::information(this, tr("Sorry"), tr(e.what()));
+    }
 }
 
 void IMFPackageView::AddTrackFile()
@@ -226,53 +269,20 @@ void IMFPackageView::AddTrackFile()
         return;
     }
 
-
-    MXFReader mxfReader(fileStdString);
-
-    MXFReader::ESSENCE_TYPE essenceType = mxfReader.GetEssenceType();
-
-    if (essenceType == MXFReader::ESSENCE_TYPE::VIDEO) {
-        std::shared_ptr<IMFVideoTrack> videoTrack(new IMFVideoTrack(fileStdString));
-
-        // parse header to get metadata for videotrack
-        try {
-            mxfReader.ParseMetadata(videoTrack);
-        } catch (MXFReaderException &ex) {
-            QMessageBox::information(this,
-                                 tr("Sorry"),
-                                 tr(ex.what()));
-            return;
+    try {
+        workingPackage->ParseAndAddTrack(fileStdString);
+        for (const std::shared_ptr<IMFVideoTrack> &vt : workingPackage->GetVideoTracks()) {
+            if (_packageModel.HasItem(vt) == false) {
+                _packageModel.AppendItem(vt);
+            }
         }
-
-        // add to abstract working model
-        workingPackage->AddVideoTrack(videoTrack);
-
-        // add to display model
-        _packageModel.AppendItem(videoTrack);
-    } else if (essenceType == MXFReader::ESSENCE_TYPE::AUDIO) {
-        std::shared_ptr<IMFAudioTrack> audioTrack(new IMFAudioTrack(fileStdString));
-
-        // parse header to get metadata for audiotrack
-        try {
-            mxfReader.ParseMetadata(audioTrack);
-        } catch (MXFReaderException &ex) {
-            QMessageBox::information(this,
-                                 tr("Sorry"),
-                                 tr(ex.what()));
-            return;
+        for (const std::shared_ptr<IMFAudioTrack> &at : workingPackage->GetAudioTracks()) {
+            if (_packageModel.HasItem(at) == false) {
+                _packageModel.AppendItem(at);
+            }
         }
-
-        // add to abstract working model
-        workingPackage->AddAudioTrack(audioTrack);
-
-        // add to display model
-        _packageModel.AppendItem(audioTrack);
-
-
-    } else {
-        QMessageBox::information(this,
-                                 tr("Sorry"),
-                                 tr("Invalid essence type (not JPEG2000 or PCM24bit)"));
+    }  catch (IMFPackageException &e) {
+        QMessageBox::information(this, tr("Sorry"), tr(e.what()));
     }
 }
 

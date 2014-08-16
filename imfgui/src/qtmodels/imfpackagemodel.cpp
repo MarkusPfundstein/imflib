@@ -110,6 +110,15 @@ void IMFPackageModel::AppendItem(std::shared_ptr<IMFPackageItem> item)
     endInsertRows();
 }
 
+
+bool IMFPackageModel::HasItem(std::shared_ptr<IMFPackageItem> item) const
+{
+    for (const std::shared_ptr<IMFPackageItem>& item2 : _data) {
+        if (item->GetUUID() == item2->GetUUID()) return true;
+    }
+    return false;
+}
+
 void IMFPackageModel::Clear()
 {
     //removeRows(0, _data.count(), QModelIndex());

@@ -36,6 +36,9 @@ class IMFPackageItem
         // returns _filename without path
         std::string GetFileName() const;
 
+        // returns file size
+        int GetFileSize() const;
+
     protected:
         std::string _uuid;
         std::string _filename;

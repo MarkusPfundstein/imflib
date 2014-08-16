@@ -29,6 +29,9 @@ class IMFPackageModel : public QAbstractTableModel
         // appends item to the end of the table view
         void AppendItem(std::shared_ptr<IMFPackageItem> item);
 
+        // returns true if it has item
+        bool HasItem(std::shared_ptr<IMFPackageItem> item) const;
+
         // clears data
         void Clear();
 

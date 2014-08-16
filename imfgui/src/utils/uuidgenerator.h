@@ -20,4 +20,8 @@ static std::string UUIDStr(const std::string &uuid) {
     return std::string("urn:uuid:") + uuid;
 }
 
+static void UUIDClean(std::string &s) {
+    s.erase(0, std::string("urn:uuid:").length());  // delete urn:uuid:
+}
+
 #endif // UUIDGENERATOR_H

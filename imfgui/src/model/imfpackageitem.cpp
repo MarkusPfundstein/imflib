@@ -23,7 +23,14 @@ std::string IMFPackageItem::GetFileName() const
 {
     using namespace boost::filesystem;
 
-    return basename(std::string(_filename).c_str());
+    return basename(_filename) + ((_type == VIDEO || _type == AUDIO) ? ".mxf" : ".xml");
+}
+
+int IMFPackageItem::GetFileSize() const
+{
+    using namespace boost::filesystem;
+
+    return file_size(_filename);
 }
 
 std::string IMFPackageItem::TypeString() const

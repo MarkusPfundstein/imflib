@@ -30,6 +30,9 @@ class IMFPackage
         IMFPackage(const IMFPackage& other) = delete;
         IMFPackage& operator=(const IMFPackage& other) = delete;
 
+        // parses and adds a track
+        void ParseAndAddTrack(const std::string &name);
+
         // adds a new video track to the package
         void AddVideoTrack(const std::shared_ptr<IMFVideoTrack> &track);
 
@@ -50,6 +53,9 @@ class IMFPackage
 
         // copies all files into package directory
         void CopyTrackFiles() const;
+
+        // loads imfpackage from disk
+        void Load(const std::string& location);
 
         std::string GetName() const
         { return _name; }
@@ -75,11 +81,20 @@ class IMFPackage
         void SetUUID(const std::string& uuid)
         { _uuid = uuid; }
 
+        const std::vector<std::shared_ptr<IMFVideoTrack>>& GetVideoTracks() const { return _videoTracks; }
+        const std::vector<std::shared_ptr<IMFAudioTrack>>& GetAudioTracks() const { return _audioTracks; }
+        const std::vector<std::shared_ptr<IMFCompositionPlaylist>>& GetCompositionPlaylists() const { return _compositionPlaylists; }
+        const std::vector<std::shared_ptr<IMFOutputProfile>>& GetOutputProfiles() const { return _outputProfiles; }
+
     protected:
     private:
 
         // writes asset map
         void WriteAssetMap(const std::string &filename) const;
+
+        // reads asset map
+        void ReadAssetMap(const std::string &filename);
+
 
         // name of imf package
         std::string _name;

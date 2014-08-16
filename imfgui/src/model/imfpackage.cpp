@@ -6,12 +6,17 @@
 #include "imfoutputprofile.h"
 
 #include "../utils/uuidgenerator.h"
+#include "../utils/mxfreader.h"
 
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #define BOOST_NO_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/exceptions.hpp>
 
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/dom/DOMAttr.hpp>
@@ -60,6 +65,8 @@ static void AddAsset(xercesc::DOMDocument *document, xercesc::DOMElement *assetL
 
     AppendElementWithText(document, chunk, "Path", item.GetFileName());
     AppendElementWithText(document, chunk, "VolumeIndex", "1");
+    AppendElementWithText(document, chunk, "Offset", "0");
+    AppendElementWithText(document, chunk, "Length", boost::lexical_cast<std::string>(item.GetFileSize()));
 }
 
 static void DumpXmlToDisk(xercesc::DOMDocument *document, const std::string& filename)
@@ -133,13 +140,14 @@ bool IMFPackage::HasTrackFile(const std::string &file) const
 
 bool IMFPackage::HasVideoTrackFile(const std::string &file) const
 {
-    auto it = std::find_if(_videoTracks.begin(), _videoTracks.end(), [&file](const std::shared_ptr<IMFVideoTrack> &vt) { return vt->GetFileName() == file; });
+    std::cout << "HAS: " << file << std::endl;
+    auto it = std::find_if(_videoTracks.begin(), _videoTracks.end(), [&file](const std::shared_ptr<IMFVideoTrack> &vt) { return vt->GetPath() == file; });
     return it != _videoTracks.end();
 }
 
 bool IMFPackage::HasAudioTrackFile(const std::string &file) const
 {
-    auto it = std::find_if(_audioTracks.begin(), _audioTracks.end(), [&file](const std::shared_ptr<IMFAudioTrack> &vt) { return vt->GetFileName() == file; });
+    auto it = std::find_if(_audioTracks.begin(), _audioTracks.end(), [&file](const std::shared_ptr<IMFAudioTrack> &vt) { return vt->GetPath() == file; });
     return it != _audioTracks.end();
 }
 
@@ -169,12 +177,115 @@ void IMFPackage::CopyTrackFiles() const
 
         if (exists(target) == false) {
             std::cout << "Copy " << asset->GetFileName() << " to package.... can take a bit..." << std::endl;
-            copy_file(src, target);
+            try {
+                copy_file(src, target);
+            } catch (boost::filesystem3::filesystem_error &e) {
+                throw IMFPackageException(e.what());
+            }
             asset->SetPath(target.string());
         }
     }
 
     std::cout << "Copying Done" << std::endl;
+}
+
+void IMFPackage::Load(const std::string &directory)
+{
+    using namespace boost::filesystem;
+    path dirPath(directory);
+
+    SetLocation(dirPath.parent_path().string());
+    SetName(dirPath.filename().string());
+
+    std::cout << "Open: " << GetLocation() << std::endl;
+    std::cout << "Package: " << GetName() << std::endl;
+
+    // yes, this could be directory + "/ASSETMAP" but i wont it to be like Write()
+    ReadAssetMap(_location + "/" + _name + "/ASSETMAP.xml");
+}
+
+void IMFPackage::ReadAssetMap(const std::string& filename)
+{
+    using namespace boost::property_tree;
+    using namespace boost::filesystem;
+
+    ptree pt;
+
+    try {
+        read_xml(filename, pt);
+
+        std::string packageId = pt.get<std::string>("AssetMap.Id");
+        UUIDClean(packageId);
+        _uuid = packageId;
+
+        std::cout << "UUID: " << packageId << std::endl;
+
+        for (ptree::value_type const &assetChild : pt.get_child("AssetMap.AssetList")) {
+
+            if (assetChild.first == "Asset") {
+
+                std::cout << "Asset:" << std::endl;
+
+                std::string assetId = assetChild.second.get<std::string>("Id");
+                UUIDClean(assetId);
+                std::cout << "\tUUID: " << assetId << std::endl;
+                for (ptree::value_type const &chunkListChild : assetChild.second.get_child("ChunkList")) {
+
+                    std::string name = chunkListChild.second.get<std::string>("Path");
+                    int volumeIndex = chunkListChild.second.get<int>("VolumeIndex");
+
+                    //boost::optional<int> offset = chunkListChild.second.get_optional<int>("Offset");
+                    //boost::optional<int> length = chunkListChild.second.get_optional<int>("Length");
+
+                    std::cout << "\tName: " << name << std::endl;
+                    std::cout << "\tVolumeIndex: " << volumeIndex << std::endl;
+
+                    if (boost::filesystem3::path(name).extension().string() == ".mxf") {
+                        std::string fullPath = _location + "/" + _name + "/" + name;
+                        ParseAndAddTrack(fullPath);
+                    }
+                }
+            }
+        }
+    } catch (xml_parser::xml_parser_error &e) {
+        throw IMFPackageException(e.what());
+    } catch (ptree_bad_path &e) {
+        throw IMFPackageException(e.what());
+    }
+}
+
+void IMFPackage::ParseAndAddTrack(const std::string& fullPath)
+{
+    std::cout << "Parse And Add: " << fullPath << std::endl;
+    MXFReader mxfReader(fullPath);
+
+    MXFReader::ESSENCE_TYPE essenceType = mxfReader.GetEssenceType();
+
+    if (essenceType == MXFReader::ESSENCE_TYPE::VIDEO) {
+        std::shared_ptr<IMFVideoTrack> videoTrack(new IMFVideoTrack(fullPath));
+
+        // parse header to get metadata for videotrack
+        try {
+            mxfReader.ParseMetadata(videoTrack);
+        } catch (MXFReaderException &ex) {
+            throw IMFPackageException(ex.what());
+        }
+
+        AddVideoTrack(videoTrack);
+    } else if (essenceType == MXFReader::ESSENCE_TYPE::AUDIO) {
+        std::shared_ptr<IMFAudioTrack> audioTrack(new IMFAudioTrack(fullPath));
+
+        // parse header to get metadata for videotrack
+        try {
+            mxfReader.ParseMetadata(audioTrack);
+        } catch (MXFReaderException &ex) {
+            throw IMFPackageException(ex.what());
+        }
+
+        AddAudioTrack(audioTrack);
+    } else {
+        throw IMFPackageException("invalid essence type");
+    }
 }
 
 void IMFPackage::Write() const
