@@ -9,6 +9,7 @@
 
 #include <stdexcept>
 #include <memory>
+#include <cmath>
 
 #include "common.h"
 
@@ -38,8 +39,7 @@ public:
   }
 } s_MyInfo;
 
-MXFWriter::MXFWriter(const std::map<std::string, boost::any> &muxerOptions) :
-    _muxerOptions(muxerOptions)
+MXFWriter::MXFWriter()
 {
     //ctor
 }
@@ -49,7 +49,7 @@ MXFWriter::~MXFWriter()
     //dtor
 }
 
-void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFile)
+void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFile, const MXFOptionsAudio& options)
 {
     AESEncContext* Context = 0;
     HMACContext* HMAC = 0;
@@ -63,24 +63,22 @@ void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFi
     ASDCP::MXF::AS02_MCAConfigParser mca_config(dict);
     UL channel_assignment;
 
-    RationalNumber frameRate = boost::any_cast<RationalNumber>(_muxerOptions["framerate"]);
-
     // set up essence parser
     Kumu::PathList_t fileList;
     fileList.push_back(file);
-    Result_t result = Parser.OpenRead(fileList, Rational(frameRate.num, frameRate.denum));;
+    Result_t result = Parser.OpenRead(fileList, Rational(options.editRate.num, options.editRate.denum));;
 
     // set up MXF writer
     if (ASDCP_SUCCESS(result)) {
         ASDCP::PCM::AudioDescriptor ADesc;
         Parser.FillAudioDescriptor(ADesc);
 
-        ADesc.EditRate = Rational(frameRate.num, frameRate.denum);
+        ADesc.EditRate = Rational(options.editRate.num, options.editRate.denum);
         FrameBuffer.Capacity(PCM::CalcFrameBufferSize(ADesc));
 
         char buf[64];
         std::cout << ADesc.AudioSamplingRate.Quotient() / 1000.0 << "kHz PCM Audio, "
-                      << frameRate.num << "x" << frameRate.denum << "fps " << PCM::CalcSamplesPerFrame(ADesc) << "spf" << std::endl;
+                      << options.editRate.num << "x" << options.editRate.denum << "fps " << PCM::CalcSamplesPerFrame(ADesc) << "spf" << std::endl;
         PCM::AudioDescriptorDump(ADesc);
 
         essence_descriptor = new ASDCP::MXF::WaveAudioDescriptor(dict);
@@ -105,13 +103,7 @@ void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFi
         WriterInfo Info = s_MyInfo;  // fill in your favorite identifiers here
         Info.LabelSetType = LS_MXF_SMPTE;
 
-        std::map<std::string, boost::any>::iterator it = _muxerOptions.find("asset_id");
-        if (it != _muxerOptions.end()) {
-            std::string assetId = boost::any_cast<std::string>(it->second);
-            memcpy(Info.AssetUUID, assetId.c_str(), UUIDlen);
-        } else {
-            Kumu::GenRandomUUID(Info.AssetUUID);
-        }
+        Kumu::GenRandomUUID(Info.AssetUUID);
 
         // configure encryption
         /*
@@ -138,7 +130,7 @@ void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFi
         }*/
 
         if (ASDCP_SUCCESS(result)) {
-            result = Writer.OpenWrite(finalFile.c_str(), Info, essence_descriptor, mca_config, Rational(frameRate.num, frameRate.denum));
+            result = Writer.OpenWrite(finalFile.c_str(), Info, essence_descriptor, mca_config, Rational(options.editRate.num, options.editRate.denum));
         }
     }
 
@@ -182,7 +174,7 @@ void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFi
     }
 }
 
-void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::string& finalFile )
+void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::string& finalFile, const MXFOptionsVideo &options)
 {
     AESEncContext* context = nullptr;
     HMACContext* HMAC = nullptr;
@@ -200,23 +192,23 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
         throw std::runtime_error("[MXFWriter] error opening j2k parser");
     }
 
-    RationalNumber aspectRatio = boost::any_cast<RationalNumber>(_muxerOptions["aspect_ratio"]);
-    RationalNumber frameRate = boost::any_cast<RationalNumber>(_muxerOptions["framerate"]);
+    RationalNumber aspectRatio = options.aspectRatio;
+    RationalNumber frameRate = options.editRate;
 
     JP2K::PictureDescriptor pictureDescriptor;
     parser.FillPictureDescriptor(pictureDescriptor);
     pictureDescriptor.EditRate = Rational(frameRate.num, frameRate.denum);
     pictureDescriptor.SampleRate = Rational(frameRate.num, frameRate.denum);
-    pictureDescriptor.ContainerDuration = boost::any_cast<uint32_t>(_muxerOptions["container_duration"]);
+    pictureDescriptor.ContainerDuration = options.containerDuration;
     pictureDescriptor.AspectRatio = Rational(aspectRatio.num, aspectRatio.denum);
 
     JP2K::PictureDescriptorDump(pictureDescriptor);
 
     MXF::JPEG2000PictureSubDescriptor* pictureSubDescriptor = new MXF::JPEG2000PictureSubDescriptor(dict);
 
-    bool yuvEssence = boost::any_cast<bool>(_muxerOptions["yuv_essence"]);
+    bool yuvEssence = options.yuvEssence;
 
-    int profileInt = boost::any_cast<int>(_muxerOptions["broadcast_profile"]);
+    int profileInt = options.broadcastProfile;
 
     // 353 is profile 1.
     MDD_t profile = static_cast<MDD_t>(static_cast<int>(MDD_JP2KEssenceCompression_BroadcastProfile_1) + (profileInt - 1));
@@ -232,13 +224,14 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
 
         if (ASDCP_SUCCESS(result)) {
             cdciDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
-            cdciDescriptor->HorizontalSubsampling = boost::any_cast<int>(_muxerOptions["subsampling_dx"]);
+            cdciDescriptor->HorizontalSubsampling = options.subsamplingDx;
             cdciDescriptor->VerticalSubsampling = 1; // no vertical subsampling in IMF
-            cdciDescriptor->ComponentDepth = boost::any_cast<int>(_muxerOptions["bits"]);
+            cdciDescriptor->ComponentDepth = options.bits;
             cdciDescriptor->FrameLayout = 0;    // no interlaced shit
             cdciDescriptor->AspectRatio = pictureDescriptor.AspectRatio;
             cdciDescriptor->FieldDominance = 0; // only for interlaced shit // field dominance = 1 -> upper field first
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(cdciDescriptor);
+            cdciDescriptor->Dump();
 	}
     } else {
         MXF::RGBAEssenceDescriptor* rgbDescriptor = new MXF::RGBAEssenceDescriptor(dict);
@@ -251,9 +244,16 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
 
         if (ASDCP_SUCCESS(result)) {
             rgbDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
-            rgbDescriptor->ComponentMaxRef = 1023;          // this must be 255 for 8 bit right?
-            rgbDescriptor->ComponentMinRef = 0;
+            if (options.fullRange) {
+                rgbDescriptor->ComponentMaxRef = std::pow(2, options.bits) - 1;
+                rgbDescriptor->ComponentMinRef = 0;
+            } else {
+                // TO-DO:
+                rgbDescriptor->ComponentMaxRef = 0;
+                rgbDescriptor->ComponentMinRef = 0;
+            }
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(rgbDescriptor);
+            rgbDescriptor->Dump();
 	}
     }
 
@@ -264,13 +264,7 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
     WriterInfo info = s_MyInfo;
     info.LabelSetType = LS_MXF_SMPTE;
 
-    std::map<std::string, boost::any>::iterator it = _muxerOptions.find("asset_id");
-    if (it != _muxerOptions.end()) {
-        std::string assetId = boost::any_cast<std::string>(it->second);
-        memcpy(info.AssetUUID, assetId.c_str(), UUIDlen);
-    } else {
-        Kumu::GenRandomUUID(info.AssetUUID);
-    }
+    Kumu::GenRandomUUID(info.AssetUUID);
 
     //char strBuf[40];
     //std::cout << "ASSET ID: " << UUID(info.AssetUUID).EncodeHex(strBuf, 40) << std::endl;

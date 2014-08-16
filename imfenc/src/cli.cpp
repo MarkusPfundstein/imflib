@@ -30,8 +30,8 @@ struct EncoderOptions {
     overwriteFiles(true),
     editRate(0, 0),
     profile(J2KEncoder::PROFILE::BCP_ST_5),
-    bitsPerComponent(J2KEncoder::BIT_RATE::BR_8bit),
-    colorFormat(COLOR_FORMAT::CF_RGB444),
+    bitsPerComponent(J2KEncoder::BIT_RATE::BR_10bit),
+    colorFormat(COLOR_FORMAT::CF_YUV444),
     useTiles(true),
     inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
     tempFilePath("/home/markus/Documents/IMF/TestFiles/TEMP"),
@@ -289,21 +289,23 @@ int main(int argc, char **argv)
                        [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
 
         if (decoder.HasVideoTrack() && j2kFiles.empty() == false) {
-            std::map<std::string, boost::any> muxerOptions;
-            // to-do: put all this shit in a struct
-            muxerOptions["framerate"] = options.editRate;
+            MXFWriter::MXFOptionsVideo videoOptions;
+
+
+            videoOptions.editRate = options.editRate;
             // Aspect Ratio is now known.
-            muxerOptions["aspect_ratio"] = decoder.GetAspectRatio();
-            muxerOptions["container_duration"] = static_cast<uint32_t>(j2kFiles.size());
-            muxerOptions["yuv_essence"] = options.colorFormat != COLOR_FORMAT::CF_RGB444;
-            muxerOptions["subsampling_dx"] = 1;
-            muxerOptions["encrypt_header"] = false;
-            muxerOptions["bits"] = static_cast<int>(options.bitsPerComponent);
-            muxerOptions["broadcast_profile"] = static_cast<int>(options.profile);
+            videoOptions.aspectRatio = decoder.GetAspectRatio();
+            videoOptions.containerDuration = static_cast<uint32_t>(j2kFiles.size());
+            videoOptions.yuvEssence = options.colorFormat != COLOR_FORMAT::CF_RGB444;
+            videoOptions.subsamplingDx = options.colorFormat == CF_YUV422 ? 2 : 1;
+            videoOptions.encryptHeader = false;
+            videoOptions.bits = static_cast<int>(options.bitsPerComponent);
+            videoOptions.broadcastProfile = static_cast<int>(options.profile);
+            videoOptions.fullRange = true;
 
             // write video
-            MXFWriter videoMxfWriter(muxerOptions);
-            videoMxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile);
+            MXFWriter videoMxfWriter;
+            videoMxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile, videoOptions);
         }
 
         // write wav files to disk
@@ -323,11 +325,11 @@ int main(int argc, char **argv)
 
             wavFiles.push_back(wavFileName);
 
-            std::map<std::string, boost::any> muxerOptions;
-            muxerOptions["framerate"] = RationalNumber(sampleRate, 1);
+            MXFWriter::MXFOptionsAudio audioOptions;
+            audioOptions.editRate = RationalNumber(sampleRate, 1);
 
-            MXFWriter audioMxfWriter(muxerOptions);
-            audioMxfWriter.MuxAudioFile(wavFileName, audioFiles[i]);
+            MXFWriter audioMxfWriter;
+            audioMxfWriter.MuxAudioFile(wavFileName, audioFiles[i], audioOptions);
         }
 
         CleanFiles(j2kFiles);

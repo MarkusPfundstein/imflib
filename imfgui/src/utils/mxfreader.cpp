@@ -125,6 +125,15 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
         colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::RGB444;
         duration = rgbaDescriptor->ContainerDuration;
         editRate = rgbaDescriptor->SampleRate;
+
+        if ((int)rgbaDescriptor->ComponentMinRef == 0) {
+            // full range only with comp. min ref = 0
+            bits = std::log((int)rgbaDescriptor->ComponentMaxRef + 1) / std::log(2);
+        } else {
+            // TO-DO:
+            bits = -1;
+        }
+
         //rgbaDescriptor->Dump();
         //reader.OP1aHeader().Dump();
         /*
@@ -175,8 +184,6 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
     track->SetEditRate(RationalNumber(editRate.Numerator, editRate.Denominator));
 
     reader.Close();
-
-    std::cout << "CLOSEDXXXXX" << std::endl;
 }
 
 //void MXFReader::ReadHeader()

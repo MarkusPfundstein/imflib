@@ -6,18 +6,32 @@
 #include <boost/any.hpp>
 #include <list>
 
+#include "common.h"
+
 class MXFWriter
 {
     public:
-        MXFWriter(const std::map<std::string, boost::any> &muxerOptions);
+        typedef struct {
+            RationalNumber editRate;
+            RationalNumber aspectRatio;
+            uint32_t containerDuration;
+            bool yuvEssence;
+            int subsamplingDx;
+            bool encryptHeader;
+            int bits;
+            int broadcastProfile;
+            bool fullRange;
+        }  MXFOptionsVideo;
+
+        typedef struct {
+            RationalNumber editRate;
+        } MXFOptionsAudio;
+
+        MXFWriter();
         virtual ~MXFWriter();
 
-        void MuxAudioFile(const std::string& file, const std::string &finalFile);
-        void MuxVideoFiles(const std::list<std::string> &files, const std::string &finalFile);
-    protected:
-    private:
-
-        std::map<std::string, boost::any> _muxerOptions;
+        void MuxAudioFile(const std::string& file, const std::string &finalFile, const MXFOptionsAudio &options);
+        void MuxVideoFiles(const std::list<std::string> &files, const std::string &finalFile, const MXFOptionsVideo &options);
 };
 
 #endif // MXFWRITER_H
