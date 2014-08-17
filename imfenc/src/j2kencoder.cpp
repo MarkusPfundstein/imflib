@@ -152,9 +152,8 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame)
         return false;
     }
 
-    if (_useTiles) {
-        opj_set_info_handler(codec, [](const char* s, void *) { std::cout << "[J2K] " << s; }, nullptr);
-    }
+
+    //opj_set_info_handler(codec, [](const char* s, void *) { std::cout << "[J2K] " << s; }, nullptr);
     opj_set_warning_handler(codec, [](const char* s, void *) { std::cerr << "[J2K] " << s; }, nullptr);
     opj_set_error_handler(codec, [](const char* s, void *) { std::cerr << "[J2K] " << s; }, nullptr);
 
@@ -224,6 +223,8 @@ void J2KEncoder::SetBroadcastProfile()
     _encodingParameters.subsampling_dy = 1;
     _encodingParameters.tcp_mct = (int)_mct;        // I really wonder what this does???
 
+    std::cout << "[J2K] MCT enabled: " << _mct << std::endl;
+
     // one layer only
     _encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug
     _encodingParameters.tcp_numlayers = 1;
@@ -276,7 +277,7 @@ void J2KEncoder::SetBroadcastProfile()
         case PROFILE::BCP_ST_4:
         case PROFILE::BCP_ST_5:
             if (_useTiles) {
-                throw std::runtime_error("single tile broadcast profile cant be used with tiles");
+                throw std::runtime_error("[J2K] single tile broadcast profile cant be used with tiles");
             }
             _encodingParameters.tile_size_on = OPJ_FALSE;
             _encodingParameters.cp_tdx = 1;              // one huge tile
@@ -287,6 +288,7 @@ void J2KEncoder::SetBroadcastProfile()
         case PROFILE::BCP_MT_7:
             if (_useTiles) {
                 _encodingParameters.tile_size_on = OPJ_TRUE;
+                std::cout << "[J2K] Use tiled encoding" << std::endl;
                 _encodingParameters.cp_tdx = _widthUsed / 2;          // 4 tiles
                 _encodingParameters.cp_tdy = _heightUsed / 2;
             } else {

@@ -12,8 +12,11 @@
 #include <sstream>
 #include <iomanip>
 #include <list>
-#include <boost/filesystem.hpp>
+
 #include <signal.h>
+
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 
 using namespace boost;
 
@@ -23,24 +26,7 @@ std::list<std::string> j2kFiles;
 // storage for all wav files
 std::list<std::string> wavFiles;
 
-struct EncoderOptions {
-
-    EncoderOptions()
-    :
-    overwriteFiles(true),
-    editRate(0, 0),
-    profile(J2KEncoder::PROFILE::BCP_ST_5),
-    bitsPerComponent(J2KEncoder::BIT_RATE::BR_12bit),
-    colorFormat(COLOR_FORMAT::CF_RGB444),
-    useTiles(true),
-    fullRange(false),
-    doMct(colorFormat == COLOR_FORMAT::CF_RGB444),
-    inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
-    tempFilePath("/home/markus/Documents/IMF/TestFiles/TEMP"),
-    outputPath("/home/markus/Documents/IMF/TestFiles/OUTPUT"),
-    sampleRate(PCMEncoder::SAMPLE_RATE::SR_48000)
-    { }
-
+typedef struct {
     /* cmd line stuff */
     bool overwriteFiles;
     RationalNumber editRate;
@@ -60,7 +46,135 @@ struct EncoderOptions {
 
     /* AUDIO STUFF */
     PCMEncoder::SAMPLE_RATE sampleRate;
-};
+} EncoderOptions;
+
+bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
+{
+    using namespace boost::program_options;
+
+    int profile;
+    bool fullRange;
+    bool forceOverwrite = false;
+    bool useTiles = false;
+    int bitDepth;
+    int sampleRate;
+    std::string colorFormat;
+    std::string inputFile;
+    std::string outDirectory;
+    std::string tempDirectory;
+
+    options_description description("Allowed Options");
+    description.add_options()
+        ("help,h", "show help")
+        ("in,i", value<std::string>(&inputFile), "input file")
+        ("out,o", value<std::string>(&outDirectory), "directory where output files shall be stored")
+        ("temp_dir,t", value<std::string>(&tempDirectory), "directory for temporary files, defaults to output directory")
+        ("force,f", "overwrite output files")
+        ("broadcast_profile,b", value<int>(&profile)->default_value(1), "broadcast profile (1-7)")
+        ("bitdepth,d", value<int>(&bitDepth)->default_value(10), "target video bit depth (8, 10 or 12)")
+        ("sample_rate,r", value<int>(&sampleRate)->default_value(48000), "target audio samplerate (48000 or 96000)")
+        ("pixel_fmt,p", value<std::string>(&colorFormat)->default_value("YUV444"), "pixel format of output. (YUV444, YUV422, RGB444)")
+        ("use_tiles", "use tiles (only broadcast profile 6 and 7) [default: false]")
+        ("full_range", value<bool>(&fullRange)->default_value(true), "full range color space (rgb essence only), else SMPTE 274M-2008 constraints are used");
+
+    variables_map vm;
+    store(parse_command_line(argc, argv, description), vm);
+    notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << description << std::endl;
+        return false;
+    }
+
+    if (vm.count("force")) {
+        forceOverwrite = true;
+    }
+
+    if (vm.count("in") == 0) {
+        std::cerr << "no input file specified (-i)" << std::endl;
+        return false;
+    }
+
+    if (vm.count("out") == 0) {
+        std::cerr << "no output directory specified (-o)" << std::endl;
+        return false;
+    }
+
+    if (vm.count("temp_dir") == 0) {
+        tempDirectory = outDirectory;
+    }
+
+    if (vm.count("use_tiles")) {
+        useTiles = true;
+    }
+
+    if (profile < 1 || profile > 7) {
+        std::cerr << "profile must be between 1 and 7" << std::endl;
+        return false;
+    }
+    if (bitDepth != 8 && bitDepth != 10 && bitDepth != 12) {
+        std::cerr << "bitdepth must be 8, 10 or 12" << std::endl;
+        return false;
+    }
+    if (sampleRate != 48000 && sampleRate != 96000) {
+        std::cerr << "sample rate must be 48000 or 96000" << std::endl;
+        return false;
+    }
+    if (colorFormat == "RGB444") {
+        options.colorFormat = COLOR_FORMAT::CF_RGB444;
+        options.doMct = true;
+    } else if (colorFormat == "YUV444") {
+        options.colorFormat = COLOR_FORMAT::CF_YUV444;
+        options.doMct = false;
+    } else if (colorFormat == "YUV422") {
+        options.colorFormat = COLOR_FORMAT::CF_YUV422;
+        options.doMct = false;
+    } else {
+        std::cerr << "invalid color format. Must be RGB444, YUV444 or YUV422" << std::endl;
+        return false;
+    }
+
+    options.profile = (J2KEncoder::PROFILE) profile;
+    options.fullRange = fullRange;
+    options.overwriteFiles = forceOverwrite;
+    options.useTiles = useTiles;
+    options.bitsPerComponent = (J2KEncoder::BIT_RATE) bitDepth;
+    options.sampleRate = (PCMEncoder::SAMPLE_RATE)sampleRate;
+    options.inputFile = inputFile;
+    options.tempFilePath = tempDirectory;
+    options.outputPath = outDirectory;
+
+    // fixed options (for now)
+    options.editRate = RationalNumber(0, 0);
+
+    // sanity checks
+    if (!filesystem::is_directory(options.tempFilePath)) {
+        std::cerr << options.tempFilePath << " is not a directory or doesn't exist" << std::endl;
+        return false;
+    }
+
+    if (!filesystem::is_directory(options.outputPath)) {
+        std::cerr << options.outputPath << " is not a directory or doesn't exist" << std::endl;
+        return false;
+    }
+
+    if (!filesystem::is_regular_file(options.inputFile)) {
+        std::cerr << options.inputFile << " is not a file or doesn't exist" << std::endl;
+        return false;
+    }
+
+    if (options.useTiles && options.profile != J2KEncoder::PROFILE::BCP_MT_6 && options.profile != J2KEncoder::PROFILE::BCP_MT_7) {
+        std::cout << "Tried to use tiles with single tiles profile." << std::endl;
+        return false;
+    }
+
+    if (options.doMct && options.colorFormat != COLOR_FORMAT::CF_RGB444) {
+        std::cout << "Tried to do mct on non RGB essence." << std::endl;
+        return false;
+    }
+
+    return true;
+}
 
 /*
 void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
@@ -197,25 +311,7 @@ int main(int argc, char **argv)
     InputStreamDecoder::RegisterAVFormat();
 
     EncoderOptions options;
-
-    if ( options.useTiles &&  options.profile != J2KEncoder::PROFILE::BCP_MT_6 && options.profile != J2KEncoder::PROFILE::BCP_MT_7) {
-        std::cout << "tried to use tiles with single tiles profile. deactive tiling" << std::endl;
-        options.useTiles = false;
-    }
-
-    std::cout << "encode with " << options.bitsPerComponent * 3 << " bpp" << std::endl;
-    if (!filesystem::is_directory(options.tempFilePath)) {
-        std::cerr << options.tempFilePath << " is not a directory" << std::endl;
-        return 1;
-    }
-
-    if (!filesystem::is_directory(options.outputPath)) {
-        std::cerr << options.outputPath << " is not a directory" << std::endl;
-        return 1;
-    }
-
-    if (!filesystem::is_regular_file(options.inputFile)) {
-        std::cerr << options.inputFile << " is not a file" << std::endl;
+    if (ParseProgramOptions(options, argc, argv) == false) {
         return 1;
     }
 

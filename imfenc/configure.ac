@@ -29,6 +29,7 @@ AC_CHECK_LIB([avformat], [main], [], [AC_MSG_ERROR([libavformat was not found])]
 AC_CHECK_LIB([avutil], [main], [], [AC_MSG_ERROR([libavutil was not found])])
 # FIXME: Replace `main' with a function in `-lboost_fileystem':
 # AC_CHECK_LIB([boost_fileystem], [boost::filesystem::remove], [], [AC_MSG_ERROR([libboost_fileystem was not found])])
+AC_CHECK_LIB([boost_program_options], [main], [], [AC_MSG_ERROR([libboost_program_options was not found])])
 # FIXME: Replace `main' with a function in `-lboost_system':
 AC_CHECK_LIB([boost_system], [main], [], [AC_MSG_ERROR([libboost_system was not found])])
 # FIXME: Replace `main' with a function in `-lkumu':

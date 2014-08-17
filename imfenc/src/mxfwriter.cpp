@@ -56,7 +56,6 @@ void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFi
     PCMParserList Parser;
     AS_02::PCM::MXFWriter Writer;
     PCM::FrameBuffer FrameBuffer;
-    byte_t IV_buf[CBC_BLOCK_SIZE];
     Kumu::FortunaRNG RNG;
     ASDCP::MXF::WaveAudioDescriptor *essence_descriptor = 0;
     const Dictionary *dict = &DefaultSMPTEDict();
@@ -76,7 +75,6 @@ void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFi
         ADesc.EditRate = Rational(options.editRate.num, options.editRate.denum);
         FrameBuffer.Capacity(PCM::CalcFrameBufferSize(ADesc));
 
-        char buf[64];
         std::cout << ADesc.AudioSamplingRate.Quotient() / 1000.0 << "kHz PCM Audio, "
                       << options.editRate.num << "x" << options.editRate.denum << "fps " << PCM::CalcSamplesPerFrame(ADesc) << "spf" << std::endl;
         PCM::AudioDescriptorDump(ADesc);
@@ -136,7 +134,6 @@ void MXFWriter::MuxAudioFile(const std::string& file, const std::string &finalFi
 
     if (ASDCP_SUCCESS(result)) {
         result = Parser.Reset();
-        ui32_t duration = 0;
 
         while (ASDCP_SUCCESS(result)) {
             result = Parser.ReadFrame(FrameBuffer);
@@ -263,6 +260,11 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                     case 12:
                         rgbDescriptor->ComponentMaxRef = upperConstraint[2];
                         rgbDescriptor->ComponentMinRef = lowerConstraint[2];
+                        break;
+                    default:
+                        // should never go here. fallback to full range
+                        rgbDescriptor->ComponentMaxRef = std::pow(2, options.bits) - 1;
+                        rgbDescriptor->ComponentMinRef = 0;
                         break;
                 }
             }
