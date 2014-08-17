@@ -29,7 +29,6 @@ std::list<std::string> wavFiles;
 typedef struct {
     /* cmd line stuff */
     bool overwriteFiles;
-    RationalNumber editRate;
 
     /* VIDEO STUFF */
     J2KEncoder::PROFILE profile ;
@@ -143,9 +142,6 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     options.inputFile = inputFile;
     options.tempFilePath = tempDirectory;
     options.outputPath = outDirectory;
-
-    // fixed options (for now)
-    options.editRate = RationalNumber(0, 0);
 
     // sanity checks
     if (!filesystem::is_directory(options.tempFilePath)) {
@@ -267,7 +263,7 @@ std::string GetAudioFileName(const EncoderOptions &options, int channels, int bi
     return ss.str();
 }
 
-std::string GetVideoFileName(const EncoderOptions &options, int width, int height)
+std::string GetVideoFileName(const EncoderOptions &options, int width, int height, RationalNumber editRate)
 {
     std::stringstream ss;
 
@@ -287,10 +283,10 @@ std::string GetVideoFileName(const EncoderOptions &options, int width, int heigh
     }
 
     std::stringstream fpsStream;
-    if (options.editRate.denum != 1) {
-        fpsStream << std::fixed << std::setprecision(2) << (float)options.editRate.num / options.editRate.denum;
+    if (editRate.denum != 1) {
+        fpsStream << std::fixed << std::setprecision(2) << (float)editRate.num / editRate.denum;
     } else {
-        fpsStream << (float)options.editRate.num;
+        fpsStream << (float)editRate.num;
     }
     std::string fpsString = fpsStream.str();
 
@@ -305,9 +301,6 @@ std::string GetVideoFileName(const EncoderOptions &options, int width, int heigh
 
 int main(int argc, char **argv)
 {
-    (void)argc;
-    (void)argv;
-
     InputStreamDecoder::RegisterAVFormat();
 
     EncoderOptions options;
@@ -326,20 +319,19 @@ int main(int argc, char **argv)
 
         std::string finalVideoFile;
 
+        RationalNumber editRate = decoder.GetFrameRate();
+
         // create one j2k encoder -> we assume only one video track
-
-        options.editRate = decoder.GetFrameRate();
-
         J2KEncoder j2kEncoder(options.bitsPerComponent,
                               options.profile,
                               options.useTiles,
-                              options.editRate,
+                              editRate,
                               decoder.GetVideoWidth(),
                               decoder.GetVideoHeight(),
                               options.doMct);
 
         if (decoder.HasVideoTrack()) {
-            finalVideoFile = GetVideoFileName(options, decoder.GetVideoWidth(), decoder.GetVideoHeight());
+            finalVideoFile = GetVideoFileName(options, decoder.GetVideoWidth(), decoder.GetVideoHeight(), editRate);
 
             // TO-DO: Add check if user really wants to delete file. otherwise abort if exists
             if (filesystem::exists(finalVideoFile)) {
@@ -351,16 +343,11 @@ int main(int argc, char **argv)
                     return 1;
                 }
             }
-            // j2kEncoder will throw here if video width or video height are 0. which is most likely if we push audio only
+
             j2kEncoder.InitEncoder();
         }
 
         int numberAudioTracks = decoder.GetNumberAudioTracks();
-        // PROBABLY NOT NECESSARY. Edit_rate is SampleRate / 1
-        //if (numberAudioTracks > 0 && decoder.HasVideoTrack() == false && options.editRate.num == 0) {
-            //std::cerr << "No Video Track found. Please set edit rate for audio files with -r option" << std::endl;
-            //return 1;
-        //}
 
         // create one pcm encoder foreach audio track
         std::vector<std::shared_ptr<PCMEncoder>> pcmEncoders;
@@ -399,7 +386,7 @@ int main(int argc, char **argv)
             MXFWriter::MXFOptionsVideo videoOptions;
 
 
-            videoOptions.editRate = options.editRate;
+            videoOptions.editRate = editRate;
             // Aspect Ratio is now known.
             videoOptions.aspectRatio = decoder.GetAspectRatio();
             videoOptions.containerDuration = (uint32_t)(j2kFiles.size());
