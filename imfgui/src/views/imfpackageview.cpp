@@ -10,19 +10,11 @@
 #include "../utils/mxfreader.h"
 #include "../utils/uuidgenerator.h"
 
-#include <QWidget>
-#include <QGridLayout>
-#include <QFormLayout>
-#include <QInputDialog>
-#include <QHeaderView>
-#include <QGroupBox>
-#include <QLabel>
-#include <QLineEdit>
-#include <QMenuBar>
-#include <QFileDialog>
-#include <QFileInfo>
-#include <QMessageBox>
-#include <QTableView>
+#include "cplsequenceview.h"
+#include "cplsequencecontrolview.h"
+#include "packagetableview.h"
+
+#include <QtGui>
 
 #include <iostream>
 
@@ -41,7 +33,7 @@ IMFPackageView::IMFPackageView()
     //QWidget *rightTopFiller = new QWidget();
     //rightTopFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QTableView *packageTableView = new QTableView();
+    PackageTableView *packageTableView = new PackageTableView();
 
     packageTableView->setModel(&_packageModel);
 
@@ -65,16 +57,20 @@ IMFPackageView::IMFPackageView()
 
     QVBoxLayout *mainLayout = new QVBoxLayout();
 
-    QGroupBox *topFileBox= new QGroupBox();
-
-
     QHBoxLayout *fileViewLayout = new QHBoxLayout();
     fileViewLayout->addWidget(packageTableView);
-    //fileViewLayout->addWidget(rightTopFiller);
-    topFileBox->setLayout(fileViewLayout);
 
+    QGroupBox *topFileBox= new QGroupBox();
+    topFileBox->setLayout(fileViewLayout);
     mainLayout->addWidget(topFileBox);
-    mainLayout->addWidget(bottomFiller);
+
+    CPLSequenceControlView *controlView = new CPLSequenceControlView(this);
+    controlView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    mainLayout->addWidget(controlView);
+
+
+    CPLSequenceView *sequenceView = new CPLSequenceView(this);
+    mainLayout->addWidget(sequenceView);
 
     CreateActions();
     CreateMenus();

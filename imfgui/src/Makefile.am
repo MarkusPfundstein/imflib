@@ -11,7 +11,11 @@ LIBS += -lboost_filesystem
 
 bin_PROGRAMS = imfgui
 
-imfgui_MOC_FILES = moc_imfpackageview.cpp
+imfgui_MOC_FILES = \
+	moc_imfpackageview.cpp \
+	moc_cplsequenceview.cpp \
+	moc_cplsequencecontrolview.cpp \
+	moc_packagetableview.cpp
 
 # please somebody explain to me what this does
 $(imfgui_OBJECTS) : $(imfgui_MOC_FILES)
@@ -30,7 +34,10 @@ imfgui_SOURCES = \
 	model/imfpackage.cpp \
 	model/imfcompositionplaylist.cpp \
 	model/imfoutputprofile.cpp \
-	views/imfpackageview.cpp
+	views/cplsequencecontrolview.cpp \
+	views/cplsequenceview.cpp \
+	views/imfpackageview.cpp \
+	views/packagetableview.cpp
 
 imfgui_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wunreachable-code
 imfgui_CXXFLAGS += $(QT4_CFLAGS)

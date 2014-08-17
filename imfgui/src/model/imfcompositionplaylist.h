@@ -12,24 +12,37 @@
 
 class IMFCompositionPlaylist : public IMFPackageItem
 {
-    // stores a IMFVideoTrack and/or AudioTrack with associated metadata for the playlist
-    template <typename T>
+    // stores a IMFVideoTrack and/or AudioTrack with associated metadata for a sequence
     struct TrackContainer
     {
-        TrackContainer() : track(), start(0), length(0) {}
+        TrackContainer() : track(), start(0), entryPoint(0), length(0), repeatCount(0) {}
 
         // pointer to the track to store
-        std::shared_ptr<T> track;
+        std::shared_ptr<IMFTrack> track;
+
+        /* track metadata */
 
         // start position in playlist
         int start;
 
+        // entry point
+        int entryPoint;
+
         // length position
         int length;
+
+        // repeat count
+        int repeatCount;
     };
 
-    typedef TrackContainer<IMFVideoTrack> VideoContainer;
-    typedef TrackContainer<IMFAudioTrack> AudioContainer;
+    // stores a sequence of Tracks
+    struct Sequence
+    {
+        Sequence() : _videoTracks(), _audioTracks() {}
+
+        std::vector<std::shared_ptr<TrackContainer>> _videoTracks;
+        std::vector<std::shared_ptr<TrackContainer>> _audioTracks;
+    };
 
     public:
         IMFCompositionPlaylist(const std::string& filename);
@@ -53,8 +66,7 @@ class IMFCompositionPlaylist : public IMFPackageItem
         RationalNumber _editRate;
 
         // video and tracks in container.
-        std::vector<std::shared_ptr<VideoContainer>> _videoTracks;
-        std::vector<std::shared_ptr<AudioContainer>> _audioTracks;
+        std::vector<std::shared_ptr<Sequence>> _sequences;
 };
 
 #endif // IMFCOMPOSITIONPLAYLIST_H

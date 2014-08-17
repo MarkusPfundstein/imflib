@@ -12,8 +12,7 @@ IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string& filename)
     :
     IMFPackageItem(filename, IMFPackageItem::TYPE::CPL),
     _editRate(0, 0),
-    _videoTracks(),
-    _audioTracks()
+    _sequences()
 {
     //ctor
 }
