@@ -182,23 +182,24 @@ void IMFPackageView::OpenFile()
 
     try {
         newPackage->Load(directory.toStdString());
-        for (const std::shared_ptr<IMFVideoTrack> &vt : newPackage->GetVideoTracks()) {
-            if (_packageModel.HasItem(vt) == false) {
-                _packageModel.AppendItem(vt);
+
+        std::vector<std::shared_ptr<IMFPackageItem>> assets;
+        assets.insert(assets.end(), newPackage->GetVideoTracks().begin(), newPackage->GetVideoTracks().end());
+        assets.insert(assets.end(), newPackage->GetAudioTracks().begin(), newPackage->GetAudioTracks().end());
+        assets.insert(assets.end(), newPackage->GetCompositionPlaylists().begin(), newPackage->GetCompositionPlaylists().end());
+        assets.insert(assets.end(), newPackage->GetOutputProfiles().begin(), newPackage->GetOutputProfiles().end());
+
+        for (const std::shared_ptr<IMFPackageItem> &item : assets) {
+            if (_packageModel.HasItem(item) == false) {
+                _packageModel.AppendItem(item);
             }
         }
-        for (const std::shared_ptr<IMFAudioTrack> &at : newPackage->GetAudioTracks()) {
-            if (_packageModel.HasItem(at) == false) {
-                _packageModel.AppendItem(at);
-            }
-        }
+
         UpdateMenu();
     } catch (IMFPackageException &e) {
         QMessageBox::information(this, tr("Sorry"), tr(e.what()));
         NewFile();
     }
-
-
 }
 
 void IMFPackageView::SaveFile()

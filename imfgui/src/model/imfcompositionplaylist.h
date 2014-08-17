@@ -8,6 +8,8 @@
 #include <vector>
 #include <memory>
 
+#include <boost/property_tree/ptree.hpp>
+
 class IMFCompositionPlaylist : public IMFPackageItem
 {
     // stores a IMFVideoTrack and/or AudioTrack with associated metadata for the playlist
@@ -36,8 +38,8 @@ class IMFCompositionPlaylist : public IMFPackageItem
         // writes composition playlist to disk
         void Write() const;
 
-        // [STATIC] loads composition playlist from disk
-        static std::shared_ptr<IMFCompositionPlaylist> Load(const std::string &filename);
+        // [STATIC] loads composition playlist from disk. Throws all boost::property_tree and xml_parser exceptions...
+        static std::shared_ptr<IMFCompositionPlaylist> Load(const std::string &filename, boost::property_tree::ptree& pt);
 
         RationalNumber GetEditRate() const
         { return _editRate; }

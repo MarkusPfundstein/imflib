@@ -140,7 +140,7 @@ void IMFPackage::ReadAssetMap(const std::string& filename)
 
         std::string packageId = pt.get<std::string>("AssetMap.Id");
         UUIDClean(packageId);
-        _uuid = packageId;
+        SetUUID(packageId);
 
         std::cout << "UUID: " << packageId << std::endl;
 
@@ -196,11 +196,13 @@ void IMFPackage::ParseAndAddXML(const std::string& fullPath)
         if (opt) {
             std::cout << "Got composition playlist" << std::endl;
 
-            std::shared_ptr<IMFCompositionPlaylist> playlist = IMFCompositionPlaylist::Load(fullPath);
+            std::shared_ptr<IMFCompositionPlaylist> playlist = IMFCompositionPlaylist::Load(fullPath, pt);
 
             std::cout << "New playlist: " << std::endl;
             std::cout << "\tUUID: " << playlist->GetUUID() << std::endl;
             std::cout << "\tEditRate: " << playlist->GetEditRate().AsIMFString() << std::endl;
+
+            AddCompositionPlaylist(playlist);
 
             return;
         }

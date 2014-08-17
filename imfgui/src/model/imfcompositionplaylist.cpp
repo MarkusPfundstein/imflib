@@ -48,12 +48,22 @@ void IMFCompositionPlaylist::Write() const
     write_xml(GetPath(), pt, std::locale(), settings);
 }
 
-std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::string &path)
+std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::string &path, boost::property_tree::ptree &pt)
 {
     std::shared_ptr<IMFCompositionPlaylist> playlist(new IMFCompositionPlaylist(path));
 
-    // parse UUID etc
-    // parse EditRate
+    std::string uuid = pt.get<std::string>("CompositionPlaylist.Id");
+    UUIDClean(uuid);
+
+    playlist->SetUUID(uuid);
+
+    std::string editRate = pt.get<std::string>("CompositionPlaylist.EditRate");
+    playlist->SetEditRate(RationalNumber::FromIMFString(editRate));
+
+    /* TO-DO: Parse Locale stuff */
+
+   // for (ptree::value_type const &assetChild : pt.get_child("CompositionPlaylist.AssetList")) {
+   // }
 
     return playlist;
 }
