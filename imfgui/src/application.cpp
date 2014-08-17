@@ -5,9 +5,9 @@
 #include <QSettings>
 #include <QDir>
 
-Application::Application(int &argc, char **argv)
+Application::Application(int &_argc, char **_argv)
     :
-    QApplication(argc, argv),
+    QApplication(_argc, _argv),
     _settings(),
     _workingPackage(nullptr)
 {

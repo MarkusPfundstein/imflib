@@ -1,11 +1,12 @@
 #ifndef IMFOUTPUTPROFILE_H
 #define IMFOUTPUTPROFILE_H
 
+#include "imfpackageitem.h"
 
-class IMFOutputProfile
+class IMFOutputProfile : public IMFPackageItem
 {
     public:
-        IMFOutputProfile();
+        IMFOutputProfile(const std::string& filename);
         virtual ~IMFOutputProfile();
 
     protected:

@@ -26,13 +26,13 @@ QVariant IMFPackageModel::data(const QModelIndex &index, int role) const
     }
 
     std::shared_ptr<IMFPackageItem> item = _data[index.row()];
-    bool trackItem = item->GetType() == IMFPackageItem::TYPE::AUDIO || IMFPackageItem::TYPE::VIDEO;
+    bool trackItem = item->GetType() == IMFPackageItem::TYPE::AUDIO || item->GetType() == IMFPackageItem::TYPE::VIDEO;
     switch (index.column()) {
         case 0: return GetDisplayFileName(*item);
         case 1: return QString::fromStdString(item->TypeString());
-        case 2: return trackItem ? GetItemBitDepth(*item) : QVariant();
-        case 3: return trackItem ? GetItemDuration(*item) : QVariant();
-        case 4: return trackItem ? GetItemDurationString(*item) : QVariant();
+        case 2: return (trackItem ? GetItemBitDepth(*item) : QString(""));
+        case 3: return (trackItem ? GetItemDuration(*item) : QString(""));
+        case 4: return (trackItem ? GetItemDurationString(*item) : QString(""));
         default: return QVariant();
     };
 }
@@ -53,7 +53,7 @@ QString IMFPackageModel::GetItemDuration(const IMFPackageItem &item) const
         const IMFTrack& track = dynamic_cast<const IMFTrack&>(item);
         return QString::number(track.GetDuration());
     } catch (std::bad_cast e) {
-        return QString("-1");
+        return QString("N/A 2");
     }
 }
 
@@ -78,7 +78,7 @@ QString IMFPackageModel::GetItemDurationString(const IMFPackageItem &item) const
 
         return res.sprintf("%02d:%02d:%02d.%02d", hours, minutes, seconds, (int)((floorf(mantissa * 100) / 100) * 100));
     } catch (std::bad_cast e) {
-        return QString("00:00:00.00");
+        return QString("N/A 2");
     }
 }
 

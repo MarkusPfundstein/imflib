@@ -25,20 +25,32 @@ class IMFPackageView : public QMainWindow
 
         // IMF Menu
         void AddTrackFile();
+        void NewCompositionPlaylist();
 
     private:
+
+        // creates all actions. gets called on startup
         void CreateActions();
+
+        // creates all menus. gets called on startup
         void CreateMenus();
 
+        /* Menus */
         QMenu *_fileMenu;
         QMenu *_imfMenu;
 
+        /* Actions */
+
+        // File Menu
         QAction *_newFileAction;
         QAction *_openFileAction;
         QAction *_saveFileAction;
 
+        // IMF Menu
         QAction *_addTrackFileAction;
+        QAction *_newCompositionPlaylistAction;
 
+        /* INSTANCE VARIABLES */
         IMFPackageModel _packageModel;
 };
 

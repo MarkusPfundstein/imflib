@@ -141,19 +141,6 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
         } else {
             bits = -1;
         }
-
-        //rgbaDescriptor->Dump();
-        //reader.OP1aHeader().Dump();
-        /*
-        ASDCP::MXF::FileDescriptor *file;
-
-
-        result = reader.OP1aHeader().GetMDObjectByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_FileDescriptor),
-							 reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&file));
-        if (KM_SUCCESS(result)) {
-            file->Dump();
-        }
-        */
     } else {
         // check if we have a cdci (yuv) descriptor
         result = reader.OP1aHeader().GetMDObjectByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_CDCIEssenceDescriptor),

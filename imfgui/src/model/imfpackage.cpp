@@ -51,6 +51,12 @@ void IMFPackage::AddAudioTrack(const std::shared_ptr<IMFAudioTrack> &track)
     _audioTracks.push_back(track);
 }
 
+void IMFPackage::AddCompositionPlaylist(const std::shared_ptr<IMFCompositionPlaylist> &track)
+{
+    std::cout << "add composition playlist: " << track->GetFileName() << std::endl;
+    _compositionPlaylists.push_back(track);
+}
+
 bool IMFPackage::HasTrackFile(const std::string &file) const
 {
     return HasVideoTrackFile(file) || HasAudioTrackFile(file);
@@ -158,9 +164,11 @@ void IMFPackage::ReadAssetMap(const std::string& filename)
                     std::cout << "\tName: " << name << std::endl;
                     std::cout << "\tVolumeIndex: " << volumeIndex << std::endl;
 
+                    std::string fullPath = _location + "/" + _name + "/" + name;
                     if (boost::filesystem3::path(name).extension().string() == ".mxf") {
-                        std::string fullPath = _location + "/" + _name + "/" + name;
                         ParseAndAddTrack(fullPath);
+                    } else if (boost::filesystem3::path(name).extension().string() == ".xml") {
+                        ParseAndAddXML(fullPath);
                     }
                 }
             }
@@ -172,9 +180,41 @@ void IMFPackage::ReadAssetMap(const std::string& filename)
     }
 }
 
+void IMFPackage::ParseAndAddXML(const std::string& fullPath)
+{
+    using namespace boost::property_tree;
+
+    std::cout << "Parse And Add XML: " << fullPath << std::endl;
+
+    // parse root node to check what type of file we have
+
+    ptree pt;
+    try {
+        read_xml(fullPath, pt);
+
+        boost::optional<std::string> opt = pt.get_optional<std::string>("CompositionPlaylist");
+        if (opt) {
+            std::cout << "Got composition playlist" << std::endl;
+
+            std::shared_ptr<IMFCompositionPlaylist> playlist = IMFCompositionPlaylist::Load(fullPath);
+
+            std::cout << "New playlist: " << std::endl;
+            std::cout << "\tUUID: " << playlist->GetUUID() << std::endl;
+            std::cout << "\tEditRate: " << playlist->GetEditRate().AsIMFString() << std::endl;
+
+            return;
+        }
+
+    } catch (xml_parser::xml_parser_error &e) {
+        throw IMFPackageException(e.what());
+    } catch (ptree_bad_path &e) {
+        throw IMFPackageException(e.what());
+    }
+}
+
 void IMFPackage::ParseAndAddTrack(const std::string& fullPath)
 {
-    std::cout << "Parse And Add: " << fullPath << std::endl;
+    std::cout << "Parse And Add A/V Track: " << fullPath << std::endl;
     MXFReader mxfReader(fullPath);
 
     MXFReader::ESSENCE_TYPE essenceType = mxfReader.GetEssenceType();
@@ -208,6 +248,12 @@ void IMFPackage::ParseAndAddTrack(const std::string& fullPath)
 
 void IMFPackage::Write() const
 {
+    // write composition playlists
+    for (const std::shared_ptr<IMFCompositionPlaylist> &cpl : _compositionPlaylists) {
+        cpl->Write();
+    }
+
+    // last but not least. write map of all assets
     WriteAssetMap(_location + "/" + _name + "/ASSETMAP.xml");
 }
 
@@ -220,20 +266,20 @@ void IMFPackage::WriteAssetMap(const std::string& filename) const
 
     rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/429-9/2007/AM");
     rootNode.put("Id", UUIDStr(_uuid));
-    rootNode.put("AnnotationText", "For testing purposes only");
-    rootNode.put("Creator", "ODMedia IMF Suite PRE-PRE-alpha-0.1 2014");
-    rootNode.put("VolumeCount", "1");
+    rootNode.put("Annotation", XML_HEADER_ANNOTATION);
+    rootNode.put("Creator", XML_HEADER_CREATOR);
     rootNode.put("IssueDate", "");
-    rootNode.put("Issuer", "ODMedia");
+    rootNode.put("Issuer", XML_HEADER_ISSUER);
+    rootNode.put("VolumeCount", "1");
 
     ptree assetListNode;
 
+    // merge all assets into one big array
     std::vector<std::shared_ptr<IMFPackageItem>> assets;
     assets.insert(assets.end(), _videoTracks.begin(), _videoTracks.end());
     assets.insert(assets.end(), _audioTracks.begin(), _audioTracks.end());
-    // are no subclasses yet
-    //assets.insert(assets.end(), _compositionPlaylists.begin(), _compositionPlaylists.end());
-    //assets.insert(assets.end(), _outputProfiles.begin(), _outputProfiles.end());
+    assets.insert(assets.end(), _compositionPlaylists.begin(), _compositionPlaylists.end());
+    assets.insert(assets.end(), _outputProfiles.begin(), _outputProfiles.end());
 
     for (const std::shared_ptr<IMFPackageItem>& item : assets) {
         ptree chunkNode;

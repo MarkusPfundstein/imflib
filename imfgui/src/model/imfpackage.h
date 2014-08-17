@@ -33,11 +33,20 @@ class IMFPackage
         // parses and adds a track
         void ParseAndAddTrack(const std::string &name);
 
+    private:
+        // keep it private for the time being. dont think we need it in public API
+        // parses and adds a xml (CPL/OPL/PKL)
+        void ParseAndAddXML(const std::string &name);
+
+    public:
         // adds a new video track to the package
         void AddVideoTrack(const std::shared_ptr<IMFVideoTrack> &track);
 
         // adds a new audio track to the package
         void AddAudioTrack(const std::shared_ptr<IMFAudioTrack> &track);
+
+        // adds a new composition playlist to the package
+        void AddCompositionPlaylist(const std::shared_ptr<IMFCompositionPlaylist> &track);
 
         // checks if a track file is already contained in the package
         bool HasTrackFile(const std::string &file) const;
@@ -74,6 +83,9 @@ class IMFPackage
 
         void SetLocation(const std::string &s)
         { _location = s; }
+
+        std::string GetFullPath() const
+        { return _location + "/" + _name; }
 
         std::string GetUUID() const
         { return _uuid; }

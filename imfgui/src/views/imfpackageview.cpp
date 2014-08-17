@@ -4,6 +4,8 @@
 #include "../model/imfpackage.h"
 #include "../model/imfvideotrack.h"
 #include "../model/imfaudiotrack.h"
+#include "../model/imfcompositionplaylist.h"
+#include "../model/imfoutputprofile.h"
 
 #include "../utils/mxfreader.h"
 #include "../utils/uuidgenerator.h"
@@ -36,8 +38,8 @@ IMFPackageView::IMFPackageView()
     QWidget *bottomFiller = new QWidget();
     bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QWidget *rightTopFiller = new QWidget();
-    rightTopFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    //QWidget *rightTopFiller = new QWidget();
+    //rightTopFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     QTableView *packageTableView = new QTableView();
 
@@ -68,7 +70,7 @@ IMFPackageView::IMFPackageView()
 
     QHBoxLayout *fileViewLayout = new QHBoxLayout();
     fileViewLayout->addWidget(packageTableView);
-    fileViewLayout->addWidget(rightTopFiller);
+    //fileViewLayout->addWidget(rightTopFiller);
     topFileBox->setLayout(fileViewLayout);
 
     mainLayout->addWidget(topFileBox);
@@ -94,6 +96,8 @@ IMFPackageView::~IMFPackageView()
 
 void IMFPackageView::CreateActions()
 {
+    /* FILE MENU */
+
     _newFileAction = new QAction(tr("&New"), this);
     _newFileAction->setShortcuts(QKeySequence::New);
     _newFileAction->setStatusTip(tr("Create a new IMF file"));
@@ -109,20 +113,29 @@ void IMFPackageView::CreateActions()
     _saveFileAction->setStatusTip(tr("Save a File"));
     connect(_saveFileAction, SIGNAL(triggered()), this, SLOT(SaveFile()));
 
+    /* IMF MENU */
+
     _addTrackFileAction = new QAction(tr("&Add File"), this);
     _addTrackFileAction->setStatusTip(tr("Adds a file to the project"));
     connect(_addTrackFileAction, SIGNAL(triggered()), this, SLOT(AddTrackFile()));
+
+    _newCompositionPlaylistAction = new QAction(tr("&New Composition Playlist"), this);
+    _newCompositionPlaylistAction->setStatusTip(tr("Creates a empty composition playlist"));
+    connect(_newCompositionPlaylistAction, SIGNAL(triggered()), this, SLOT(NewCompositionPlaylist()));
 }
 
 void IMFPackageView::CreateMenus()
 {
+    /* FILE MENU */
     _fileMenu = menuBar()->addMenu(tr("&File"));
     _fileMenu->addAction(_newFileAction);
     _fileMenu->addAction(_openFileAction);
     _fileMenu->addAction(_saveFileAction);
 
+    /* IMF MENU */
     _imfMenu = menuBar()->addMenu(tr("&IMF"));
     _imfMenu->addAction(_addTrackFileAction);
+    _imfMenu->addAction(_newCompositionPlaylistAction);
 }
 
 void IMFPackageView::UpdateMenu()
@@ -196,7 +209,7 @@ void IMFPackageView::SaveFile()
     IMFPackage *workingPackage = app->GetWorkingPackage();
 
     // completely new save. do all the tedious work
-    if (workingPackage->GetLocation().empty() && workingPackage->GetName().empty()) {
+    if (workingPackage->GetLocation().empty() || workingPackage->GetName().empty()) {
         QString directory = QFileDialog::getExistingDirectory(this,
                                                               tr("Where?"),
                                                               app->Settings()->GetLastSaveDir());
@@ -284,6 +297,25 @@ void IMFPackageView::AddTrackFile()
     }  catch (IMFPackageException &e) {
         QMessageBox::information(this, tr("Sorry"), tr(e.what()));
     }
+}
+
+void IMFPackageView::NewCompositionPlaylist()
+{
+    Application *app = static_cast<Application*>(Application::instance());
+    IMFPackage *workingPackage = app->GetWorkingPackage();
+    if (workingPackage->GetLocation().empty() && workingPackage->GetName().empty()) {
+        QMessageBox::information(this, tr("Sorry"), tr("The package is not saved yet. You must save it before you can create a CPL"));
+        return;
+    }
+
+    std::string uuid = UUIDGenerator().MakeUUID();
+    std::string path = workingPackage->GetFullPath() + "/CPL_" + uuid + ".xml";
+
+    std::shared_ptr<IMFCompositionPlaylist> newPlaylist(new IMFCompositionPlaylist(path));
+    newPlaylist->SetUUID(uuid);
+
+    workingPackage->AddCompositionPlaylist(newPlaylist);
+    _packageModel.AppendItem(newPlaylist);
 }
 
 #include "../moc_imfpackageview.cpp"
