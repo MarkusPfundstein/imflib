@@ -14,6 +14,7 @@ class CPLSequenceView : public QWidget
 
         QSize minimumSizeHint() const;
         QSize sizeHint() const;
+        void paintEvent(QPaintEvent *event);
     protected:
     private:
 };
