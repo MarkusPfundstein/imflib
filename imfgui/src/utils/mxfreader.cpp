@@ -126,11 +126,19 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
         duration = rgbaDescriptor->ContainerDuration;
         editRate = rgbaDescriptor->SampleRate;
 
-        if ((int)rgbaDescriptor->ComponentMinRef == 0) {
-            // full range only with comp. min ref = 0
-            bits = std::log((int)rgbaDescriptor->ComponentMaxRef + 1) / std::log(2);
+        int minRef = (int)rgbaDescriptor->ComponentMinRef;
+        int maxRef = (int)rgbaDescriptor->ComponentMaxRef;
+
+        // full range only with comp. min ref between 0 and 15 (SMPTE 274M-2008)
+        if (minRef >= 0 && minRef <= 15) {
+            bits = std::log(maxRef + 1) / std::log(2);
+        } else if (minRef == 16 && maxRef == 235) {
+            bits = 8;
+        } else if (minRef == 64 && maxRef == 940) {
+            bits = 10;
+        } else if (minRef == 256 && maxRef == 3760) {
+            bits = 12;
         } else {
-            // TO-DO:
             bits = -1;
         }
 

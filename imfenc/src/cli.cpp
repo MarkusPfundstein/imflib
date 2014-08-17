@@ -30,9 +30,10 @@ struct EncoderOptions {
     overwriteFiles(true),
     editRate(0, 0),
     profile(J2KEncoder::PROFILE::BCP_ST_5),
-    bitsPerComponent(J2KEncoder::BIT_RATE::BR_10bit),
+    bitsPerComponent(J2KEncoder::BIT_RATE::BR_12bit),
     colorFormat(COLOR_FORMAT::CF_RGB444),
     useTiles(true),
+    fullRange(false),
     doMct(colorFormat == COLOR_FORMAT::CF_RGB444),
     inputFile("/home/markus/Documents/IMF/TestFiles/MPEG2_PAL_SHORT.mpeg"),
     tempFilePath("/home/markus/Documents/IMF/TestFiles/TEMP"),
@@ -49,6 +50,7 @@ struct EncoderOptions {
     J2KEncoder::BIT_RATE bitsPerComponent;
     COLOR_FORMAT colorFormat;
     bool useTiles;
+    bool fullRange;
     bool doMct;
 
     std::string inputFile;
@@ -158,7 +160,7 @@ std::string GetVideoFileName(const EncoderOptions &options, int width, int heigh
     ss << options.outputPath << "/IMF_ODM_JPEG2000_" << width << "x" << height << "_";
     switch (options.colorFormat) {
         case COLOR_FORMAT::CF_RGB444:
-            ss << "RGB444";
+            ss << "RGB444_" << (options.fullRange ? "RngFull" : "Rng274M");
             break;
         case COLOR_FORMAT::CF_YUV444:
             ss << "YUV444";
@@ -304,13 +306,13 @@ int main(int argc, char **argv)
             videoOptions.editRate = options.editRate;
             // Aspect Ratio is now known.
             videoOptions.aspectRatio = decoder.GetAspectRatio();
-            videoOptions.containerDuration = static_cast<uint32_t>(j2kFiles.size());
+            videoOptions.containerDuration = (uint32_t)(j2kFiles.size());
             videoOptions.yuvEssence = options.colorFormat != COLOR_FORMAT::CF_RGB444;
             videoOptions.subsamplingDx = options.colorFormat == CF_YUV422 ? 2 : 1;
             videoOptions.encryptHeader = false;
-            videoOptions.bits = static_cast<int>(options.bitsPerComponent);
-            videoOptions.broadcastProfile = static_cast<int>(options.profile);
-            videoOptions.fullRange = true;
+            videoOptions.bits = (int)(options.bitsPerComponent);
+            videoOptions.broadcastProfile = (int)(options.profile);
+            videoOptions.fullRange = options.fullRange;
 
             // write video
             MXFWriter videoMxfWriter;

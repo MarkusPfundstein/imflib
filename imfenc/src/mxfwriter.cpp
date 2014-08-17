@@ -248,9 +248,23 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                 rgbDescriptor->ComponentMaxRef = std::pow(2, options.bits) - 1;
                 rgbDescriptor->ComponentMinRef = 0;
             } else {
-                // TO-DO:
-                rgbDescriptor->ComponentMaxRef = 0;
-                rgbDescriptor->ComponentMinRef = 0;
+                const int upperConstraint[3] = {235, 940, 3760};
+                const int lowerConstraint[3] = {16, 64, 256};
+
+                switch (options.bits) {
+                    case 8:
+                        rgbDescriptor->ComponentMaxRef = upperConstraint[0];
+                        rgbDescriptor->ComponentMinRef = lowerConstraint[0];
+                        break;
+                    case 10:
+                        rgbDescriptor->ComponentMaxRef = upperConstraint[1];
+                        rgbDescriptor->ComponentMinRef = lowerConstraint[1];
+                        break;
+                    case 12:
+                        rgbDescriptor->ComponentMaxRef = upperConstraint[2];
+                        rgbDescriptor->ComponentMinRef = lowerConstraint[2];
+                        break;
+                }
             }
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(rgbDescriptor);
             rgbDescriptor->Dump();
