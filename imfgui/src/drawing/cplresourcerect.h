@@ -1,18 +1,18 @@
-#ifndef CPLSEQUENCERECT_H
-#define CPLSEQUENCERECT_H
+#ifndef CPLResourceRect_H
+#define CPLResourceRect_H
 
 #include <memory>
 #include <QRect>
 #include <QColor>
 #include <QPainter>
 
-class CPLSequenceRect
+class CPLResourceRect
 {
     public:
-        CPLSequenceRect(int x1, int y1, int x2, int y2);
-        CPLSequenceRect(int x1, int y1, int x2, int y2, int r, int g, int b, int a);
-        CPLSequenceRect(QPoint s, QPoint e, QColor c);
-        virtual ~CPLSequenceRect();
+        CPLResourceRect(int x1, int y1, int x2, int y2);
+        CPLResourceRect(int x1, int y1, int x2, int y2, int r, int g, int b, int a);
+        CPLResourceRect(QPoint s, QPoint e, QColor c);
+        virtual ~CPLResourceRect();
 
         void Draw(QPainter &painter);
 
@@ -33,4 +33,4 @@ class CPLSequenceRect
         QRect _sequenceBox;
 };
 
-#endif // CPLSEQUENCERECT_H
+#endif // CPLResourceRect_H
