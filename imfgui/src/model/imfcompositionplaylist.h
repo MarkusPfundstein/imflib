@@ -12,43 +12,6 @@
 
 class IMFCompositionPlaylist : public IMFPackageItem
 {
-    // stores a IMFVideoTrack and/or AudioTrack with associated metadata for a sequence
-    struct TrackContainer
-    {
-        TrackContainer() : track(), start(0), entryPoint(0), length(0), repeatCount(0) {}
-
-        // pointer to the track to store
-        std::shared_ptr<IMFTrack> track;
-
-        /* track metadata */
-
-        // start position in playlist
-        int start;
-
-        // entry point
-        int entryPoint;
-
-        // length position
-        int length;
-
-        // repeat count
-        int repeatCount;
-    };
-
-    // stores a sequence of Tracks
-    class Segment
-    {
-        public:
-            Segment(const std::string &uuid) : _uuid(uuid), _videoTracks(), _audioTracks() {}
-
-        private:
-
-            std::string _uuid;
-
-            std::vector<std::shared_ptr<TrackContainer>> _videoTracks;
-            std::vector<std::shared_ptr<TrackContainer>> _audioTracks;
-    };
-
     public:
         IMFCompositionPlaylist(const std::string& filename);
         virtual ~IMFCompositionPlaylist();
@@ -69,9 +32,6 @@ class IMFCompositionPlaylist : public IMFPackageItem
     private:
         // global edit rate of playlist
         RationalNumber _editRate;
-
-        // video and tracks in container.
-        std::vector<std::shared_ptr<Segment>> _segments;
 };
 
 #endif // IMFCOMPOSITIONPLAYLIST_H

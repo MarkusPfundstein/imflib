@@ -6,7 +6,7 @@
 
 IMFPackageItem::IMFPackageItem(const std::string& filename, TYPE type)
     :
-    _uuid(""),
+    GenericItem(),
     _filename(filename),
     _type(type)
 {

@@ -1,9 +1,9 @@
 #ifndef IMFPACKAGEITEM_H
 #define IMFPACKAGEITEM_H
 
-#include <string>
+#include "genericitem.h"
 
-class IMFPackageItem
+class IMFPackageItem : public GenericItem
 {
     public:
         enum TYPE {
@@ -25,12 +25,6 @@ class IMFPackageItem
         TYPE GetType() const
         { return _type; }
 
-        const std::string& GetUUID() const
-        { return _uuid; }
-
-        void SetUUID(const std::string &u)
-        { _uuid = u; }
-
         virtual std::string TypeString() const;
 
         // returns _filename without path
@@ -40,7 +34,6 @@ class IMFPackageItem
         int GetFileSize() const;
 
     protected:
-        std::string _uuid;
         std::string _filename;
 
         TYPE _type;

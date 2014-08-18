@@ -27,6 +27,11 @@ imfgui_SOURCES = \
 	utils/mxfreader.cpp \
 	utils/uuidgenerator.cpp \
 	qtmodels/imfpackagemodel.cpp \
+	model/genericitem.cpp \
+	model/cplresource.cpp \
+	model/cplsegment.cpp \
+	model/cplsequence.cpp \
+	model/cplvirtualtrack.cpp \
 	model/imfpackageitem.cpp \
 	model/imftrack.cpp \
 	model/imfvideotrack.cpp \

@@ -11,8 +11,7 @@
 IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string& filename)
     :
     IMFPackageItem(filename, IMFPackageItem::TYPE::CPL),
-    _editRate(0, 0),
-    _segments()
+    _editRate(0, 0)
 {
     //ctor
 }
@@ -31,7 +30,7 @@ void IMFCompositionPlaylist::Write() const
 
     rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/2067-3/XXXX");
     rootNode.put("<xmlattr>.xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-    rootNode.put("Id", UUIDStr(_uuid));
+    rootNode.put("Id", UUIDStr(GetUUID()));
     rootNode.put("Annotation", XML_HEADER_ANNOTATION);
     rootNode.put("Creator", XML_HEADER_CREATOR);
     rootNode.put("IssueDate", "");
@@ -44,9 +43,9 @@ void IMFCompositionPlaylist::Write() const
     ptree segmentList;
 
     // write segments list
-    for (const std::shared_ptr<Segment> &segment : _segments) {
+    /*for (const std::shared_ptr<Segment> &segment : _segments) {
 
-    }
+    }*/
 
     rootNode.add_child("SegmentList", segmentList);
     pt.add_child("CompositionPlaylist", rootNode);
@@ -71,7 +70,8 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
 
     /* TO-DO: Parse Locale stuff */
 
-    // parse each segment and resources. here we build our actual playlist
+    // parse each segment and resources. here we build our actual playlist.
+    // segments get played after each other
     for (ptree::value_type const &segmentNode : pt.get_child("CompositionPlaylist.SegmentList")) {
         // id of segment
         std::string segmentUUID = segmentNode.second.get<std::string>("Id");
@@ -79,12 +79,8 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
 
         std::cout << "\tSegmentUUID: " << segmentUUID << std::endl;
 
-        Segment segment(segmentUUID);
-
+        // go through all sequences of segment. sequences get played synchrounously at the same time
         for (ptree::value_type const &sequenceListNode : segmentNode.second.get_child("SequenceList")) {
-
-            std::cout << "\t\tSeqNode: " << sequenceListNode.first << std::endl;
-
             // id of sequence
             std::string sequenceId = sequenceListNode.second.get<std::string>("Id");
             UUIDClean(sequenceId);
