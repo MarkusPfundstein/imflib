@@ -10,6 +10,15 @@
 
 #include <boost/property_tree/ptree.hpp>
 
+class CPLResource;
+
+class IMFCompositionPlaylistException : public std::runtime_error
+{
+    public:
+        IMFCompositionPlaylistException(std::string const& error)
+        : std::runtime_error(error) {};
+};
+
 class IMFCompositionPlaylist : public IMFPackageItem
 {
     public:
@@ -20,7 +29,9 @@ class IMFCompositionPlaylist : public IMFPackageItem
         void Write() const;
 
         // [STATIC] loads composition playlist from disk. Throws all boost::property_tree and xml_parser exceptions...
-        static std::shared_ptr<IMFCompositionPlaylist> Load(const std::string &filename, boost::property_tree::ptree& pt);
+        static std::shared_ptr<IMFCompositionPlaylist> Load(const std::string &filename,
+                                                             boost::property_tree::ptree& pt,
+                                                             const std::vector<std::shared_ptr<IMFTrack>> &tracks);
 
         RationalNumber GetEditRate() const
         { return _editRate; }
@@ -30,6 +41,10 @@ class IMFCompositionPlaylist : public IMFPackageItem
 
     protected:
     private:
+        std::shared_ptr<CPLResource> LoadCPLResource(const boost::property_tree::ptree &pt,
+                                                     const std::string &cplEditRate,
+                                                     const std::vector<std::shared_ptr<IMFTrack>> &tracks);
+
         // global edit rate of playlist
         RationalNumber _editRate;
 };

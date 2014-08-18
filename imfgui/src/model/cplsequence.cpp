@@ -1,7 +1,5 @@
 #include "cplsequence.h"
 
-
-
 CPLSequence::CPLSequence(const std::string &uuid)
     :
     GenericItem(uuid)

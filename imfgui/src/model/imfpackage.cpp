@@ -64,7 +64,6 @@ bool IMFPackage::HasTrackFile(const std::string &file) const
 
 bool IMFPackage::HasVideoTrackFile(const std::string &file) const
 {
-    std::cout << "HAS: " << file << std::endl;
     auto it = std::find_if(_videoTracks.begin(), _videoTracks.end(), [&file](const std::shared_ptr<IMFVideoTrack> &vt) { return vt->GetPath() == file; });
     return it != _videoTracks.end();
 }
@@ -133,9 +132,13 @@ void IMFPackage::ReadAssetMap(const std::string& filename)
     using namespace boost::property_tree;
     using namespace boost::filesystem;
 
-    ptree pt;
-
     try {
+
+        // we put all xmlFiles in one vector before we parse them
+        // because we first need all track files.
+        std::vector<std::string> xmlFiles;
+
+        ptree pt;
         read_xml(filename, pt);
 
         std::string packageId = pt.get<std::string>("AssetMap.Id");
@@ -168,14 +171,21 @@ void IMFPackage::ReadAssetMap(const std::string& filename)
                     if (boost::filesystem3::path(name).extension().string() == ".mxf") {
                         ParseAndAddTrack(fullPath);
                     } else if (boost::filesystem3::path(name).extension().string() == ".xml") {
-                        ParseAndAddXML(fullPath);
+                        xmlFiles.push_back(fullPath);
                     }
                 }
             }
         }
+
+        // done with parsing list. now lets check our xml files
+        for (const std::string &s : xmlFiles) {
+            ParseAndAddXML(s);
+        }
     } catch (xml_parser::xml_parser_error &e) {
         throw IMFPackageException(e.what());
     } catch (ptree_bad_path &e) {
+        throw IMFPackageException(e.what());
+    } catch (IMFCompositionPlaylistException &e) {
         throw IMFPackageException(e.what());
     }
 }
@@ -192,19 +202,23 @@ void IMFPackage::ParseAndAddXML(const std::string& fullPath)
     try {
         read_xml(fullPath, pt);
 
+        // only way to figure out if xml is composition playlist. we check if root is it
         boost::optional<std::string> opt = pt.get_optional<std::string>("CompositionPlaylist");
         if (opt) {
             std::cout << "Got composition playlist" << std::endl;
 
-            std::shared_ptr<IMFCompositionPlaylist> playlist = IMFCompositionPlaylist::Load(fullPath, pt);
+            /* make vector of all our tracks */
+            std::vector<std::shared_ptr<IMFTrack>> tracks;
+            tracks.insert(tracks.end(), _videoTracks.begin(), _videoTracks.end());
+            tracks.insert(tracks.end(), _audioTracks.begin(), _audioTracks.end());
 
-            std::cout << "New playlist: " << std::endl;
-            std::cout << "\tUUID: " << playlist->GetUUID() << std::endl;
-            std::cout << "\tEditRate: " << playlist->GetEditRate().AsIMFString() << std::endl;
-
+            std::shared_ptr<IMFCompositionPlaylist> playlist = IMFCompositionPlaylist::Load(fullPath, pt, tracks);
             AddCompositionPlaylist(playlist);
-
             return;
+        }
+        opt = pt.get_optional<std::string>("OutputProfile");
+        if (opt) {
+            std::cout << "Got output profile" << std::endl;
         }
 
     } catch (xml_parser::xml_parser_error &e) {

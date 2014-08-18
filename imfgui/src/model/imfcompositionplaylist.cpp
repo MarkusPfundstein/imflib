@@ -2,11 +2,18 @@
 
 #include "../utils/uuidgenerator.h"
 
+#include "cplresource.h"
+#include "cplsegment.h"
+#include "cplsequence.h"
+#include "cplvirtualtrack.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/exceptions.hpp>
+
+#include <algorithm>
 
 IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string &uuid, const std::string& filename)
     :
@@ -54,7 +61,9 @@ void IMFCompositionPlaylist::Write() const
     write_xml(GetPath(), pt, std::locale(), settings);
 }
 
-std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::string &path, boost::property_tree::ptree &pt)
+std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::string &path,
+                                                                     boost::property_tree::ptree &pt,
+                                                                     const std::vector<std::shared_ptr<IMFTrack>> &tracks)
 {
     using namespace boost::property_tree;
 
@@ -92,52 +101,11 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
 
             for (ptree::value_type const &resourceListNode : sequenceListNode.second.get_child("ResourceList")) {
                 if (resourceListNode.first == "Resource") {
-                    std::string resourceId = resourceListNode.second.get<std::string>("Id");
-                    UUIDClean(resourceId);
-
-                    // real duration of essence in frames
-                    int intrinsicDuration = resourceListNode.second.get<int>("IntrinsicDuration");
-
-                    // entry point of essence. defaults to 0
-                    int entryPoint = resourceListNode.second.get<int>("EntryPoint", 0);
-
-                    // playing duration of essence. defaults to intrinsic - entrypoint
-                    int sourceDuration = resourceListNode.second.get<int>("SourceDuration", intrinsicDuration - entryPoint);
-
-                    // how often shall essence be played in thus sequence, defaults to 1
-                    int repeatCount = resourceListNode.second.get<int>("RepeatCount", 1);
-                    std::string editRateString = resourceListNode.second.get<std::string>("EditRate", cplEditRate);
-                    RationalNumber resourceEditRate = RationalNumber::FromIMFString(editRateString);
-
-                    std::cout << "\t\t\tResource ID: " << resourceId << std::endl;
-                    std::cout << "\t\t\tIntrinsic Duration: " << intrinsicDuration << std::endl;
-                    std::cout << "\t\t\tEntry Point: " << entryPoint << std::endl;
-                    std::cout << "\t\t\tSource Duration: " << sourceDuration << std::endl;
-                    std::cout << "\t\t\tRepeat Count: " << repeatCount << std::endl;
-                    std::cout << "\t\t\tEdit Rate: " << resourceEditRate.AsIMFString() << std::endl;
-
                     std::string resourceType = resourceListNode.second.get<std::string>("<xmlattr>.xsi:type");
+
+                    // we only handle TrackFileResourceTypes now. This is AUDIO/VIDEO and SUBTITLES
                     if (resourceType.find("TrackFileResourceType") != std::string::npos) {
-
-                        // refers to EssenceDescriptorList in CPL
-                        // but no idea yet to what field in MXF file
-                        std::string sourceEncodingId = resourceListNode.second.get<std::string>("SourceEncoding");
-                        UUIDClean(sourceEncodingId);
-
-                        // refers to tracks in ASSETMAP, thus in imfpackage
-                        std::string trackFileId = resourceListNode.second.get<std::string>("TrackFileId");
-                        UUIDClean(trackFileId);
-
-                        // key to decrypt essence
-                        std::string keyId = resourceListNode.second.get<std::string>("KeyId", "");
-
-                        // hash to validate essence
-                        std::string hash = resourceListNode.second.get<std::string>("Hash", "");
-
-                        std::cout << "\t\t\tSourceEncoding: " << sourceEncodingId << std::endl;
-                        std::cout << "\t\t\tTrackFileId: " << trackFileId << std::endl;
-                        std::cout << "\t\t\tKeyId: " << keyId << std::endl;
-                        std::cout << "\t\t\tHash: " << hash << std::endl;
+                        std::shared_ptr<CPLResource> resource = playlist->LoadCPLResource(resourceListNode.second, cplEditRate, tracks);
                     }
                 }
             }
@@ -147,4 +115,66 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
     return playlist;
 }
 
+std::shared_ptr<CPLResource> IMFCompositionPlaylist::LoadCPLResource(const boost::property_tree::ptree &pt,
+                                                                     const std::string &cplEditRate,
+                                                                     const std::vector<std::shared_ptr<IMFTrack>> &tracks)
+{
+    std::string resourceId = pt.get<std::string>("Id");
+    UUIDClean(resourceId);
 
+    // real duration of essence in frames
+    int intrinsicDuration = pt.get<int>("IntrinsicDuration");
+
+    // entry point of essence. defaults to 0
+    int entryPoint = pt.get<int>("EntryPoint", 0);
+
+    // playing duration of essence. defaults to intrinsic - entrypoint
+    int sourceDuration = pt.get<int>("SourceDuration", intrinsicDuration - entryPoint);
+
+    // how often shall essence be played in thus sequence, defaults to 1
+    int repeatCount = pt.get<int>("RepeatCount", 1);
+    std::string editRateString = pt.get<std::string>("EditRate", cplEditRate);
+    RationalNumber resourceEditRate = RationalNumber::FromIMFString(editRateString);
+
+    // refers to EssenceDescriptorList in CPL
+    // but no idea yet to what field in MXF file
+    std::string sourceEncodingId = pt.get<std::string>("SourceEncoding");
+    UUIDClean(sourceEncodingId);
+
+    // refers to tracks in ASSETMAP, thus in imfpackage
+    std::string trackFileId = pt.get<std::string>("TrackFileId");
+    UUIDClean(trackFileId);
+
+    // key to decrypt essence
+    std::string keyId = pt.get<std::string>("KeyId", "");
+
+    // hash to validate essence
+    std::string hash = pt.get<std::string>("Hash", "");
+
+    // search track in tracks
+    auto it = std::find_if(tracks.begin(), tracks.end(), [&trackFileId](const std::shared_ptr<IMFTrack>& t) { return t->GetUUID() == trackFileId; });
+    if (it == tracks.end()) {
+        throw IMFCompositionPlaylistException("Track referenced in CPL which is not defined in ASSETMAP");
+    }
+
+    std::shared_ptr<CPLResource> cplResource(new CPLResource(resourceId, *it));
+    cplResource->SetEntryPoint(entryPoint);
+    cplResource->SetSourceDuration(sourceDuration);
+    cplResource->SetRepeatCount(repeatCount);
+    cplResource->SetSourceEncoding(sourceEncodingId);
+    cplResource->SetKeyId(keyId);
+    cplResource->SetHash(hash);
+
+    std::cout << "\t\t\tResource ID: " << resourceId << std::endl;
+    std::cout << "\t\t\tIntrinsic Duration: " << intrinsicDuration << std::endl;
+    std::cout << "\t\t\tEntry Point: " << entryPoint << std::endl;
+    std::cout << "\t\t\tSource Duration: " << sourceDuration << std::endl;
+    std::cout << "\t\t\tRepeat Count: " << repeatCount << std::endl;
+    std::cout << "\t\t\tEdit Rate: " << resourceEditRate.AsIMFString() << std::endl;
+    std::cout << "\t\t\tSourceEncoding: " << sourceEncodingId << std::endl;
+    std::cout << "\t\t\tTrackFileId: " << trackFileId << std::endl;
+    std::cout << "\t\t\tKeyId: " << keyId << std::endl;
+    std::cout << "\t\t\tHash: " << hash << std::endl;
+
+    return cplResource;
+}
