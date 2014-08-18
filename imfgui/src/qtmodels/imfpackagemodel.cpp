@@ -5,9 +5,9 @@
 #include <cmath>
 #include "../model/imftrack.h"
 
-IMFPackageModel::IMFPackageModel(QObject *parent)
+IMFPackageModel::IMFPackageModel(QObject *_parent)
     :
-    QAbstractTableModel(parent),
+    QAbstractTableModel(_parent),
     _data()
 {
     //ctor
@@ -19,15 +19,15 @@ IMFPackageModel::~IMFPackageModel()
     std::cout << "delete packagemodel" << std::endl;
 }
 
-QVariant IMFPackageModel::data(const QModelIndex &index, int role) const
+QVariant IMFPackageModel::data(const QModelIndex &_index, int role) const
 {
     if (role != Qt::DisplayRole && role != Qt::EditRole) {
         return QVariant();
     }
 
-    std::shared_ptr<IMFPackageItem> item = _data[index.row()];
+    std::shared_ptr<IMFPackageItem> item = _data[_index.row()];
     bool trackItem = item->GetType() == IMFPackageItem::TYPE::AUDIO || item->GetType() == IMFPackageItem::TYPE::VIDEO;
-    switch (index.column()) {
+    switch (_index.column()) {
         case 0: return GetDisplayFileName(*item);
         case 1: return QString::fromStdString(item->TypeString());
         case 2: return (trackItem ? GetItemBitDepth(*item) : QString(""));
@@ -76,7 +76,7 @@ QString IMFPackageModel::GetItemDurationString(const IMFPackageItem &item) const
         float mantissa = duration - floorf(duration);
         //std::cout << mantissa << std::endl;
 
-        return res.sprintf("%02d:%02d:%02d.%02d", hours, minutes, seconds, (int)((floorf(mantissa * 100) / 100) * 100));
+        return res.sprintf("%02d:%02d:%02d.%02d", hours, minutes, seconds, (int)((roundf(mantissa * 100) / 100) * 100));
     } catch (std::bad_cast e) {
         return QString("N/A 2");
     }

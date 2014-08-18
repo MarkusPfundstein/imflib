@@ -4,6 +4,7 @@
 #include "imfpackageitem.h"
 #include "imfvideotrack.h"
 #include "imfaudiotrack.h"
+#include "imfexceptions.h"
 
 #include <vector>
 #include <memory>
@@ -11,13 +12,6 @@
 #include <boost/property_tree/ptree.hpp>
 
 class CPLResource;
-
-class IMFCompositionPlaylistException : public std::runtime_error
-{
-    public:
-        IMFCompositionPlaylistException(std::string const& error)
-        : std::runtime_error(error) {};
-};
 
 class IMFCompositionPlaylist : public IMFPackageItem
 {
@@ -41,10 +35,6 @@ class IMFCompositionPlaylist : public IMFPackageItem
 
     protected:
     private:
-        std::shared_ptr<CPLResource> LoadCPLResource(const boost::property_tree::ptree &pt,
-                                                     const std::string &cplEditRate,
-                                                     const std::vector<std::shared_ptr<IMFTrack>> &tracks);
-
         // global edit rate of playlist
         RationalNumber _editRate;
 };

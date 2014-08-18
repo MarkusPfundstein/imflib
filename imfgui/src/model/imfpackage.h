@@ -6,20 +6,13 @@
 #include <string>
 #include <stdexcept>
 
-
+#include "imfexceptions.h"
 
 // forward references
 class IMFVideoTrack;
 class IMFAudioTrack;
 class IMFOutputProfile;
 class IMFCompositionPlaylist;
-
-class IMFPackageException : public std::runtime_error
-{
-    public:
-        IMFPackageException(std::string const& error)
-        : std::runtime_error(error) {};
-};
 
 class IMFPackage
 {

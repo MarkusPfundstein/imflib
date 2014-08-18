@@ -29,7 +29,6 @@ struct RationalNumber {
         std::vector<std::string> strs;
         boost::split(strs, s, boost::is_any_of(" "));
         if (strs.size() != 2) {
-
             return RationalNumber(0, 0);
         }
         return RationalNumber(boost::lexical_cast<int>(strs[0]),

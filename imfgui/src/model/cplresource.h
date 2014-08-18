@@ -3,8 +3,13 @@
 
 #include "genericitem.h"
 #include "imftrack.h"
+#include "imfexceptions.h"
 
 #include <memory>
+#include <string>
+
+#include <vector>
+#include <boost/property_tree/ptree.hpp>
 
 // SMPTE ST 2067-3 defines this as a base class where
 // another class TrackFileResource derives from.
@@ -16,6 +21,11 @@ class CPLResource : public GenericItem
     public:
         CPLResource(const std::string &uuid, const std::shared_ptr<IMFTrack> &track);
         virtual ~CPLResource();
+
+        // loads a CPLResource from a property tree reference. Attentation: throws all xml exceptions
+        static std::shared_ptr<CPLResource> Load(const boost::property_tree::ptree &pt,
+                                                  const std::string &cplEditRate,
+                                                  const std::vector<std::shared_ptr<IMFTrack>> &tracks);
 
         // returns real playing time of referenced resource
         int GetIntrinsicDuration() const

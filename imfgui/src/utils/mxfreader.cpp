@@ -206,6 +206,9 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(editRate.Numerator, editRate.Denominator));
 
+    std::cout << track->GetEditRate().AsIMFString() << std::endl;
+    std::cout << editRate.Numerator << "/" << editRate.Denominator << std::endl;
+
     reader.Close();
 
     return track;
