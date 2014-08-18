@@ -41,10 +41,20 @@ class IMFCompositionPlaylist : public IMFPackageItem
         // pushes a virtual track onto list
         void AddVirtualTrack(const std::shared_ptr<CPLVirtualTrack> &vt);
 
+        // returns nullptr or virtual track if in it with ID
         std::shared_ptr<CPLVirtualTrack> FindVirtualTrackById(const std::string &id) const;
 
         // checks if a virtual track with a certain id exists already
         bool VirtualTrackExists(const std::string &id) const;
+
+        const std::vector<std::shared_ptr<CPLVirtualTrack>>& GetVirtualTracks() const
+        { return _virtualTracks; }
+
+        const std::vector<std::shared_ptr<CPLSegment>>& GetSegments() const
+        { return _segments; }
+
+        int GetDurationInFrames() const;
+        double GetDurationInEditUnits() const;
 
     protected:
     private:

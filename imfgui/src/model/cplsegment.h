@@ -19,6 +19,8 @@ class CPLSegment : public GenericItem
         const std::vector<std::shared_ptr<CPLSequence>>& GetSequences() const
         { return _sequences; }
 
+        int GetDuration() const;
+
     protected:
     private:
 

@@ -174,3 +174,22 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
 
     return playlist;
 }
+
+double IMFCompositionPlaylist::GetDurationInEditUnits() const
+{
+    return GetDurationInFrames() / _editRate.AsDouble();
+}
+
+int IMFCompositionPlaylist::GetDurationInFrames() const
+{
+    int duration = 0;
+
+    // SMPTE 2067-3
+    // The duration of the composition shall be the sum of the duration of
+    // its segments
+    for (const std::shared_ptr<CPLSegment> &s : _segments) {
+        duration += s->GetDuration();
+    }
+
+    return duration;
+}

@@ -26,6 +26,8 @@ class CPLSequence : public GenericItem
         const std::vector<std::shared_ptr<CPLResource>>& GetResources() const
         { return _resources; }
 
+        int GetDuration() const;
+
     protected:
     private:
 

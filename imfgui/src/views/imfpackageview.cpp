@@ -351,6 +351,8 @@ void IMFPackageView::NewCompositionPlaylist()
 
     workingPackage->AddCompositionPlaylist(newPlaylist);
     _packageModel.AppendItem(newPlaylist);
+
+    emit CompositionPlaylistDoubleClick(newPlaylist);
 }
 
 #include "../moc_imfpackageview.cpp"

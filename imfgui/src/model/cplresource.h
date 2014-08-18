@@ -31,6 +31,11 @@ class CPLResource : public GenericItem
         int GetIntrinsicDuration() const
         { return _track->GetDuration(); }
 
+        // gets source duration but normalized to video frames.
+        // if resource is audio it returns
+        // intrinsic duration / fps * playlistEditRate
+        int GetNormalizedSourceDuration() const;
+
         // returns edit rate of (referenced resource??).
         // this a bit unclear yet if this always must be the edit rate of the referenced resource
         // or if this would overwrite the edit rate of it. so that a resource in the cpl can
@@ -82,6 +87,12 @@ class CPLResource : public GenericItem
         void SetRepeatCount(int r)
         { _repeatCount = r; }
 
+        RationalNumber GetPlaylistEditRate() const
+        { return _playlistEditRate; }
+
+        void SetPlaylistEditRate(RationalNumber r)
+        { _playlistEditRate = r; }
+
     protected:
     private:
         /*
@@ -105,6 +116,8 @@ class CPLResource : public GenericItem
         std::string _sourceEncoding;
         std::string _keyId;
         std::string _hash;
+
+        RationalNumber _playlistEditRate;
 
 
 };

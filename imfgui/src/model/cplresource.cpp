@@ -11,7 +11,8 @@ CPLResource::CPLResource(const std::string &uuid, const std::shared_ptr<IMFTrack
     _sourceDuration(0),
     _sourceEncoding(""),
     _keyId(""),
-    _hash("")
+    _hash(""),
+    _playlistEditRate(0, 0)
 {
     //ctor
 }
@@ -19,6 +20,26 @@ CPLResource::CPLResource(const std::string &uuid, const std::shared_ptr<IMFTrack
 CPLResource::~CPLResource()
 {
     //dtor
+}
+
+int CPLResource::GetNormalizedSourceDuration() const
+{
+    switch (_track->GetType()) {
+        case IMFPackageItem::TYPE::VIDEO:
+            // for video its simple. return source duration
+            return _sourceDuration;
+            break;
+
+        case IMFPackageItem::TYPE::AUDIO:
+            /* for audio its shitty. we have to convert the duration to video frames.
+               i hacked it now by using the playlist edit rate and rounding the result.
+               this is probably not really accurate and should be fixed. As I think that
+               on non fractional framerates (25,30) it will cause problems */
+            return roundf(_sourceDuration / _track->GetEditRate().AsDouble() * _playlistEditRate.AsDouble());
+            break;
+    }
+
+    return -1;
 }
 
 std::shared_ptr<CPLResource> CPLResource ::Load(const boost::property_tree::ptree &pt,
@@ -70,6 +91,7 @@ std::shared_ptr<CPLResource> CPLResource ::Load(const boost::property_tree::ptre
     cplResource->SetSourceEncoding(sourceEncodingId);
     cplResource->SetKeyId(keyId);
     cplResource->SetHash(hash);
+    cplResource->SetPlaylistEditRate(RationalNumber::FromIMFString(cplEditRate));
 
     std::cout << "\t\t\tResource ID: " << resourceId << std::endl;
     std::cout << "\t\t\tIntrinsic Duration: " << intrinsicDuration << std::endl;
