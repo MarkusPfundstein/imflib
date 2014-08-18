@@ -43,12 +43,12 @@ MXFReader::ESSENCE_TYPE MXFReader::GetEssenceType() const
     return ESSENCE_TYPE::INVALID;
 }
 
-void MXFReader::ParseMetadata(const std::shared_ptr<IMFAudioTrack> &track)
+std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
 {
     AS_02::PCM::MXFReader reader;
     ASDCP::MXF::WaveAudioDescriptor *waveDescriptor = nullptr;
 
-    ASDCP::Result_t result = reader.OpenRead(track->GetPath());
+    ASDCP::Result_t result = reader.OpenRead(_filename);
     if (KM_FAILURE(result)) {
         throw MXFReaderException("Error opening file");
     }
@@ -95,20 +95,22 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFAudioTrack> &track)
     std::stringstream ss;
     ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
 
-    track->SetUUID(ss.str());
+    std::shared_ptr<IMFAudioTrack> track(new IMFAudioTrack(ss.str(), _filename));
     track->SetBits(bits);
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(waveDescriptor->SampleRate.Numerator, waveDescriptor->SampleRate.Denominator));
     reader.Close();
+
+    return track;
 }
 
-void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
+std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
 {
     AS_02::JP2K::MXFReader reader;
     ASDCP::MXF::RGBAEssenceDescriptor *rgbaDescriptor = nullptr;
     ASDCP::MXF::CDCIEssenceDescriptor *cdciDescriptor = nullptr;
 
-    ASDCP::Result_t result = reader.OpenRead(track->GetPath());
+    ASDCP::Result_t result = reader.OpenRead(_filename);
     if (KM_FAILURE(result)) {
         throw MXFReaderException("Error opening file");
     }
@@ -198,13 +200,15 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
     std::stringstream ss;
     ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
 
-    track->SetUUID(ss.str());
+    std::shared_ptr<IMFVideoTrack> track(new IMFVideoTrack(ss.str(), _filename));
     track->SetBits(bits);
     track->SetColorSpace(colorSpace);
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(editRate.Numerator, editRate.Denominator));
 
     reader.Close();
+
+    return track;
 }
 
 //void MXFReader::ReadHeader()

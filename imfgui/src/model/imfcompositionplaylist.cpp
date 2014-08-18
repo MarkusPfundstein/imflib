@@ -8,9 +8,9 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/exceptions.hpp>
 
-IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string& filename)
+IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string &uuid, const std::string& filename)
     :
-    IMFPackageItem(filename, IMFPackageItem::TYPE::CPL),
+    IMFPackageItem(uuid, filename, IMFPackageItem::TYPE::CPL),
     _editRate(0, 0)
 {
     //ctor
@@ -58,12 +58,10 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
 {
     using namespace boost::property_tree;
 
-    std::shared_ptr<IMFCompositionPlaylist> playlist(new IMFCompositionPlaylist(path));
-
     std::string cplUUID = pt.get<std::string>("CompositionPlaylist.Id");
     UUIDClean(cplUUID);
 
-    playlist->SetUUID(cplUUID);
+    std::shared_ptr<IMFCompositionPlaylist> playlist(new IMFCompositionPlaylist(cplUUID, path));
 
     std::string cplEditRate = pt.get<std::string>("CompositionPlaylist.EditRate");
     playlist->SetEditRate(RationalNumber::FromIMFString(cplEditRate));

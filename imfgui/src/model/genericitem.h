@@ -6,14 +6,11 @@
 class GenericItem
 {
     public:
-        GenericItem();
+        GenericItem(const std::string &uuid);
         virtual ~GenericItem();
 
         const std::string& GetUUID() const
         { return _uuid; }
-
-        void SetUUID(const std::string &u)
-        { _uuid = u; }
 
     protected:
     private:

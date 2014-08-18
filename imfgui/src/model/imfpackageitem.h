@@ -13,7 +13,7 @@ class IMFPackageItem : public GenericItem
             OPL = 4
         };
 
-        explicit IMFPackageItem(const std::string &filename, TYPE type);
+        explicit IMFPackageItem(const std::string &uuid, const std::string &filename, TYPE type);
         virtual ~IMFPackageItem();
 
         const std::string& GetPath() const

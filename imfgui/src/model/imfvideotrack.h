@@ -13,7 +13,7 @@ class IMFVideoTrack : public IMFTrack
             YUV422  = 3
         };
 
-        IMFVideoTrack(const std::string& filename);
+        IMFVideoTrack(const std::string &uuid, const std::string& filename);
         virtual ~IMFVideoTrack();
 
         std::string TypeString() const;

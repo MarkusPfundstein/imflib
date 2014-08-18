@@ -1,8 +1,8 @@
 #include "imfaudiotrack.h"
 
-IMFAudioTrack::IMFAudioTrack(const std::string& filename)
+IMFAudioTrack::IMFAudioTrack(const std::string &uuid, const std::string& filename)
     :
-    IMFTrack(filename, TYPE::AUDIO)
+    IMFTrack(uuid, filename, TYPE::AUDIO)
 {
     //ctor
 }

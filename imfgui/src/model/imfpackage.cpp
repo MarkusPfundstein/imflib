@@ -218,33 +218,22 @@ void IMFPackage::ParseAndAddTrack(const std::string& fullPath)
 {
     std::cout << "Parse And Add A/V Track: " << fullPath << std::endl;
     MXFReader mxfReader(fullPath);
+    try {
+        MXFReader::ESSENCE_TYPE essenceType = mxfReader.GetEssenceType();
 
-    MXFReader::ESSENCE_TYPE essenceType = mxfReader.GetEssenceType();
-
-    if (essenceType == MXFReader::ESSENCE_TYPE::VIDEO) {
-        std::shared_ptr<IMFVideoTrack> videoTrack(new IMFVideoTrack(fullPath));
-
-        // parse header to get metadata for videotrack
-        try {
-            mxfReader.ParseMetadata(videoTrack);
-        } catch (MXFReaderException &ex) {
-            throw IMFPackageException(ex.what());
+        if (essenceType == MXFReader::ESSENCE_TYPE::VIDEO) {
+            // parse header to get metadata for videotrack
+            std::shared_ptr<IMFVideoTrack> videoTrack = mxfReader.ReadVideoTrack();
+            AddVideoTrack(videoTrack);
+        } else if (essenceType == MXFReader::ESSENCE_TYPE::AUDIO) {
+            // parse header to get metadata for videotrack
+            std::shared_ptr<IMFAudioTrack> audioTrack = mxfReader.ReadAudioTrack();
+            AddAudioTrack(audioTrack);
+        } else {
+            throw IMFPackageException("invalid essence type");
         }
-
-        AddVideoTrack(videoTrack);
-    } else if (essenceType == MXFReader::ESSENCE_TYPE::AUDIO) {
-        std::shared_ptr<IMFAudioTrack> audioTrack(new IMFAudioTrack(fullPath));
-
-        // parse header to get metadata for videotrack
-        try {
-            mxfReader.ParseMetadata(audioTrack);
-        } catch (MXFReaderException &ex) {
-            throw IMFPackageException(ex.what());
-        }
-
-        AddAudioTrack(audioTrack);
-    } else {
-        throw IMFPackageException("invalid essence type");
+    } catch (MXFReaderException &ex) {
+        throw IMFPackageException(ex.what());
     }
 }
 

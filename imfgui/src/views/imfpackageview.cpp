@@ -315,8 +315,7 @@ void IMFPackageView::NewCompositionPlaylist()
     std::string uuid = UUIDGenerator().MakeUUID();
     std::string path = workingPackage->GetFullPath() + "/CPL_" + uuid + ".xml";
 
-    std::shared_ptr<IMFCompositionPlaylist> newPlaylist(new IMFCompositionPlaylist(path));
-    newPlaylist->SetUUID(uuid);
+    std::shared_ptr<IMFCompositionPlaylist> newPlaylist(new IMFCompositionPlaylist(uuid, path));
 
     workingPackage->AddCompositionPlaylist(newPlaylist);
     _packageModel.AppendItem(newPlaylist);

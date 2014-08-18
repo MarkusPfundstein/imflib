@@ -1,8 +1,8 @@
 #include "imfoutputprofile.h"
 
-IMFOutputProfile::IMFOutputProfile(const std::string& filename)
+IMFOutputProfile::IMFOutputProfile(const std::string &uuid, const std::string& filename)
     :
-    IMFPackageItem(filename, IMFPackageItem::TYPE::OPL)
+    IMFPackageItem(uuid, filename, IMFPackageItem::TYPE::OPL)
 {
     //ctor
 }

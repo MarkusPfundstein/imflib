@@ -1,8 +1,8 @@
 #include "imftrack.h"
 
-IMFTrack::IMFTrack(const std::string& filename, TYPE type)
+IMFTrack::IMFTrack(const std::string &uuid, const std::string& filename, TYPE type)
     :
-    IMFPackageItem(filename, type),
+    IMFPackageItem(uuid, filename, type),
     _bits(0),
     _duration(0),
     _editRate(0, 0),

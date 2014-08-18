@@ -1,8 +1,8 @@
 #include "genericitem.h"
 
-GenericItem::GenericItem()
+GenericItem::GenericItem(const std::string &uuid)
     :
-    _uuid("")
+    _uuid(uuid)
 {
     //ctor
 }

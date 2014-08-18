@@ -35,8 +35,8 @@ class MXFReader
         ESSENCE_TYPE GetEssenceType() const;
 
         // parses headers in track
-        void ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track);
-        void ParseMetadata(const std::shared_ptr<IMFAudioTrack> &track);
+        std::shared_ptr<IMFAudioTrack> ReadAudioTrack();
+        std::shared_ptr<IMFVideoTrack> ReadVideoTrack();
     protected:
     private:
         std::string _filename;

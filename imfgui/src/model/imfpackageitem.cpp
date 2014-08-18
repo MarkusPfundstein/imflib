@@ -4,9 +4,9 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 
-IMFPackageItem::IMFPackageItem(const std::string& filename, TYPE type)
+IMFPackageItem::IMFPackageItem(const std::string &uuid, const std::string& filename, TYPE type)
     :
-    GenericItem(),
+    GenericItem(uuid),
     _filename(filename),
     _type(type)
 {

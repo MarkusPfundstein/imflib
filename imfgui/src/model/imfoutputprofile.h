@@ -6,7 +6,7 @@
 class IMFOutputProfile : public IMFPackageItem
 {
     public:
-        IMFOutputProfile(const std::string& filename);
+        IMFOutputProfile(const std::string &uuid, const std::string& filename);
         virtual ~IMFOutputProfile();
 
     protected:

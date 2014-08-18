@@ -13,7 +13,7 @@
 class IMFCompositionPlaylist : public IMFPackageItem
 {
     public:
-        IMFCompositionPlaylist(const std::string& filename);
+        IMFCompositionPlaylist(const std::string &uuid, const std::string& filename);
         virtual ~IMFCompositionPlaylist();
 
         // writes composition playlist to disk

@@ -9,7 +9,7 @@
 class IMFTrack : public IMFPackageItem
 {
     public:
-        IMFTrack(const std::string& filename, TYPE type);
+        IMFTrack(const std::string &uuid, const std::string& filename, TYPE type);
 
         virtual ~IMFTrack();
 
