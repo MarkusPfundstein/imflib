@@ -1,6 +1,8 @@
 #include "cplresource.h"
 
-CPLResource::CPLResource()
+CPLResource::CPLResource(const std::string &uuid)
+    :
+    GenericItem(uuid)
 {
     //ctor
 }

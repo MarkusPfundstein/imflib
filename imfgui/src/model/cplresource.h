@@ -1,11 +1,12 @@
 #ifndef CPLRESOURCE_H
 #define CPLRESOURCE_H
 
+#include "genericitem.h"
 
-class CPLResource
+class CPLResource : public GenericItem
 {
     public:
-        CPLResource();
+        CPLResource(const std::string &uuid);
         virtual ~CPLResource();
     protected:
     private:

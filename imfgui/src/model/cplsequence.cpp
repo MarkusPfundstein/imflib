@@ -1,6 +1,10 @@
 #include "cplsequence.h"
 
-CPLSequence::CPLSequence()
+
+
+CPLSequence::CPLSequence(const std::string &uuid)
+    :
+    GenericItem(uuid)
 {
     //ctor
 }

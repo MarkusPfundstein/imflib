@@ -1,11 +1,12 @@
 #ifndef CPLSEQUENCE_H
 #define CPLSEQUENCE_H
 
+#include "genericitem.h"
 
-class CPLSequence
+class CPLSequence : public GenericItem
 {
     public:
-        CPLSequence();
+        CPLSequence(const std::string &uuid);
         virtual ~CPLSequence();
     protected:
     private:

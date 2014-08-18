@@ -1,11 +1,12 @@
 #ifndef CPLSEGMENT_H
 #define CPLSEGMENT_H
 
+#include "genericitem.h"
 
-class CPLSegment
+class CPLSegment : public GenericItem
 {
     public:
-        CPLSegment();
+        CPLSegment(const std::string &uuid);
         virtual ~CPLSegment();
     protected:
     private:

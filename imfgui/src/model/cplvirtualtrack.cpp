@@ -1,6 +1,8 @@
 #include "cplvirtualtrack.h"
 
-CPLVirtualTrack::CPLVirtualTrack()
+CPLVirtualTrack::CPLVirtualTrack(const std::string &uuid)
+    :
+    GenericItem(uuid)
 {
     //ctor
 }

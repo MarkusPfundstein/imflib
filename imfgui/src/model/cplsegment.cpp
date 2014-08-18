@@ -1,6 +1,8 @@
 #include "cplsegment.h"
 
-CPLSegment::CPLSegment()
+CPLSegment::CPLSegment(const std::string &uuid)
+    :
+    GenericItem(uuid)
 {
     //ctor
 }

@@ -1,11 +1,12 @@
 #ifndef CPLVIRTUALTRACK_H
 #define CPLVIRTUALTRACK_H
 
+#include "genericitem.h"
 
-class CPLVirtualTrack
+class CPLVirtualTrack : public GenericItem
 {
     public:
-        CPLVirtualTrack();
+        CPLVirtualTrack(const std::string &uuid);
         virtual ~CPLVirtualTrack();
     protected:
     private:
