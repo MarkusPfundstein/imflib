@@ -125,3 +125,11 @@ void IMFPackageModel::Clear()
     _data.clear();
     reset();
 }
+
+const std::shared_ptr<IMFPackageItem> IMFPackageModel::IMFPackageInRow(int row) const
+{
+    if (row >= 0 && row < _data.size()) {
+        return _data[row];
+    }
+    return std::shared_ptr<IMFPackageItem>(nullptr);
+}

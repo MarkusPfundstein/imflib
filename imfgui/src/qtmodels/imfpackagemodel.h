@@ -35,6 +35,9 @@ class IMFPackageModel : public QAbstractTableModel
         // clears data
         void Clear();
 
+        // returns IMFPackage in row
+        const std::shared_ptr<IMFPackageItem> IMFPackageInRow(int row) const;
+
     protected:
     private:
         // tries to cast item to IMFTrack and returns duration in frames as string

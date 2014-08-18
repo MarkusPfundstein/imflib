@@ -2,9 +2,9 @@
 
 #include <QtGui>
 
-PackageTableView::PackageTableView(QWidget *parent)
+PackageTableView::PackageTableView(QWidget *_parent)
     :
-    QTableView(parent)
+    QTableView(_parent)
 {
     //ctor
 }

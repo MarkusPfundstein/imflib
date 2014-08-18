@@ -3,7 +3,10 @@
 
 #include <QMainWindow>
 #include <QMenu>
+#include <QModelIndex>
 #include "qtmodels/imfpackagemodel.h"
+
+class IMFCompositionPlaylist;
 
 class IMFPackageView : public QMainWindow
 {
@@ -16,7 +19,9 @@ class IMFPackageView : public QMainWindow
         // disables and enables all menus according to state of program
         void UpdateMenu();
 
-    protected:
+    signals:
+        void CompositionPlaylistDoubleClick(const std::shared_ptr<IMFCompositionPlaylist> &playlist);
+
     private slots:
         // File Menu
         void NewFile();
@@ -26,6 +31,9 @@ class IMFPackageView : public QMainWindow
         // IMF Menu
         void AddTrackFile();
         void NewCompositionPlaylist();
+
+        // A Row is selected in table view
+        void TableViewRowSelected(const QModelIndex& idx);
 
     private:
 

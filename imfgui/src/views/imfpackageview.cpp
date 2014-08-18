@@ -46,6 +46,10 @@ IMFPackageView::IMFPackageView()
     packageTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     packageTableView->setSelectionMode(QAbstractItemView::SingleSelection);
 
+    connect(packageTableView,
+            SIGNAL (doubleClicked(const QModelIndex&)),
+            this, SLOT (TableViewRowSelected(const QModelIndex&)));
+
     // adjust tableview after new data gets inserted so that column width
     // fits to new data.
 
@@ -68,9 +72,13 @@ IMFPackageView::IMFPackageView()
     controlView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     mainLayout->addWidget(controlView);
 
-
     CPLSequenceView *sequenceView = new CPLSequenceView(this);
     mainLayout->addWidget(sequenceView);
+
+    connect(this,
+            SIGNAL(CompositionPlaylistDoubleClick(const std::shared_ptr<IMFCompositionPlaylist>&)),
+            sequenceView,
+            SLOT(CompositionPlaylistChanged(const std::shared_ptr<IMFCompositionPlaylist> &)));
 
     CreateActions();
     CreateMenus();
@@ -142,6 +150,23 @@ void IMFPackageView::UpdateMenu()
     _newCompositionPlaylistAction->setEnabled(app->GetWorkingPackage() ? true : false);
 }
 
+void IMFPackageView::TableViewRowSelected(const QModelIndex &idx)
+{
+    std::cout << "Row selected: " << idx.row() << std::endl;
+
+    std::shared_ptr<IMFPackageItem> item = _packageModel.IMFPackageInRow(idx.row());
+    if (item == nullptr) {
+        return;
+    }
+    if (item->GetType() == IMFPackageItem::TYPE::CPL) {
+        std::shared_ptr<IMFCompositionPlaylist> cpl = std::dynamic_pointer_cast<IMFCompositionPlaylist>(item);
+        if (cpl) {
+            std::cout << "emit signal " << std::endl;
+            emit CompositionPlaylistDoubleClick(cpl);
+        }
+    }
+}
+
 void IMFPackageView::NewFile()
 {
     std::cout << "new file" << std::endl;
@@ -154,6 +179,8 @@ void IMFPackageView::NewFile()
     _packageModel.Clear();
 
     setWindowTitle(BaseWindowTitle + tr(" - New File"));
+
+    emit CompositionPlaylistDoubleClick(std::shared_ptr<IMFCompositionPlaylist>(nullptr));
 }
 
 void IMFPackageView::OpenFile()
@@ -190,6 +217,11 @@ void IMFPackageView::OpenFile()
             if (_packageModel.HasItem(item) == false) {
                 _packageModel.AppendItem(item);
             }
+        }
+
+        // draw first composition playlist
+        if (newPackage->GetCompositionPlaylists().empty() == false) {
+            emit CompositionPlaylistDoubleClick(newPackage->GetCompositionPlaylists()[0]);
         }
 
         UpdateMenu();
