@@ -7,6 +7,8 @@
 #include "../model/imfvideotrack.h"
 #include "../model/imfaudiotrack.h"
 
+#include <KM_util.h>
+
 MXFReader::MXFReader(const std::string& filename)
     : _filename(filename)
 {
@@ -114,6 +116,8 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
     result = reader.OP1aHeader().GetMDObjectByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_RGBAEssenceDescriptor),
 						     reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&rgbaDescriptor));
 
+    //reader.OP1aHeader().Dump();
+
     // get used down below to set color space etc
     int bits = -1;
     int duration = -1;
@@ -141,6 +145,14 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
         } else {
             bits = -1;
         }
+
+        //rgbaDescriptor->Dump();
+        /*
+        Kumu::UUID uuid = rgbaDescriptor->InstanceUID;
+        char buf[41];
+        uuid.EncodeHex(buf, 40);
+        std::cout << "buf: " << buf << std::endl;
+        */
     } else {
         // check if we have a cdci (yuv) descriptor
         result = reader.OP1aHeader().GetMDObjectByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_CDCIEssenceDescriptor),
@@ -155,11 +167,25 @@ void MXFReader::ParseMetadata(const std::shared_ptr<IMFVideoTrack> &track)
             duration = cdciDescriptor->ContainerDuration;
             editRate = cdciDescriptor->SampleRate;
             bits = cdciDescriptor->ComponentDepth;
+
         } else {
             reader.Close();
             throw MXFReaderException("No essence descriptor found");
         }
+        /*Kumu::UUID uuid = cdciDescriptor->InstanceUID;
+        char buf[41];
+        uuid.EncodeHex(buf, 40);
+        std::cout << "buf: " << buf << std::endl;*/
     }
+
+    /* Lets try to get SourceEncoding */
+    /*
+    ASDCP::MXF::SourcePackage *sourcePackage = reader.OP1aHeader().GetSourcePackage();
+    Kumu::UUID uuid = sourcePackage->Descriptor;
+    char buf[41];
+    uuid.EncodeHex(buf, 40);
+    std::cout << "buf: " << buf << std::endl;
+    */
 
     ASDCP::WriterInfo info;
     result = reader.FillWriterInfo(info);

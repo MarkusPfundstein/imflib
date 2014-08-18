@@ -4,6 +4,14 @@
 #include <cmath>
 #include <iostream>
 
+#include "../drawing/cplsequencerect.h"
+
+#include "../application.h"
+
+#include "../model/imfpackage.h"
+#include "../model/imfvideotrack.h"
+#include "../model/imfaudiotrack.h"
+
 CPLSequenceView::CPLSequenceView(QWidget *parent)
     : QWidget(parent)
 {
@@ -28,6 +36,9 @@ QSize CPLSequenceView::sizeHint() const
 
 void CPLSequenceView::paintEvent(QPaintEvent *)
 {
+    Application *app = static_cast<Application*>(Application::instance());
+    IMFPackage *workingPackage = app->GetWorkingPackage();
+
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, false);
     painter.setPen(palette().light().color());
@@ -39,15 +50,14 @@ void CPLSequenceView::paintEvent(QPaintEvent *)
     int heightPerTrack = floorf(height() / numberTracks);       // lets assume 4 now
 
     for (int i = 0; i < numberTracks; ++i) {
-        std::cout << i << std::endl;
         int horizontalOffset = i * heightPerTrack;
 
         QLine line(0, horizontalOffset, width(), horizontalOffset);
 
         /* TESTING */
         if (i == 0) {
-            QRect r(1, horizontalOffset + 1, (int)(width() * 0.3f), heightPerTrack - 1);
-            painter.fillRect(r, QBrush(QColor(230, 120, 120, 188)));
+            CPLSequenceRect r(1, horizontalOffset + 1, width() * 0.3f, heightPerTrack - 1, 230, 120, 120, 188);
+            r.Draw(painter);
         } else if (i == 1) {
             QRect r(1, horizontalOffset + 1, (int)(width() * 0.3f), heightPerTrack - 1);
             painter.fillRect(r, QBrush(QColor(120, 230, 120, 188)));

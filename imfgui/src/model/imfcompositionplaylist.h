@@ -36,12 +36,17 @@ class IMFCompositionPlaylist : public IMFPackageItem
     };
 
     // stores a sequence of Tracks
-    struct Sequence
+    class Segment
     {
-        Sequence() : _videoTracks(), _audioTracks() {}
+        public:
+            Segment(const std::string &uuid) : _uuid(uuid), _videoTracks(), _audioTracks() {}
 
-        std::vector<std::shared_ptr<TrackContainer>> _videoTracks;
-        std::vector<std::shared_ptr<TrackContainer>> _audioTracks;
+        private:
+
+            std::string _uuid;
+
+            std::vector<std::shared_ptr<TrackContainer>> _videoTracks;
+            std::vector<std::shared_ptr<TrackContainer>> _audioTracks;
     };
 
     public:
@@ -66,7 +71,7 @@ class IMFCompositionPlaylist : public IMFPackageItem
         RationalNumber _editRate;
 
         // video and tracks in container.
-        std::vector<std::shared_ptr<Sequence>> _sequences;
+        std::vector<std::shared_ptr<Segment>> _segments;
 };
 
 #endif // IMFCOMPOSITIONPLAYLIST_H

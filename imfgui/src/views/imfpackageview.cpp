@@ -139,6 +139,7 @@ void IMFPackageView::UpdateMenu()
     Application *app = static_cast<Application*>(Application::instance());
 
     _addTrackFileAction->setEnabled(app->GetWorkingPackage() ? true : false);
+    _newCompositionPlaylistAction->setEnabled(app->GetWorkingPackage() ? true : false);
 }
 
 void IMFPackageView::NewFile()
@@ -218,6 +219,9 @@ void IMFPackageView::SaveFile()
         QString name = QInputDialog::getText(this,
                                              tr("Name of IMF package?"),
                                              tr("Name: "));
+        if (name.isEmpty()) {
+            return;
+        }
 
         QString finalLocation = directory + tr("/") + name;
 
@@ -264,6 +268,9 @@ void IMFPackageView::AddTrackFile()
                                                     tr("Add Track File"),
                                                     app->Settings()->GetLastOpenedTrackDir(),
                                                     tr("MXF Files (*.mxf)"));
+    if (fileName.isEmpty()) {
+        return;
+    }
 
     QFileInfo fileInfo(fileName);
     app->Settings()->SetLastOpenedTrackDir(fileInfo.absolutePath());

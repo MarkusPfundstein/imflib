@@ -31,11 +31,18 @@ class IMFTrack : public IMFPackageItem
         RationalNumber GetEditRate() const
         { return _editRate; }
 
+        const std::string& GetSourceEncodingUUID() const
+        { return _sourceEncodingUUID; }
+
+        void SetSourceEncodingUUID(const std::string &val)
+        { _sourceEncodingUUID = val; }
+
     protected:
         int _bits;
         int _duration;
         RationalNumber _editRate;
 
+        std::string _sourceEncodingUUID;
 };
 
 #endif // IMFTRACK_H
