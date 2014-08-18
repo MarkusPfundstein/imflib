@@ -1,6 +1,6 @@
-#include "cplsequencerect.h"
+#include "CPLResourceRect.h"
 
-CPLSequenceRect::CPLSequenceRect(int x1, int y1, int x2, int y2)
+CPLResourceRect::CPLResourceRect(int x1, int y1, int x2, int y2)
     :
     _color(230, 120, 120, 230),
     _startCoordinates(x1, y1),
@@ -10,7 +10,7 @@ CPLSequenceRect::CPLSequenceRect(int x1, int y1, int x2, int y2)
     //ctor
 }
 
-CPLSequenceRect::CPLSequenceRect(int x1, int y1, int x2, int y2, int r, int g, int b, int a)
+CPLResourceRect::CPLResourceRect(int x1, int y1, int x2, int y2, int r, int g, int b, int a)
     :
     _color(r, g, b, a),
     _startCoordinates(x1, y1),
@@ -20,7 +20,7 @@ CPLSequenceRect::CPLSequenceRect(int x1, int y1, int x2, int y2, int r, int g, i
     //ctor
 }
 
-CPLSequenceRect::CPLSequenceRect(QPoint s, QPoint e, QColor c)
+CPLResourceRect::CPLResourceRect(QPoint s, QPoint e, QColor c)
     :
     _color(c),
     _startCoordinates(s),
@@ -30,12 +30,12 @@ CPLSequenceRect::CPLSequenceRect(QPoint s, QPoint e, QColor c)
     //ctor
 }
 
-CPLSequenceRect::~CPLSequenceRect()
+CPLResourceRect::~CPLResourceRect()
 {
     //dtor
 }
 
-void CPLSequenceRect::Draw(QPainter &painter)
+void CPLResourceRect::Draw(QPainter &painter)
 {
     _sequenceBox.setCoords(_startCoordinates.x(), _startCoordinates.y(), _endCoordinates.x(), _endCoordinates.y());
     painter.fillRect(_sequenceBox, QBrush(_color));

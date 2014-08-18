@@ -60,7 +60,7 @@ std::shared_ptr<CPLResource> CPLResource ::Load(const boost::property_tree::ptre
     // search track in tracks
     auto it = std::find_if(tracks.begin(), tracks.end(), [&trackFileId](const std::shared_ptr<IMFTrack>& t) { return t->GetUUID() == trackFileId; });
     if (it == tracks.end()) {
-        throw IMFCompositionPlaylistException("Track referenced in CPL which is not defined in ASSETMAP");
+        throw IMFInvalidReferenceException("Track referenced in CPL which is not defined in ASSETMAP");
     }
 
     std::shared_ptr<CPLResource> cplResource(new CPLResource(resourceId, *it));

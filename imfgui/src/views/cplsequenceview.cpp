@@ -4,7 +4,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "../drawing/cplsequencerect.h"
+#include "../drawing/cplresourcerect.h"
 
 #include "../application.h"
 
@@ -56,7 +56,7 @@ void CPLSequenceView::paintEvent(QPaintEvent *)
 
         /* TESTING */
         if (i == 0) {
-            CPLSequenceRect r(1, horizontalOffset + 1, width() * 0.3f, heightPerTrack - 1, 230, 120, 120, 188);
+            CPLResourceRect r(1, horizontalOffset + 1, width() * 0.3f, heightPerTrack - 1, 230, 120, 120, 188);
             r.Draw(painter);
         } else if (i == 1) {
             QRect r(1, horizontalOffset + 1, (int)(width() * 0.3f), heightPerTrack - 1);

@@ -18,7 +18,9 @@
 IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string &uuid, const std::string& filename)
     :
     IMFPackageItem(uuid, filename, IMFPackageItem::TYPE::CPL),
-    _editRate(0, 0)
+    _editRate(0, 0),
+    _segments(),
+    _virtualTracks()
 {
     //ctor
 }
@@ -61,6 +63,35 @@ void IMFCompositionPlaylist::Write() const
     write_xml(GetPath(), pt, std::locale(), settings);
 }
 
+void IMFCompositionPlaylist::AddSegment(const std::shared_ptr<CPLSegment> &segment)
+{
+    _segments.push_back(segment);
+}
+
+void IMFCompositionPlaylist::AddVirtualTrack(const std::shared_ptr<CPLVirtualTrack> &vt)
+{
+    _virtualTracks.push_back(vt);
+}
+
+bool IMFCompositionPlaylist::VirtualTrackExists(const std::string &id) const
+{
+    return _virtualTracks.end() != std::find_if(_virtualTracks.begin(),
+                                                 _virtualTracks.end(),
+                                                 [&id](const std::shared_ptr<CPLVirtualTrack> &v) { return v->GetUUID() == id; });
+}
+
+std::shared_ptr<CPLVirtualTrack> IMFCompositionPlaylist::FindVirtualTrackById(const std::string &id) const
+{
+    auto it = std::find_if(_virtualTracks.begin(),
+                           _virtualTracks.end(),
+                           [&id](const std::shared_ptr<CPLVirtualTrack> &v) { return v->GetUUID() == id; });
+    if (it != _virtualTracks.end()) {
+        return *it;
+    }
+
+    return std::shared_ptr<CPLVirtualTrack>(nullptr);
+}
+
 std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::string &path,
                                                                      boost::property_tree::ptree &pt,
                                                                      const std::vector<std::shared_ptr<IMFTrack>> &tracks)
@@ -84,7 +115,14 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
         std::string segmentUUID = segmentNode.second.get<std::string>("Id");
         UUIDClean(segmentUUID);
 
+        std::string annotation = segmentNode.second.get<std::string>("Annotation", "");
+
         std::cout << "\tSegmentUUID: " << segmentUUID << std::endl;
+        std::cout << "\tAnnotation: " << annotation << std::endl;
+
+        std::shared_ptr<CPLSegment> segment(new CPLSegment(segmentUUID));
+
+        playlist->AddSegment(segment);
 
         // go through all sequences of segment. sequences get played synchrounously at the same time
         for (ptree::value_type const &sequenceListNode : segmentNode.second.get_child("SequenceList")) {
@@ -99,13 +137,35 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
             std::cout << "\t\tSequence Id: " << sequenceId << std::endl;
             std::cout << "\t\tVirtual Track Id: "<< virtualTrackId << std::endl;
 
+            std::shared_ptr<CPLSequence> sequence(new CPLSequence(sequenceId));
+            sequence->SetVirtualTrackId(virtualTrackId);
+
+            segment->AddSequence(sequence);
+
+            std::shared_ptr<CPLVirtualTrack> virtualTrack = playlist->FindVirtualTrackById(virtualTrackId);
+            if (virtualTrack == nullptr) {
+                virtualTrack.reset(new CPLVirtualTrack(virtualTrackId));
+                playlist->AddVirtualTrack(virtualTrack);
+                std::cout << "-> New Virtual Track generated" << std::endl;
+            }
+
+            virtualTrack->AddSequence(sequence);
+
             for (ptree::value_type const &resourceListNode : sequenceListNode.second.get_child("ResourceList")) {
                 if (resourceListNode.first == "Resource") {
                     std::string resourceType = resourceListNode.second.get<std::string>("<xmlattr>.xsi:type");
 
                     // we only handle TrackFileResourceTypes now. This is AUDIO/VIDEO and SUBTITLES
                     if (resourceType.find("TrackFileResourceType") != std::string::npos) {
-                        std::shared_ptr<CPLResource> resource = CPLResource::Load(resourceListNode.second, cplEditRate, tracks);
+                        try {
+                            std::shared_ptr<CPLResource> resource = CPLResource::Load(resourceListNode.second,
+                                                                                      cplEditRate,
+                                                                                      tracks);
+                            sequence->AddResource(resource);
+                        } catch (IMFInvalidReferenceException &e) {
+                            throw IMFCompositionPlaylistException(e.what());
+                        }
+
                     }
                 }
             }

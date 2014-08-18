@@ -17,4 +17,11 @@ class IMFPackageException : public std::runtime_error
         : std::runtime_error(error) {};
 };
 
+class IMFInvalidReferenceException : public std::runtime_error
+{
+    public:
+        IMFInvalidReferenceException(std::string const& error)
+        : std::runtime_error(error) {};
+};
+
 #endif // IMFEXCEPTIONS_H_INCLUDED
