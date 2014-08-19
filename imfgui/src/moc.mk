@@ -11,3 +11,6 @@ moc_cplsequencecontrolview.cpp:
 
 moc_packagetableview.cpp:
 	$(MOC) -i -o $@ views/packagetableview.h
+
+moc_cplresourcerect.cpp:
+	$(MOC) -i -o $@ drawing/cplresourcerect.h

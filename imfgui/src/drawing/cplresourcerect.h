@@ -2,16 +2,19 @@
 #define CPLResourceRect_H
 
 #include <memory>
+#include <QObject>
 #include <QRect>
 #include <QColor>
 #include <QPainter>
 
-class CPLResourceRect
+class QEvent;
+
+class CPLResourceRect : public QObject
 {
+    Q_OBJECT
+
     public:
-        CPLResourceRect(int x1, int y1, int x2, int y2);
-        CPLResourceRect(int x1, int y1, int x2, int y2, int r, int g, int b, int a);
-        CPLResourceRect(QPoint s, QPoint e, QColor c);
+        CPLResourceRect(QObject *parent, QPoint s, QPoint e, QColor c);
         virtual ~CPLResourceRect();
 
         void Draw(QPainter &painter);
@@ -19,8 +22,18 @@ class CPLResourceRect
         void SetColorRGBA(int r, int g, int b, int a)
         { _color.setRgb(r, g, b, a); }
 
+        virtual bool eventFilter(QObject *object, QEvent *event);
+
+        void SetSelected(bool s)
+        { _selected = s; }
+
+    signals:
+        void IGotSelected(CPLResourceRect *me);
+
     protected:
     private:
+        // determines if box is selcted
+        bool _selected;
 
         // color in which rect shall be drawn
         QColor _color;

@@ -3,11 +3,13 @@
 
 #include <QWidget>
 #include <memory>
-
+#include <map>
 
 class CPLSegment;
 class CPLSequence;
 class CPLVirtualTrack;
+class CPLResource;
+class CPLResourceRect;
 class IMFCompositionPlaylist;
 
 class CPLSequenceView : public QWidget
@@ -26,6 +28,9 @@ class CPLSequenceView : public QWidget
         // Composition playlist changed
         void CompositionPlaylistChanged(const std::shared_ptr<IMFCompositionPlaylist> &newPlaylist);
 
+        // a resource rect got selected
+        void ResourceRectGotSelected(CPLResourceRect *resourceRect);
+
     protected:
     private:
 
@@ -35,11 +40,17 @@ class CPLSequenceView : public QWidget
         // renders a sequence
         void RenderSequence(const CPLSequence& sequence, QPainter &painter, int seqIdx, int startX, int trackIdx, int heightPerTrack, int *sequenceLength);
 
+        // renders a resource
+        void RenderResource(const CPLResource& resource, QPainter &painter, int seqIdx, int startX, int trackIdx, int heightPerTrack, int *resourceLength);
+
         // composition playlist to render
         std::shared_ptr<IMFCompositionPlaylist> _compositionPlaylist;
 
         // duration of playlist
         int _playlistDuration;
+
+        // mapping of virtual track id to render index (0, 1, 2, ..)
+        std::map<std::string, int> _virtualTrackMap;
 };
 
 #endif // CPLSEQUENCEVIEW_H

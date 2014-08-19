@@ -64,7 +64,8 @@ std::shared_ptr<CPLResource> CPLResource ::Load(const boost::property_tree::ptre
     RationalNumber resourceEditRate = RationalNumber::FromIMFString(editRateString);
 
     // refers to EssenceDescriptorList in CPL
-    // but no idea yet to what field in MXF file
+    // TO-DO check if it is already in EssenceDescriptor List . If not
+    // throw IMFInvalidReferenceException
     std::string sourceEncodingId = pt.get<std::string>("SourceEncoding");
     UUIDClean(sourceEncodingId);
 
