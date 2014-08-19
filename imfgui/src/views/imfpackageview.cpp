@@ -87,9 +87,10 @@ IMFPackageView::IMFPackageView()
     mainWidget->setLayout(mainLayout);
     setWindowTitle(BaseWindowTitle + tr(" - New File"));
     setMinimumSize(640, 480);
-    resize(1024, 768);
+    //resize(1024, 768);
+    showMaximized();
 
-    NewFile();
+    //NewFile();
 }
 
 IMFPackageView::~IMFPackageView()

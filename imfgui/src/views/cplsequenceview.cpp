@@ -20,13 +20,17 @@
 
 CPLSequenceView::CPLSequenceView(QWidget *_parent)
     :
-    QWidget(_parent),
+    QGraphicsView(_parent),
     _compositionPlaylist(nullptr),
     _playlistDuration(0),
     _virtualTrackMap()
 {
     setBackgroundRole(QPalette::Shadow);
     setAutoFillBackground(true);
+    setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+    //QGraphicsScene *gscene = new QGraphicsScene(0, 0, width(), height());
+    //setScene(gscene);
 }
 
 CPLSequenceView::~CPLSequenceView()
@@ -59,27 +63,18 @@ void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompos
             idx++;
         }
     }
-    update();
+    // we also call this if nullptr is passed. to delete scene
+    setScene(new QGraphicsScene(0, 0, width(), height()));
+    paintScence();
 }
 
-void CPLSequenceView::paintEvent(QPaintEvent *)
+void CPLSequenceView::paintScence()
 {
-    //Application *app = static_cast<Application*>(Application::instance());
-    //IMFPackage *workingPackage = app->GetWorkingPackage();
-
-    for (QObject *child : children()) {
-        CPLResourceRect *rect = dynamic_cast<CPLResourceRect*>(child);
-        if (rect) {
-            delete rect;
-        }
-    }
-
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setBrush(Qt::NoBrush);
-
     int numberTracks = _compositionPlaylist ? _compositionPlaylist->GetVirtualTracks().size() : 4;
-    int heightPerTrack = floorf(height() / numberTracks);
+    if (numberTracks < 8) {
+        numberTracks = 8;
+    }
+    int heightPerTrack = floorf((height() - 10) / numberTracks);
 
     std::vector<int> _separatorOffsets;
     if (_compositionPlaylist) {
@@ -88,9 +83,9 @@ void CPLSequenceView::paintEvent(QPaintEvent *)
         _separatorOffsets.push_back(0);
         for (const std::shared_ptr<CPLSegment> segment : _compositionPlaylist->GetSegments()) {
             int length;
-            RenderSegment(*segment, painter, seqIdx, startX, heightPerTrack, &length);
+            RenderSegment(*segment, seqIdx, startX + 1, heightPerTrack, &length);
 
-            _separatorOffsets.push_back(startX + length);
+            _separatorOffsets.push_back(startX + length + 1);
 
             startX += length;
             seqIdx++;
@@ -98,25 +93,20 @@ void CPLSequenceView::paintEvent(QPaintEvent *)
         // render segment lines
         for (int sx: _separatorOffsets) {
              // render segment line
-            QLine line(sx, 0, sx, height());
-            painter.setPen(QPen(QColor(0, 0, 0), 2));
-            painter.drawLine(line);
+            QLine line(sx, 0, sx, scene()->height());
+            scene()->addLine(line, QPen(QColor(0, 0, 0, 128), 2));
         }
     }
 
     // draw nice lines to separate tracks
-    for (int i = 1; i < numberTracks; ++i) {
-        int horizontalOffset = i * heightPerTrack;
-        QLine line(0, horizontalOffset, width(), horizontalOffset);
-        painter.setPen(QPen(QColor(188, 188, 188)));
-        painter.drawLine(line);
+    for (int i = 0; i < numberTracks; ++i) {
+        int horizontalOffset = i * heightPerTrack + 1;
+        QLine line(0, horizontalOffset, QApplication::desktop()->screenGeometry().width(), horizontalOffset);
+        scene()->addLine(line, QPen(QColor(0, 0, 0, 188), 1, Qt::DashLine));
     }
-
-    painter.end();
 }
 
 void CPLSequenceView::RenderSegment(const CPLSegment& segment,
-                                    QPainter &painter,
                                     int seqIdx,
                                     int startX,
                                     int heightPerTrack,
@@ -127,13 +117,12 @@ void CPLSequenceView::RenderSegment(const CPLSegment& segment,
     for (const std::shared_ptr<CPLSequence> &s : segment.GetSequences()) {
         int length;
         int i = _virtualTrackMap[s->GetVirtualTrackId()];
-        RenderSequence(*s, painter, seqIdx, startX, i, heightPerTrack, &length);
+        RenderSequence(*s, seqIdx, startX, i, heightPerTrack, &length);
         *sequenceLength = std::max(*sequenceLength, length);
     }
 }
 
 void CPLSequenceView::RenderSequence(const CPLSequence &sequence,
-                                     QPainter &painter,
                                      int seqIdx,
                                      int startX,
                                      int trackIdx,
@@ -144,61 +133,35 @@ void CPLSequenceView::RenderSequence(const CPLSequence &sequence,
     int offsetX = startX;
     for (const std::shared_ptr<CPLResource>& r : sequence.GetResources()) {
         int resourceLength = 0;
-        RenderResource(*r, painter, seqIdx, offsetX, trackIdx, heightPerTrack, &resourceLength);
+        RenderResource(*r, seqIdx, offsetX, trackIdx, heightPerTrack, &resourceLength);
         offsetX += resourceLength;
         *sequenceLength += resourceLength;
     }
 }
 
-void CPLSequenceView::ResourceRectGotSelected(CPLResourceRect *target)
-{
-    bool doUpdate = false;
-    for (QObject *child : children()) {
-        CPLResourceRect *childRect = dynamic_cast<CPLResourceRect*>(child);
-        if (childRect) {
-            doUpdate = true;
-            childRect->SetSelected(childRect == target);
-        }
-    }
-    if (doUpdate) {
-        update();
-    }
-}
-
 void CPLSequenceView::RenderResource(const CPLResource& resource,
-                                     QPainter &painter,
                                      int seqIdx,
                                      int startX,
                                      int trackIdx,
                                      int heightPerTrack,
                                      int *resourceLength)
 {
-    static QColor colors[4] = {
-        QColor(120, 230, 120, 188),
-        QColor(230, 230, 120, 188),
-        QColor(120, 120, 230, 188),
-        QColor(230, 120, 230, 188)
-    };
+    QBrush brush(QColor(51, 102, 152));
+    QPen pen(QColor(20, 41, 61), 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
     int startY = trackIdx * heightPerTrack;
 
-    double widthRatio = (double)_playlistDuration / width();
+    double widthRatio = (double)_playlistDuration / 1024;
 
     int length = roundf(resource.GetNormalizedSourceDuration() / widthRatio);
 
-    //std::cout << "Widget Width: " << width();
-    //std::cout << " EndX: " << startX + length << std::endl;
+    std::cout << "Drawing Width: " << 1024;
+    std::cout << " EndX: " << startX + length << std::endl;
 
-    CPLResourceRect *r = new CPLResourceRect(this,
-                                             QPoint(startX, startY + 1),
-                                             QPoint(startX + length, startY + heightPerTrack),
-                                             colors[seqIdx % 4]);
-    r->Draw(painter);
-
-    connect(r,
-            SIGNAL(IGotSelected(CPLResourceRect*)),
-            this,
-            SLOT(ResourceRectGotSelected(CPLResourceRect*)));
+    QRect r;
+    r.setCoords(startX, startY + 3, startX + length - 2, startY + heightPerTrack - 2);
+    QGraphicsScene *s = scene();
+    s->addRect(r, pen, brush);
 
     *resourceLength = length;
 }

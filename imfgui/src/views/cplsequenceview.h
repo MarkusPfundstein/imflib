@@ -1,7 +1,7 @@
 #ifndef CPLSEQUENCEVIEW_H
 #define CPLSEQUENCEVIEW_H
 
-#include <QWidget>
+#include <QGraphicsView>
 #include <memory>
 #include <map>
 
@@ -12,7 +12,7 @@ class CPLResource;
 class CPLResourceRect;
 class IMFCompositionPlaylist;
 
-class CPLSequenceView : public QWidget
+class CPLSequenceView : public QGraphicsView
 {
     Q_OBJECT
 
@@ -22,26 +22,23 @@ class CPLSequenceView : public QWidget
 
         QSize minimumSizeHint() const;
         QSize sizeHint() const;
-        void paintEvent(QPaintEvent *event);
+        void paintScence();
 
     public slots:
         // Composition playlist changed
         void CompositionPlaylistChanged(const std::shared_ptr<IMFCompositionPlaylist> &newPlaylist);
 
-        // a resource rect got selected
-        void ResourceRectGotSelected(CPLResourceRect *resourceRect);
-
     protected:
     private:
 
         // renders a segment
-        void RenderSegment(const CPLSegment& segment, QPainter &painter, int segIdx, int startX, int heightPerTrack, int *sequenceLength);
+        void RenderSegment(const CPLSegment& segment, int segIdx, int startX, int heightPerTrack, int *sequenceLength);
 
         // renders a sequence
-        void RenderSequence(const CPLSequence& sequence, QPainter &painter, int seqIdx, int startX, int trackIdx, int heightPerTrack, int *sequenceLength);
+        void RenderSequence(const CPLSequence& sequence, int seqIdx, int startX, int trackIdx, int heightPerTrack, int *sequenceLength);
 
         // renders a resource
-        void RenderResource(const CPLResource& resource, QPainter &painter, int seqIdx, int startX, int trackIdx, int heightPerTrack, int *resourceLength);
+        void RenderResource(const CPLResource& resource, int seqIdx, int startX, int trackIdx, int heightPerTrack, int *resourceLength);
 
         // composition playlist to render
         std::shared_ptr<IMFCompositionPlaylist> _compositionPlaylist;
