@@ -11,6 +11,7 @@ class CPLVirtualTrack;
 class CPLResource;
 class CPLResourceRect;
 class IMFCompositionPlaylist;
+class QMouseEvent;
 
 class CPLSequenceView : public QGraphicsView
 {
@@ -23,6 +24,7 @@ class CPLSequenceView : public QGraphicsView
         QSize minimumSizeHint() const;
         QSize sizeHint() const;
         void paintScence();
+        void mousePressEvent(QMouseEvent *event);
 
     public slots:
         // Composition playlist changed
@@ -32,13 +34,27 @@ class CPLSequenceView : public QGraphicsView
     private:
 
         // renders a segment
-        void RenderSegment(const CPLSegment& segment, int segIdx, int startX, int heightPerTrack, int *sequenceLength);
+        void RenderSegment(const CPLSegment& segment,
+                           int segIdx,
+                           int startX,
+                           int heightPerTrack,
+                           int *sequenceLength);
 
         // renders a sequence
-        void RenderSequence(const CPLSequence& sequence, int seqIdx, int startX, int trackIdx, int heightPerTrack, int *sequenceLength);
+        void RenderSequence(const CPLSequence& sequence,
+                            int seqIdx,
+                            int startX,
+                            int trackIdx,
+                            int heightPerTrack,
+                            int *sequenceLength);
 
         // renders a resource
-        void RenderResource(const CPLResource& resource, int seqIdx, int startX, int trackIdx, int heightPerTrack, int *resourceLength);
+        void RenderResource(const std::shared_ptr<CPLResource>& resource,
+                            int seqIdx,
+                            int startX,
+                            int trackIdx,
+                            int heightPerTrack,
+                            int *resourceLength);
 
         // composition playlist to render
         std::shared_ptr<IMFCompositionPlaylist> _compositionPlaylist;
@@ -48,6 +64,9 @@ class CPLSequenceView : public QGraphicsView
 
         // mapping of virtual track id to render index (0, 1, 2, ..)
         std::map<std::string, int> _virtualTrackMap;
+
+        QImage _videoIcon;
+        QImage _audioIcon;
 };
 
 #endif // CPLSEQUENCEVIEW_H

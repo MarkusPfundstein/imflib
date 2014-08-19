@@ -87,8 +87,8 @@ IMFPackageView::IMFPackageView()
     mainWidget->setLayout(mainLayout);
     setWindowTitle(BaseWindowTitle + tr(" - New File"));
     setMinimumSize(640, 480);
-    //resize(1024, 768);
-    showMaximized();
+    resize(1200, 768);
+    //showMaximized();
 
     //NewFile();
 }
@@ -226,6 +226,7 @@ void IMFPackageView::OpenFile()
         }
 
         UpdateMenu();
+        setWindowTitle(BaseWindowTitle + QString::fromStdString(newPackage->GetName()));
     } catch (IMFPackageException &e) {
         QMessageBox::information(this, tr("Sorry"), tr(e.what()));
         NewFile();

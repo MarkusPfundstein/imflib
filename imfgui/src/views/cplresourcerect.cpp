@@ -1,5 +1,8 @@
 #include "cplresourcerect.h"
 
+#include "../model/cplresource.h"
+#include "../model/imftrack.h"
+
 #include <QEvent>
 #include <QMouseEvent>
 #include <iostream>
@@ -7,27 +10,54 @@
 
 static int DEBUG_COUNT = 0;
 
-CPLResourceRect::CPLResourceRect(const QRect &r, const QColor& fillColor, const QColor &shadowColor)
+CPLResourceRect::CPLResourceRect(const std::shared_ptr<CPLResource> &resource,
+                                 const QRect &r,
+                                 const QColor& fillColor,
+                                 const QColor &shadowColor,
+                                 const QImage &identifierIcon)
     :
     QGraphicsItem(),
     _drawingRect(r),
     _drawingRectFillColor(fillColor),
     _drawingRectBorderColor(shadowColor),
+    _identifierItem(identifierIcon),
+    _resource(resource),
+    _mouseIsOver(false),
     _shadowOffsetX(1),
     _shadowOffsetY(1)
 {
+    setAcceptHoverEvents(true);
+
     DEBUG_COUNT++;
-    std::cout << "Make resource rect [" << DEBUG_COUNT << "]" << std::endl;
+    //std::cout << "Make resource rect [" << DEBUG_COUNT << "]" << std::endl;
 }
 
 CPLResourceRect::~CPLResourceRect()
 {
-    std::cout << "delete resource rect [" << DEBUG_COUNT-- << " left]" << std::endl;
+    std::cout << "delete resource rect [" << --DEBUG_COUNT << " left]" << std::endl;
 }
 
 QRectF CPLResourceRect::boundingRect() const
 {
     return _drawingRect;
+}
+
+void CPLResourceRect::hoverEnterEvent(QGraphicsSceneHoverEvent* ev)
+{
+    _mouseIsOver = true;
+    update();
+}
+
+void CPLResourceRect::hoverLeaveEvent(QGraphicsSceneHoverEvent* ev)
+{
+    _mouseIsOver = false;
+    update();
+}
+
+void CPLResourceRect::mousePressEvent(QGraphicsSceneMouseEvent *ev)
+{
+    std::cout << "Custom item clicked." << std::endl;
+    update();
 }
 
 void CPLResourceRect::paint(QPainter* painter, const QStyleOptionGraphicsItem* /*item*/, QWidget* /*widget*/)
@@ -41,6 +71,25 @@ void CPLResourceRect::paint(QPainter* painter, const QStyleOptionGraphicsItem* /
     shadowRect.setHeight(shadowRect.height() + _shadowOffsetX);
     shadowRect.setWidth(shadowRect.width() + _shadowOffsetY);
     painter->fillRect(shadowRect, shadowBrush);
-    painter->fillRect(_drawingRect, fillBrush);
-    //
+
+    QRect imageRect;
+    QRect textRect;
+
+    int imageWidth = roundf(_identifierItem.width() * (_drawingRect.height() / (float)_identifierItem.height()));
+
+    if (_mouseIsOver == false) {
+        painter->fillRect(_drawingRect, fillBrush);
+        imageRect = _drawingRect;
+        textRect = _drawingRect;
+    } else {
+        imageRect = shadowRect;
+        textRect = shadowRect;
+    }
+
+    imageRect.setLeft(imageRect.left() + 3);
+    imageRect.setWidth(imageWidth);
+    textRect.setLeft(imageRect.right() + 10);
+
+    painter->drawImage(imageRect, _identifierItem);
+    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, QString::fromStdString(_resource->GetTrack()->GetFileName()));
 }

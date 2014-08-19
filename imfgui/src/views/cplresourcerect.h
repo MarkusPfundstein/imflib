@@ -4,25 +4,42 @@
 #include <QGraphicsItem>
 #include <QRect>
 #include <QColor>
+#include <memory>
+
+class CPLResource;
+class QGraphicsScenceMouseEvent;
 
 class CPLResourceRect : public QGraphicsItem
 {
     public:
-        CPLResourceRect(const QRect &r, const QColor &fillColor, const QColor &shadowColor);
+        CPLResourceRect(const std::shared_ptr<CPLResource> &resource,
+                        const QRect &r,
+                        const QColor &fillColor,
+                        const QColor &shadowColor,
+                        const QImage &identifierIcon);
         virtual ~CPLResourceRect();
 
-        QRectF boundingRect() const;
+        virtual QRectF boundingRect() const;
 
-        void paint(QPainter* painter, const QStyleOptionGraphicsItem* item, QWidget* widget);
+        virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* item, QWidget* widget);
 
         void SetShadowOffsets(int ox, int oy)
         { _shadowOffsetX = ox; _shadowOffsetY = oy; }
+
+        virtual void mousePressEvent(QGraphicsSceneMouseEvent *ev);
+        virtual void hoverEnterEvent(QGraphicsSceneHoverEvent *ev);
+        virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent *ev);
 
     private:
         QRect _drawingRect;
 
         QColor _drawingRectFillColor;
         QColor _drawingRectBorderColor;
+
+        const QImage& _identifierItem;
+        std::shared_ptr<CPLResource> _resource;
+
+        bool _mouseIsOver;
 
         int _shadowOffsetX;
         int _shadowOffsetY;

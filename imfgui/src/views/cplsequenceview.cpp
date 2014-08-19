@@ -23,14 +23,27 @@ CPLSequenceView::CPLSequenceView(QWidget *_parent)
     QGraphicsView(_parent),
     _compositionPlaylist(nullptr),
     _playlistDuration(0),
-    _virtualTrackMap()
+    _virtualTrackMap(),
+    _videoIcon(),
+    _audioIcon()
 {
     setBackgroundRole(QPalette::Shadow);
     setAutoFillBackground(true);
     setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    setMouseTracking(true);
+    viewport()->setMouseTracking(true);
 
     //QGraphicsScene *gscene = new QGraphicsScene(0, 0, width(), height());
     //setScene(gscene);
+
+    QFileInfo appPath(QCoreApplication::applicationFilePath());
+    std::cout << appPath.absoluteDir().absolutePath().toStdString() << std::endl;
+    if (_videoIcon.load(appPath.absoluteDir().absolutePath() + tr("/../resources/video.png")) == false) {
+        std::cout << "[Error] Video icon not found" << std::endl;
+    }
+    if (_audioIcon.load(appPath.absoluteDir().absolutePath() + tr("/../resources/audio.png")) == false) {
+        std::cout << "[Error] Audio icon not found" << std::endl;
+    }
 }
 
 CPLSequenceView::~CPLSequenceView()
@@ -67,8 +80,11 @@ void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompos
     if (scene()) {
         scene()->clear();
     } else {
-        setScene(new QGraphicsScene(0, 0, width(), height()));
+        setScene(new QGraphicsScene(0, 0, 1600, height()));
     }
+    QRectF rect(scene()->sceneRect());
+    rect.setWidth(_playlistDuration < 1600 ? 1600 : _playlistDuration);
+    scene()->setSceneRect(rect);
     paintScence();
 }
 
@@ -105,7 +121,7 @@ void CPLSequenceView::paintScence()
     // draw nice lines to separate tracks
     for (int i = 0; i < numberTracks; ++i) {
         int horizontalOffset = i * heightPerTrack + 1;
-        QLine line(0, horizontalOffset, QApplication::desktop()->screenGeometry().width(), horizontalOffset);
+        QLine line(0, horizontalOffset, scene()->width(), horizontalOffset);
         scene()->addLine(line, QPen(QColor(0, 0, 0, 188), 1, Qt::DashLine));
     }
 }
@@ -137,45 +153,70 @@ void CPLSequenceView::RenderSequence(const CPLSequence &sequence,
     int offsetX = startX;
     for (const std::shared_ptr<CPLResource>& r : sequence.GetResources()) {
         int resourceLength = 0;
-        RenderResource(*r, seqIdx, offsetX, trackIdx, heightPerTrack, &resourceLength);
+        RenderResource(r, seqIdx, offsetX, trackIdx, heightPerTrack, &resourceLength);
         offsetX += resourceLength;
         *sequenceLength += resourceLength;
     }
 }
 
-void CPLSequenceView::RenderResource(const CPLResource& resource,
+void CPLSequenceView::mousePressEvent(QMouseEvent *ev)
+{
+    std::cout << "mousePressEvent" << std::endl;
+    if (ev->button() == Qt::RightButton) {
+        std::cout << "Right mouse button called" << std::endl;
+        for (QGraphicsItem *cs : scene()->items()) {
+            CPLResourceRect *r= dynamic_cast<CPLResourceRect*>(cs);
+            if (r && r->boundingRect().contains(ev->pos())) {
+                std::cout << "on child" << std::endl;
+                //onChild = true;
+                return;
+            }
+        }
+    }
+
+    QGraphicsView::mousePressEvent(ev);
+}
+
+void CPLSequenceView::RenderResource(const std::shared_ptr<CPLResource>& resource,
                                      int seqIdx,
                                      int startX,
                                      int trackIdx,
                                      int heightPerTrack,
                                      int *resourceLength)
 {
-    static QColor brushColors[2] = {
+    static QColor fillColors[2] = {
         QColor(51, 102, 152),
         QColor(204, 0, 102)
     };
 
-    static QColor penColors[2] = {
+    static QColor shadowColors[2] = {
         QColor(20, 41, 61),
         QColor(82, 0, 41)
     };
 
     int startY = trackIdx * heightPerTrack;
 
-    double widthRatio = (double)_playlistDuration / 1024;
+    double zoomFactor = 9.0;
 
-    int length = roundf(resource.GetNormalizedSourceDuration() / widthRatio);
+    int length = roundf(resource->GetNormalizedSourceDuration() / zoomFactor);
 
-    std::cout << "Drawing Width: " << 1024;
-    std::cout << " EndX: " << startX + length << std::endl;
+    QImage *image = nullptr;
+    IMFPackageItem::TYPE resourceType = resource->GetTrack()->GetType();
+    if (resourceType == IMFPackageItem::TYPE::VIDEO) {
+        image = &_videoIcon;
+    } else if (resourceType == IMFPackageItem::TYPE::AUDIO) {
+        image = &_audioIcon; // TO-DO: this stuff should be cached
+    }
+    if (image == nullptr) {
+        std::cout << "[ERROR] Null image" << std::endl;
+    }
 
     int shadowOffsetX = 2;
     int shadowOffsetY = 1;
-
     QRect r;
     r.setCoords(startX, startY + 3, startX + length - 1 - shadowOffsetX, startY + heightPerTrack - 1 - shadowOffsetY);
 
-    CPLResourceRect *resourceRect = new CPLResourceRect(r, penColors[trackIdx % 2], brushColors[trackIdx % 2]);
+    CPLResourceRect *resourceRect = new CPLResourceRect(resource, r, fillColors[trackIdx % 2], shadowColors[trackIdx % 2], *image);
     resourceRect->SetShadowOffsets(shadowOffsetX, shadowOffsetY);
     scene()->addItem(resourceRect);
 

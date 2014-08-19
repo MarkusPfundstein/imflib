@@ -22,6 +22,10 @@ class IMFPackageView : public QMainWindow
     signals:
         void CompositionPlaylistDoubleClick(const std::shared_ptr<IMFCompositionPlaylist> &playlist);
 
+    //public slots:
+        // Request for right click menu cplsequenceview
+        //void CPLSequenceViewRightClickMenu(CPLSequenceView* view, CPLResourceRect* rect);
+
     private slots:
         // File Menu
         void NewFile();
