@@ -15,8 +15,7 @@ imfgui_MOC_FILES = \
 	moc_imfpackageview.cpp \
 	moc_cplsequenceview.cpp \
 	moc_cplsequencecontrolview.cpp \
-	moc_packagetableview.cpp \
-	moc_cplresourcerect.cpp
+	moc_packagetableview.cpp
 
 # please somebody explain to me what this does
 $(imfgui_OBJECTS) : $(imfgui_MOC_FILES)
@@ -40,7 +39,7 @@ imfgui_SOURCES = \
 	model/imfpackage.cpp \
 	model/imfcompositionplaylist.cpp \
 	model/imfoutputprofile.cpp \
-	drawing/cplresourcerect.cpp \
+	views/cplresourcerect.cpp \
 	views/cplsequencecontrolview.cpp \
 	views/cplsequenceview.cpp \
 	views/imfpackageview.cpp \

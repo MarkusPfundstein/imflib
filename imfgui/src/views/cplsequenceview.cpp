@@ -4,7 +4,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "../drawing/cplresourcerect.h"
+#include "cplresourcerect.h"
 
 #include "../model/imfcompositionplaylist.h"
 #include "../model/cplsegment.h"
@@ -64,7 +64,11 @@ void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompos
         }
     }
     // we also call this if nullptr is passed. to delete scene
-    setScene(new QGraphicsScene(0, 0, width(), height()));
+    if (scene()) {
+        scene()->clear();
+    } else {
+        setScene(new QGraphicsScene(0, 0, width(), height()));
+    }
     paintScence();
 }
 
@@ -146,8 +150,15 @@ void CPLSequenceView::RenderResource(const CPLResource& resource,
                                      int heightPerTrack,
                                      int *resourceLength)
 {
-    QBrush brush(QColor(51, 102, 152));
-    QPen pen(QColor(20, 41, 61), 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    static QColor brushColors[2] = {
+        QColor(51, 102, 152),
+        QColor(204, 0, 102)
+    };
+
+    static QColor penColors[2] = {
+        QColor(20, 41, 61),
+        QColor(82, 0, 41)
+    };
 
     int startY = trackIdx * heightPerTrack;
 
@@ -158,10 +169,15 @@ void CPLSequenceView::RenderResource(const CPLResource& resource,
     std::cout << "Drawing Width: " << 1024;
     std::cout << " EndX: " << startX + length << std::endl;
 
+    int shadowOffsetX = 2;
+    int shadowOffsetY = 1;
+
     QRect r;
-    r.setCoords(startX, startY + 3, startX + length - 2, startY + heightPerTrack - 2);
-    QGraphicsScene *s = scene();
-    s->addRect(r, pen, brush);
+    r.setCoords(startX, startY + 3, startX + length - 1 - shadowOffsetX, startY + heightPerTrack - 1 - shadowOffsetY);
+
+    CPLResourceRect *resourceRect = new CPLResourceRect(r, penColors[trackIdx % 2], brushColors[trackIdx % 2]);
+    resourceRect->SetShadowOffsets(shadowOffsetX, shadowOffsetY);
+    scene()->addItem(resourceRect);
 
     *resourceLength = length;
 }
