@@ -69,17 +69,20 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
 
 
     int duration = 0;
-    if (waveDescriptor->ContainerDuration.get() == 0 ) {
+    // On some clipster beta files this was indeed not set.
+    if (waveDescriptor->ContainerDuration.empty()) {
         std::cout << "[Warning] ContainerDuration not set in file descriptor, attempting to use index duration." << std::endl;
         duration = reader.AS02IndexReader().GetDuration();
     } else {
         duration = waveDescriptor->ContainerDuration;
-
     }
+
+    //int duration = reader.AS02IndexReader().GetDuration();
     if (duration == 0) {
         std::cout << "[Warning] Couldn't get duration" << std::endl;
         duration = -1;
     }
+
 
     ASDCP::WriterInfo info;
     result = reader.FillWriterInfo(info);
@@ -88,8 +91,11 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
         throw MXFReaderException("Couldn't get UUID");
     }
 
+    waveDescriptor->Dump();
+    std::cout << duration << std::endl;
 
     int bits = waveDescriptor->QuantizationBits;
+
 
     char strBuf[41];
     std::stringstream ss;
@@ -129,7 +135,9 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
     if (KM_SUCCESS(result)) {
         // we have a rgba descriptor
         colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::RGB444;
-        duration = rgbaDescriptor->ContainerDuration;
+        if (rgbaDescriptor->ContainerDuration.empty() == false) {
+            duration = rgbaDescriptor->ContainerDuration;
+        }
         editRate = rgbaDescriptor->SampleRate;
 
         int minRef = (int)rgbaDescriptor->ComponentMinRef;
@@ -148,7 +156,7 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
             bits = -1;
         }
 
-        //rgbaDescriptor->Dump();
+        rgbaDescriptor->Dump();
         /*
         Kumu::UUID uuid = rgbaDescriptor->InstanceUID;
         char buf[41];
@@ -166,18 +174,29 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
             } else if (cdciDescriptor->HorizontalSubsampling == 2) {
                 colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::YUV422;
             }
-            duration = cdciDescriptor->ContainerDuration;
+            if (cdciDescriptor->ContainerDuration.empty() == false) {
+                duration = cdciDescriptor->ContainerDuration;
+            }
             editRate = cdciDescriptor->SampleRate;
             bits = cdciDescriptor->ComponentDepth;
+            cdciDescriptor->Dump();
 
         } else {
             reader.Close();
             throw MXFReaderException("No essence descriptor found");
         }
+
         /*Kumu::UUID uuid = cdciDescriptor->InstanceUID;
         char buf[41];
         uuid.EncodeHex(buf, 40);
         std::cout << "buf: " << buf << std::endl;*/
+    }
+    if (duration == -1) {
+        std::cout << "[Warning] ContainerDuration not set in file descriptor, attempting to use index duration." << std::endl;
+        duration = reader.AS02IndexReader().GetDuration();
+        if (duration == 0) {
+            duration = -1;
+        }
     }
 
     /* Lets try to get SourceEncoding */
@@ -188,7 +207,7 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
     uuid.EncodeHex(buf, 40);
     std::cout << "buf: " << buf << std::endl;
     */
-
+    std::cout << "Duration: " << duration << std::endl;
     ASDCP::WriterInfo info;
     result = reader.FillWriterInfo(info);
     if (KM_FAILURE(result)) {
