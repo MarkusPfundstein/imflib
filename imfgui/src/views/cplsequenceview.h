@@ -7,6 +7,7 @@
 
 class CPLSegment;
 class CPLSequence;
+class IMFTrack;
 class CPLVirtualTrack;
 class CPLResource;
 class CPLResourceRect;
@@ -28,6 +29,8 @@ class CPLSequenceView : public QGraphicsView
         void paintScence();
         void mousePressEvent(QMouseEvent *event);
 
+        void ShowRightClickMenu(const QPoint &pos, CPLResourceRect& resourceRect, const std::shared_ptr<IMFTrack>& newTrack);
+
     public slots:
         // Composition playlist changed
         void CompositionPlaylistChanged(const std::shared_ptr<IMFCompositionPlaylist> &newPlaylist);
@@ -42,30 +45,10 @@ class CPLSequenceView : public QGraphicsView
         void AddSequence(CPLSegmentRect* segmentRect, const std::shared_ptr<CPLSequence>& sequence);
 
         // appends a resource at the end of the sequence
-        void AppendResource(CPLSequenceRect *sequenceRect, const std::shared_ptr<CPLResource> &resource);
+        CPLResourceRect *AppendResource(CPLSequenceRect *sequenceRect, const std::shared_ptr<CPLResource> &resource);
 
-        // renders a segment
-        void RenderSegment(const CPLSegment& segment,
-                           int segIdx,
-                           int startX,
-                           int heightPerTrack,
-                           int *sequenceLength);
-
-        // renders a sequence
-        void RenderSequence(const CPLSequence& sequence,
-                            int seqIdx,
-                            int startX,
-                            int trackIdx,
-                            int heightPerTrack,
-                            int *sequenceLength);
-
-        // renders a resource
-        void RenderResource(const std::shared_ptr<CPLResource>& resource,
-                            int seqIdx,
-                            int startX,
-                            int trackIdx,
-                            int heightPerTrack,
-                            int *resourceLength);
+        // shifts everything after a point, offset to the right
+        void ShiftEverythingRight(int x, int offset);
 
         // composition playlist to render
         std::shared_ptr<IMFCompositionPlaylist> _compositionPlaylist;

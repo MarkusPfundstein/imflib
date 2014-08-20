@@ -7,6 +7,7 @@
 #include "qtmodels/imfpackagemodel.h"
 
 class IMFCompositionPlaylist;
+class PackageTableView;
 
 class IMFPackageView : public QMainWindow
 {
@@ -18,6 +19,12 @@ class IMFPackageView : public QMainWindow
 
         // disables and enables all menus according to state of program
         void UpdateMenu();
+
+        const PackageTableView& GetPackageTableView() const
+        { return *_packageTableView; }
+
+        const IMFPackageModel& GetPackageModel() const
+        { return _packageModel; }
 
     signals:
         void CompositionPlaylistDoubleClick(const std::shared_ptr<IMFCompositionPlaylist> &playlist);
@@ -37,7 +44,7 @@ class IMFPackageView : public QMainWindow
         void NewCompositionPlaylist();
 
         // A Row is selected in table view
-        void TableViewRowSelected(const QModelIndex& idx);
+        void TableViewRowSelectedDoubleClick(const QModelIndex& idx);
 
     private:
 
@@ -64,6 +71,9 @@ class IMFPackageView : public QMainWindow
 
         /* INSTANCE VARIABLES */
         IMFPackageModel _packageModel;
+
+        // table view
+        PackageTableView *_packageTableView;
 };
 
 #endif // IMFPACKAGEVIEW_H

@@ -6,8 +6,9 @@
 CPLRenderRect::CPLRenderRect(QGraphicsItem *_parent)
     :
     QGraphicsItem(_parent),
+    _renderBackground(true),
     _drawingRect(0, 0, 0, 0),
-    _color(233, 5, 177, 255)
+    _color(16, 233, 177, 255)
 {
     //ctor
     std::cout << "New render rect";
@@ -37,5 +38,7 @@ void CPLRenderRect::SetDrawingRect(const QRect &r)
 
 void CPLRenderRect::paint(QPainter* painter, const QStyleOptionGraphicsItem* item, QWidget* widget)
 {
-    painter->fillRect(_drawingRect, QBrush(_color));
+    if (_renderBackground) {
+        painter->fillRect(_drawingRect, QBrush(_color));
+    }
 }

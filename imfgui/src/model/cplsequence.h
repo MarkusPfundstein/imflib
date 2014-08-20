@@ -4,7 +4,7 @@
 #include "genericitem.h"
 
 #include <memory>
-#include <vector>
+#include <list>
 
 class CPLResource;
 
@@ -20,10 +20,11 @@ class CPLSequence : public GenericItem
         const std::string& GetVirtualTrackId() const
         { return _virtualTrackId; }
 
-
+        std::shared_ptr<CPLResource> FindResourceByID(const std::string &uuid) const;
         void AddResource(const std::shared_ptr<CPLResource> &resource);
+        void AddResourceAfterResource(const std::shared_ptr<CPLResource> &resource, const std::shared_ptr<CPLResource> &other);
 
-        const std::vector<std::shared_ptr<CPLResource>>& GetResources() const
+        const std::list<std::shared_ptr<CPLResource>>& GetResources() const
         { return _resources; }
 
         int GetDuration() const;
@@ -32,7 +33,7 @@ class CPLSequence : public GenericItem
     private:
 
         std::string _virtualTrackId;
-        std::vector<std::shared_ptr<CPLResource>> _resources;
+        std::list<std::shared_ptr<CPLResource>> _resources;
 };
 
 #endif // CPLSEQUENCE_H

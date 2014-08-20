@@ -25,6 +25,9 @@ class CPLResourceRect : public CPLRenderRect
         void SetShadowOffsets(int ox, int oy)
         { _shadowOffsetX = ox; _shadowOffsetY = oy; }
 
+        const std::shared_ptr<CPLResource>& GetResource() const
+        { return _resource; }
+
         virtual void mousePressEvent(QGraphicsSceneMouseEvent *ev);
         virtual void hoverEnterEvent(QGraphicsSceneHoverEvent *ev);
         virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent *ev);

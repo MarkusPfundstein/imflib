@@ -22,7 +22,16 @@ static const QString BaseWindowTitle("ODMedia IMF Suite");
 
 IMFPackageView::IMFPackageView()
     :
-    QMainWindow()
+    QMainWindow(),
+    _fileMenu(nullptr),
+    _imfMenu(nullptr),
+    _newFileAction(nullptr),
+    _openFileAction(nullptr),
+    _saveFileAction(nullptr),
+    _addTrackFileAction(nullptr),
+    _newCompositionPlaylistAction(nullptr),
+    _packageModel(),
+    _packageTableView(nullptr)
 {
     QWidget *mainWidget = new QWidget();
     setCentralWidget(mainWidget);
@@ -46,10 +55,6 @@ IMFPackageView::IMFPackageView()
     packageTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     packageTableView->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    connect(packageTableView,
-            SIGNAL (doubleClicked(const QModelIndex&)),
-            this, SLOT (TableViewRowSelected(const QModelIndex&)));
-
     // adjust tableview after new data gets inserted so that column width
     // fits to new data.
 
@@ -72,13 +77,21 @@ IMFPackageView::IMFPackageView()
     controlView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     mainLayout->addWidget(controlView);
 
-    CPLSequenceView *sequenceView = new CPLSequenceView(this);
+    CPLSequenceView *sequenceView = new CPLSequenceView();
     mainLayout->addWidget(sequenceView);
+
+    connect(packageTableView,
+            SIGNAL (doubleClicked(const QModelIndex&)),
+            this,
+            SLOT (TableViewRowSelectedDoubleClick(const QModelIndex&)));
 
     connect(this,
             SIGNAL(CompositionPlaylistDoubleClick(const std::shared_ptr<IMFCompositionPlaylist>&)),
             sequenceView,
             SLOT(CompositionPlaylistChanged(const std::shared_ptr<IMFCompositionPlaylist> &)));
+
+    // lazy yeah :-)
+    _packageTableView = packageTableView;
 
     CreateActions();
     CreateMenus();
@@ -151,7 +164,7 @@ void IMFPackageView::UpdateMenu()
     _newCompositionPlaylistAction->setEnabled(app->GetWorkingPackage() ? true : false);
 }
 
-void IMFPackageView::TableViewRowSelected(const QModelIndex &idx)
+void IMFPackageView::TableViewRowSelectedDoubleClick(const QModelIndex &idx)
 {
     std::cout << "Row selected: " << idx.row() << std::endl;
 

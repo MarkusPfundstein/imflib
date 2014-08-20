@@ -131,5 +131,6 @@ const std::shared_ptr<IMFPackageItem> IMFPackageModel::IMFPackageInRow(int row) 
     if (row >= 0 && row < _data.size()) {
         return _data[row];
     }
+    std::cout << "row index out of bounds" << std::endl;
     return std::shared_ptr<IMFPackageItem>(nullptr);
 }

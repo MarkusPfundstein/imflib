@@ -20,7 +20,12 @@ class CPLRenderRect : public QGraphicsItem
         void SetColor(const QColor &c)
         { _color = c; }
 
+        void SetRenderBackground(bool b)
+        { _renderBackground = b; }
+
     protected:
+        // render background
+        bool _renderBackground;
 
         // position
         QRect _drawingRect;

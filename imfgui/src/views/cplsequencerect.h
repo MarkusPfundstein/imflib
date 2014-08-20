@@ -2,13 +2,15 @@
 #define CPLSEQUENCERECT_H
 
 #include "cplrenderrect.h"
+#include <memory>
 
 class CPLResourceRect;
+class CPLSequence;
 
 class CPLSequenceRect : public CPLRenderRect
 {
     public:
-        CPLSequenceRect(QGraphicsItem *parent = nullptr);
+        CPLSequenceRect(QGraphicsItem *parent, const std::shared_ptr<CPLSequence> &sequence);
         virtual ~CPLSequenceRect();
 
         void SetLastItem(CPLResourceRect* l)
@@ -17,14 +19,19 @@ class CPLSequenceRect : public CPLRenderRect
         CPLResourceRect* GetLastItem() const
         { return _lastItem; }
 
-        int SetTrackIndex(int t)
+        void SetTrackIndex(int t)
         { _trackIndex = t; }
 
         int GetTrackIndex() const
         { return _trackIndex; }
 
+        const std::shared_ptr<CPLSequence>& GetSequence() const
+        { return _sequence; }
+
     protected:
     private:
+
+        std::shared_ptr<CPLSequence> _sequence;
 
         // trackIdx
         int _trackIndex;
