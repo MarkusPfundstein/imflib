@@ -2,7 +2,9 @@
 #define PACKAGETABLEVIEW_H
 
 #include <QTableView>
+#include <memory>
 
+class IMFPackageItem;
 
 class PackageTableView : public QTableView
 {
@@ -13,6 +15,9 @@ class PackageTableView : public QTableView
         virtual ~PackageTableView();
 
         QSize sizeHint() const;
+
+        // returns first item that is selected in table view. otherwise nullptr
+        std::shared_ptr<IMFPackageItem> GetFirstSelectedItem() const;
     protected:
     private:
 };

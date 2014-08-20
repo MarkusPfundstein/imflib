@@ -98,9 +98,9 @@ void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompos
     } else {
         setScene(new QGraphicsScene(0, 0, 1600, height()));
     }
-    QRectF rect(scene()->sceneRect());
-    rect.setWidth(_playlistDuration < 1600 ? 1600 : _playlistDuration + 20);
-    scene()->setSceneRect(rect);
+    QRectF r(scene()->sceneRect());
+    r.setWidth(_playlistDuration < 1600 ? 1600 : _playlistDuration + 20);
+    scene()->setSceneRect(r);
     paintScence();
 }
 
@@ -113,68 +113,68 @@ void CPLSequenceView::mousePressEvent(QMouseEvent *ev)
             CPLResourceRect *r= dynamic_cast<CPLResourceRect*>(cs);
             if (r && r->boundingRect().contains(ev->pos())) {
                 ev->accept();
-                IMFPackageView *packageView = dynamic_cast<IMFPackageView*>(parentWidget()->parentWidget());
-                if (packageView == nullptr) {
-                    return;
-                }
-
-                for (QModelIndex modelIndex : packageView->GetPackageTableView().selectionModel()->selectedRows()) {
-                    std::shared_ptr<IMFPackageItem> packageItem = packageView->GetPackageModel().IMFPackageInRow(modelIndex.row());
-                    if (packageItem &&
-                        (packageItem->GetType() == IMFPackageItem::TYPE::VIDEO ||
-                         packageItem->GetType() == IMFPackageItem::TYPE::AUDIO)) {
-                        std::cout << "Selected " << packageItem->GetFileName() << std::endl;
-                        ShowRightClickMenu(ev->pos(),
-                                           *r,
-                                           std::static_pointer_cast<IMFTrack>(packageItem));
-                        break;
-                    }
-                }
-                return;
+                ShowRightClickMenuOnResource(ev->pos(), *r);
+                break;
             }
         }
     }
 }
 
-void CPLSequenceView::ShowRightClickMenu(const QPoint &pos,
-                                         CPLResourceRect& resourceRect,
-                                         const std::shared_ptr<IMFTrack> &track)
+void CPLSequenceView::ShowRightClickMenuOnResource(const QPoint &position,
+                                                    CPLResourceRect& resourceRect)
 {
-    QPoint global = mapToGlobal(pos);
+
+
+    QPoint global = mapToGlobal(position);
     QMenu *popUp = new QMenu(this);
 
-    QAction *insertAfterAction = new QAction(tr("&Append Track"), this);
-    QAction *cancel = new QAction(tr("&Cancel"), this);
+    QAction *insertAfterAction = new QAction(tr("&Insert After"), this);
+    QAction *insertBeforeAction = new QAction(tr("&Insert Before"), this);
+    QAction *cancelAction = new QAction(tr("&Cancel"), this);
     popUp->addAction(insertAfterAction);
-    popUp->addAction(cancel);
+    popUp->addAction(insertBeforeAction);
+    popUp->addAction(cancelAction);
 
     QAction *execAction = popUp->exec(global);
+    if (execAction == cancelAction) {
+        return;
+    }
+
     if (execAction == insertAfterAction) {
-        std::cout << "insert track: " << track->GetFileName() << " after: " << resourceRect.GetResource()->GetTrack()->GetFileName() << std::endl;
-        CPLSequenceRect *sequenceRect = dynamic_cast<CPLSequenceRect*>(resourceRect.parentItem());
-        if (sequenceRect) {
-            std::shared_ptr<CPLResource> newResource(new CPLResource(UUIDGenerator().MakeUUID(),
-                                                                     track));
-            newResource->SetEntryPoint(0);
-            newResource->SetSourceDuration(track->GetDuration());
-            newResource->SetRepeatCount(1);
-            newResource->SetPlaylistEditRate(_compositionPlaylist->GetEditRate());
+        InsertResourceAction(resourceRect, true);
+    } else if (execAction == insertBeforeAction) {
+        InsertResourceAction(resourceRect, false);
+    }
+}
 
-            // To-DO: Fix me
-            newResource->SetKeyId("");
-            newResource->SetHash("");
-            newResource->SetSourceEncoding(UUIDGenerator().MakeUUID());
+void CPLSequenceView::InsertResourceAction(const CPLResourceRect &resourceRect, bool afterResourceRect)
+{
+    IMFPackageView *packageView = dynamic_cast<IMFPackageView*>(parentWidget()->parentWidget());
+    if (packageView == nullptr) {
+        return;
+    }
 
-            sequenceRect->GetSequence()->InsertItemAfter(newResource, resourceRect.GetResource());
+    std::shared_ptr<IMFPackageItem> packageItem = packageView->GetPackageTableView().GetFirstSelectedItem();
+    if (packageItem &&
+        (packageItem->GetType() == IMFPackageItem::TYPE::VIDEO ||
+         packageItem->GetType() == IMFPackageItem::TYPE::AUDIO)) {
 
-            CompositionPlaylistChanged(_compositionPlaylist);
-
-            //AppendResource(sequenceRect, newResource);
-
-            //ShiftEverythingRight()
-
-            //AppendResource(sequenceRect, )
+        std::cout << "insert track: " << packageItem->GetFileName();
+        if (afterResourceRect) {
+            std::cout << " after: ";
+        } else {
+            std::cout << " before: ";
         }
+        std::cout << resourceRect.GetResource()->GetTrack()->GetFileName() << std::endl;
+
+        std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(std::static_pointer_cast<IMFTrack>(packageItem),
+                                                                                 _compositionPlaylist->GetEditRate());
+        if (afterResourceRect) {
+            static_cast<CPLSequenceRect*>(resourceRect.parentItem())->GetSequence()->InsertItemAfter(newResource, resourceRect.GetResource());
+        } else {
+            static_cast<CPLSequenceRect*>(resourceRect.parentItem())->GetSequence()->InsertItemBefore(newResource, resourceRect.GetResource());
+        }
+        CompositionPlaylistChanged(_compositionPlaylist);
     }
 }
 
@@ -217,11 +217,8 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
         lastIndex = lastSegmentRect->GetIndex();
     }
 
-    int width = segment->GetDuration();
-    std::cout << "RenderOffsetX: " << renderOffsetX << std::endl;
-    std::cout << "segmentWidth: " << width << std::endl;
     CPLSegmentRect *newRect = new CPLSegmentRect();
-    QRect drawingRect(renderOffsetX, 0, roundf(width / _zoomFactor), height());
+    QRect drawingRect(renderOffsetX, 0, roundf(segment->GetDuration() / _zoomFactor), height());
     newRect->SetDrawingRect(drawingRect);
     newRect->SetIndex(lastIndex + 1);
 
@@ -230,9 +227,6 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
     } else {
         newRect->SetColor(QColor(107, 107, 107));
     }
-
-    std::cout << "render segment, X: " << newRect->boundingRect().x() << " Y: " << newRect->boundingRect().y();
-    std::cout << " W: " << newRect->boundingRect().width() << " H: " << newRect->boundingRect().height() << std::endl;
 
     for (const std::shared_ptr<CPLSequence> &s : segment->GetItems()) {
         AddSequence(newRect, s);
@@ -304,10 +298,6 @@ CPLResourceRect *CPLSequenceView::AppendResource(CPLSequenceRect *sequenceRect, 
                                                         shadowColors[sequenceRect->GetTrackIndex() % 2],
                                                         *image);
     resourceRect->SetShadowOffsets(shadowOffsetX, shadowOffsetY);
-    std::cout << "drawing rect x: " << drawingRect.x() << " endX: " << sequenceRect->boundingRect().x() + sequenceRect->boundingRect().width() << std::endl;
-    if (drawingRect.x() + drawingRect.width() > sequenceRect->boundingRect().x() + sequenceRect->boundingRect().width()) {
-        std::cout << "resize sequence rect " << std::endl;
-    }
     return resourceRect;
 }
 

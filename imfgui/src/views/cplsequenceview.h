@@ -29,7 +29,7 @@ class CPLSequenceView : public QGraphicsView
         void paintScence();
         void mousePressEvent(QMouseEvent *event);
 
-        void ShowRightClickMenu(const QPoint &pos, CPLResourceRect& resourceRect, const std::shared_ptr<IMFTrack>& newTrack);
+
 
     public slots:
         // Composition playlist changed
@@ -37,6 +37,11 @@ class CPLSequenceView : public QGraphicsView
 
     protected:
     private:
+        // shows a right click menu when the user makes a right click on a resource
+        void ShowRightClickMenuOnResource(const QPoint &pos, CPLResourceRect& resourceRect);
+
+        // user requests to insert a track after or before a resource
+        void InsertResourceAction(const CPLResourceRect& resourceRect, bool afterResourceRect);
 
         // appends a segment at the end of the scene
         void AppendSegment(const std::shared_ptr<CPLSegment> &segment);
@@ -46,9 +51,6 @@ class CPLSequenceView : public QGraphicsView
 
         // appends a resource at the end of the sequence
         CPLResourceRect *AppendResource(CPLSequenceRect *sequenceRect, const std::shared_ptr<CPLResource> &resource);
-
-        // shifts everything after a point, offset to the right
-        void ShiftEverythingRight(int x, int offset);
 
         // composition playlist to render
         std::shared_ptr<IMFCompositionPlaylist> _compositionPlaylist;

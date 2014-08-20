@@ -40,6 +40,17 @@ class CPLItemList
             _items.insert(it, item);
         }
 
+        void InsertItemBefore(const std::shared_ptr<Type> &item, const std::shared_ptr<Type> &other)
+        {
+            auto it = std::find_if(_items.begin(),
+                                    _items.end(),
+                                    [&other](const std::shared_ptr<Type> &v) { return v->GetTrack()->GetUUID() == other->GetTrack()->GetUUID(); });
+            if (it != _items.begin()) {
+                it--;
+            }
+            _items.insert(it, item);
+        }
+
         const TypeList& GetItems() const
         { return _items; }
 
