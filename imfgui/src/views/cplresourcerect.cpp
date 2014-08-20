@@ -10,15 +10,14 @@
 
 static int DEBUG_COUNT = 0;
 
-CPLResourceRect::CPLResourceRect(const std::shared_ptr<CPLResource> &resource,
+CPLResourceRect::CPLResourceRect(QGraphicsItem *_parent,
+                                 const std::shared_ptr<CPLResource> &resource,
                                  const QRect &r,
                                  const QColor& fillColor,
                                  const QColor &shadowColor,
                                  const QImage &identifierIcon)
     :
-    QGraphicsItem(),
-    _drawingRect(r),
-    _drawingRectFillColor(fillColor),
+    CPLRenderRect(_parent),
     _drawingRectBorderColor(shadowColor),
     _identifierItem(identifierIcon),
     _resource(resource),
@@ -27,6 +26,8 @@ CPLResourceRect::CPLResourceRect(const std::shared_ptr<CPLResource> &resource,
     _shadowOffsetY(1)
 {
     setAcceptHoverEvents(true);
+    SetDrawingRect(r);
+    SetColor(fillColor);
 
     DEBUG_COUNT++;
     //std::cout << "Make resource rect [" << DEBUG_COUNT << "]" << std::endl;
@@ -35,11 +36,6 @@ CPLResourceRect::CPLResourceRect(const std::shared_ptr<CPLResource> &resource,
 CPLResourceRect::~CPLResourceRect()
 {
     std::cout << "delete resource rect [" << --DEBUG_COUNT << " left]" << std::endl;
-}
-
-QRectF CPLResourceRect::boundingRect() const
-{
-    return _drawingRect;
 }
 
 void CPLResourceRect::hoverEnterEvent(QGraphicsSceneHoverEvent* ev)
@@ -62,7 +58,7 @@ void CPLResourceRect::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 
 void CPLResourceRect::paint(QPainter* painter, const QStyleOptionGraphicsItem* /*item*/, QWidget* /*widget*/)
 {
-    QBrush fillBrush(_drawingRectFillColor);
+    QBrush fillBrush(_color);
     QBrush shadowBrush(_drawingRectBorderColor);
 
     QRect shadowRect(_drawingRect);

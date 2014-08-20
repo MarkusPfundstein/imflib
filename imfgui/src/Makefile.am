@@ -39,6 +39,9 @@ imfgui_SOURCES = \
 	model/imfpackage.cpp \
 	model/imfcompositionplaylist.cpp \
 	model/imfoutputprofile.cpp \
+	views/cplrenderrect.cpp \
+	views/cplsequencerect.cpp \
+	views/cplsegmentrect.cpp \
 	views/cplresourcerect.cpp \
 	views/cplsequencecontrolview.cpp \
 	views/cplsequenceview.cpp \

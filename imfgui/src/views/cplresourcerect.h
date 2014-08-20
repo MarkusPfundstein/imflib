@@ -1,7 +1,7 @@
 #ifndef CPLResourceRect_H
 #define CPLResourceRect_H
 
-#include <QGraphicsItem>
+#include "cplrenderrect.h"
 #include <QRect>
 #include <QColor>
 #include <memory>
@@ -9,17 +9,16 @@
 class CPLResource;
 class QGraphicsScenceMouseEvent;
 
-class CPLResourceRect : public QGraphicsItem
+class CPLResourceRect : public CPLRenderRect
 {
     public:
-        CPLResourceRect(const std::shared_ptr<CPLResource> &resource,
+        CPLResourceRect(QGraphicsItem *parent,
+                        const std::shared_ptr<CPLResource> &resource,
                         const QRect &r,
                         const QColor &fillColor,
                         const QColor &shadowColor,
                         const QImage &identifierIcon);
         virtual ~CPLResourceRect();
-
-        virtual QRectF boundingRect() const;
 
         virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* item, QWidget* widget);
 
@@ -31,9 +30,6 @@ class CPLResourceRect : public QGraphicsItem
         virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent *ev);
 
     private:
-        QRect _drawingRect;
-
-        QColor _drawingRectFillColor;
         QColor _drawingRectBorderColor;
 
         const QImage& _identifierItem;

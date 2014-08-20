@@ -5,6 +5,8 @@
 #include <iostream>
 
 #include "cplresourcerect.h"
+#include "cplsegmentrect.h"
+#include "cplsequencerect.h"
 
 #include "../model/imfcompositionplaylist.h"
 #include "../model/cplsegment.h"
@@ -25,7 +27,10 @@ CPLSequenceView::CPLSequenceView(QWidget *_parent)
     _playlistDuration(0),
     _virtualTrackMap(),
     _videoIcon(),
-    _audioIcon()
+    _audioIcon(),
+    _heightPerTrack(36),
+    _lastSegmentRect(nullptr),
+    _zoomFactor(8)
 {
     setBackgroundRole(QPalette::Shadow);
     setAutoFillBackground(true);
@@ -76,6 +81,9 @@ void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompos
             idx++;
         }
     }
+
+    _lastSegmentRect = nullptr;
+
     // we also call this if nullptr is passed. to delete scene
     if (scene()) {
         scene()->clear();
@@ -83,18 +91,139 @@ void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompos
         setScene(new QGraphicsScene(0, 0, 1600, height()));
     }
     QRectF rect(scene()->sceneRect());
-    rect.setWidth(_playlistDuration < 1600 ? 1600 : _playlistDuration);
+    rect.setWidth(_playlistDuration < 1600 ? 1600 : _playlistDuration + 20);
     scene()->setSceneRect(rect);
     paintScence();
 }
 
+void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
+{
+    CPLSegmentRect *lastSegmentRect = _lastSegmentRect;
+
+    int renderOffsetX = 0;
+    int lastIndex = 0;
+
+    if (lastSegmentRect) {
+        renderOffsetX = lastSegmentRect->boundingRect().x() + lastSegmentRect->boundingRect().width() + 1;
+        lastIndex = lastSegmentRect->GetIndex();
+    }
+
+    int width = segment->GetDuration();
+    std::cout << "RenderOffsetX: " << renderOffsetX << std::endl;
+    std::cout << "segmentWidth: " << width << std::endl;
+    CPLSegmentRect *newRect = new CPLSegmentRect();
+    QRect drawingRect(renderOffsetX, 0, roundf(width / _zoomFactor), height());
+    newRect->SetDrawingRect(drawingRect);
+    newRect->SetIndex(lastIndex + 1);
+
+    if ((newRect->GetIndex() % 2) == 0) {
+        newRect->SetColor(QColor(138, 138, 138));
+    } else {
+        newRect->SetColor(QColor(107, 107, 107));
+    }
+
+    std::cout << "render segment, X: " << newRect->boundingRect().x() << " Y: " << newRect->boundingRect().y();
+    std::cout << " W: " << newRect->boundingRect().width() << " H: " << newRect->boundingRect().height() << std::endl;
+
+    for (const std::shared_ptr<CPLSequence> &s : segment->GetSequences()) {
+        AddSequence(newRect, s);
+    }
+
+    scene()->addItem(newRect);
+
+    _lastSegmentRect = newRect;
+}
+
+void CPLSequenceView::AddSequence(CPLSegmentRect *segmentRect, const std::shared_ptr<CPLSequence>& sequence)
+{
+    int trackIdx = _virtualTrackMap[sequence->GetVirtualTrackId()];
+
+    CPLSequenceRect *newRect = new CPLSequenceRect(segmentRect);
+    newRect->SetDrawingRect(QRect(segmentRect->boundingRect().x(),
+                                  trackIdx * _heightPerTrack,
+                                  floorf(sequence->GetDuration() / _zoomFactor),
+                                  _heightPerTrack));
+    newRect->SetTrackIndex(trackIdx);
+
+    for (const std::shared_ptr<CPLResource> &resource : sequence->GetResources()) {
+        AppendResource(newRect, resource);
+    }
+}
+
+void CPLSequenceView::AppendResource(CPLSequenceRect *sequenceRect, const std::shared_ptr<CPLResource> &resource)
+{
+    CPLResourceRect *lastResourceRect = sequenceRect->GetLastItem();
+
+    static QColor fillColors[2] = {
+        QColor(51, 102, 152),
+        QColor(204, 0, 102)
+    };
+
+    static QColor shadowColors[2] = {
+        QColor(20, 41, 61),
+        QColor(82, 0, 41)
+    };
+
+    int startX = sequenceRect->boundingRect().x();
+    if (lastResourceRect) {
+        startX = lastResourceRect->boundingRect().x() + lastResourceRect->boundingRect().width();
+    }
+    int startY = sequenceRect->GetTrackIndex() * _heightPerTrack;
+
+    int length = roundf(resource->GetNormalizedSourceDuration() / _zoomFactor);
+
+    QImage *image = nullptr;
+    IMFPackageItem::TYPE resourceType = resource->GetTrack()->GetType();
+    if (resourceType == IMFPackageItem::TYPE::VIDEO) {
+        image = &_videoIcon;
+    } else if (resourceType == IMFPackageItem::TYPE::AUDIO) {
+        image = &_audioIcon; // TO-DO: this stuff should be cached
+    }
+    if (image == nullptr) {
+        std::cout << "[ERROR] Null image" << std::endl;
+    }
+
+    int shadowOffsetX = 2;
+    int shadowOffsetY = 1;
+    QRect drawingRect(startX, startY, length, _heightPerTrack);
+    CPLResourceRect *resourceRect = new CPLResourceRect(sequenceRect,
+                                                        resource,
+                                                        drawingRect,
+                                                        fillColors[sequenceRect->GetTrackIndex() % 2],
+                                                        shadowColors[sequenceRect->GetTrackIndex() % 2],
+                                                        *image);
+    resourceRect->SetShadowOffsets(shadowOffsetX, shadowOffsetY);
+
+    sequenceRect->SetLastItem(resourceRect);
+}
+
 void CPLSequenceView::paintScence()
 {
+    if (scene() == nullptr) {
+        return;
+    }
+
     int numberTracks = _compositionPlaylist ? _compositionPlaylist->GetVirtualTracks().size() : 4;
     if (numberTracks < 8) {
         numberTracks = 8;
     }
-    int heightPerTrack = floorf((height() - 10) / numberTracks);
+    //int heightPerTrack = 36; //floorf((height() - 10) / numberTracks);
+    std::cout << "heightPerTrack: " << _heightPerTrack << std::endl;
+
+    if (_compositionPlaylist) {
+        for (const std::shared_ptr<CPLSegment> segment : _compositionPlaylist->GetSegments()) {
+            AppendSegment(segment);
+        }
+    }
+
+    // draw nice lines to separate tracks
+    for (int i = 0; i < numberTracks; ++i) {
+        int horizontalOffset = i * _heightPerTrack + 1;
+        QLine line(0, horizontalOffset, scene()->width(), horizontalOffset);
+        scene()->addLine(line, QPen(QColor(0, 0, 0, 188), 1, Qt::DashLine));
+    }
+}
+/*
 
     std::vector<int> _separatorOffsets;
     if (_compositionPlaylist) {
@@ -125,6 +254,7 @@ void CPLSequenceView::paintScence()
         scene()->addLine(line, QPen(QColor(0, 0, 0, 188), 1, Qt::DashLine));
     }
 }
+*/
 
 void CPLSequenceView::RenderSegment(const CPLSegment& segment,
                                     int seqIdx,
@@ -137,6 +267,7 @@ void CPLSequenceView::RenderSegment(const CPLSegment& segment,
     for (const std::shared_ptr<CPLSequence> &s : segment.GetSequences()) {
         int length;
         int i = _virtualTrackMap[s->GetVirtualTrackId()];
+
         RenderSequence(*s, seqIdx, startX, i, heightPerTrack, &length);
         *sequenceLength = std::max(*sequenceLength, length);
     }
@@ -216,9 +347,9 @@ void CPLSequenceView::RenderResource(const std::shared_ptr<CPLResource>& resourc
     QRect r;
     r.setCoords(startX, startY + 3, startX + length - 1 - shadowOffsetX, startY + heightPerTrack - 1 - shadowOffsetY);
 
-    CPLResourceRect *resourceRect = new CPLResourceRect(resource, r, fillColors[trackIdx % 2], shadowColors[trackIdx % 2], *image);
+    CPLResourceRect *resourceRect = nullptr;//new CPLResourceRect(resource, r, fillColors[trackIdx % 2], shadowColors[trackIdx % 2], *image);
     resourceRect->SetShadowOffsets(shadowOffsetX, shadowOffsetY);
-    scene()->addItem(resourceRect);
+    //scene()->addItem(resourceRect);
 
     *resourceLength = length;
 }
