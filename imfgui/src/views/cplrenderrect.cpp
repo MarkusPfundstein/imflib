@@ -3,6 +3,8 @@
 #include <QtGui>
 #include <iostream>
 
+static int DEBUG_COUNT = 0;
+
 CPLRenderRect::CPLRenderRect(QGraphicsItem *_parent)
     :
     QGraphicsItem(_parent),
@@ -10,18 +12,13 @@ CPLRenderRect::CPLRenderRect(QGraphicsItem *_parent)
     _drawingRect(0, 0, 0, 0),
     _color(16, 233, 177, 255)
 {
-    //ctor
-    std::cout << "New render rect";
-    if (_parent) {
-        std::cout << " (with parent) ";
-    }
-    std::cout << std::endl;
+    DEBUG_COUNT++;
 }
 
 CPLRenderRect::~CPLRenderRect()
 {
     //dtor
-    std::cout << "Delete renderrect" << std::endl;
+    std::cout << "Delete renderrect [" << --DEBUG_COUNT << " left]" << std::endl;
 }
 
 

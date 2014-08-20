@@ -165,7 +165,7 @@ void CPLSequenceView::ShowRightClickMenu(const QPoint &pos,
             newResource->SetHash("");
             newResource->SetSourceEncoding(UUIDGenerator().MakeUUID());
 
-            sequenceRect->GetSequence()->AddResourceAfterResource(newResource, resourceRect.GetResource());
+            sequenceRect->GetSequence()->InsertItemAfter(newResource, resourceRect.GetResource());
 
             CompositionPlaylistChanged(_compositionPlaylist);
 
@@ -234,7 +234,7 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
     std::cout << "render segment, X: " << newRect->boundingRect().x() << " Y: " << newRect->boundingRect().y();
     std::cout << " W: " << newRect->boundingRect().width() << " H: " << newRect->boundingRect().height() << std::endl;
 
-    for (const std::shared_ptr<CPLSequence> &s : segment->GetSequences()) {
+    for (const std::shared_ptr<CPLSequence> &s : segment->GetItems()) {
         AddSequence(newRect, s);
     }
 
@@ -255,7 +255,7 @@ void CPLSequenceView::AddSequence(CPLSegmentRect *segmentRect, const std::shared
                                   _heightPerTrack));
     newRect->SetTrackIndex(trackIdx);
 
-    for (const std::shared_ptr<CPLResource> &resource : sequence->GetResources()) {
+    for (const std::shared_ptr<CPLResource> &resource : sequence->GetItems()) {
         CPLResourceRect *resourceRect = AppendResource(newRect, resource);
         newRect->SetLastItem(resourceRect);
     }

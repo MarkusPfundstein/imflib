@@ -22,6 +22,22 @@ CPLResource::~CPLResource()
     //dtor
 }
 
+std::shared_ptr<CPLResource> CPLResource::StandardResource(const std::shared_ptr<IMFTrack> &track,
+                                                           RationalNumber compositionPlaylistEditRate)
+{
+    std::shared_ptr<CPLResource> newResource(new CPLResource(UUIDGenerator().MakeUUID(), track));
+    newResource->SetEntryPoint(0);
+    newResource->SetSourceDuration(track->GetDuration());
+    newResource->SetRepeatCount(1);
+    newResource->SetPlaylistEditRate(compositionPlaylistEditRate);
+
+    // To-DO: Fix me
+    newResource->SetKeyId("");
+    newResource->SetHash("");
+    newResource->SetSourceEncoding(UUIDGenerator().MakeUUID());
+    return newResource;
+}
+
 int CPLResource::GetNormalizedSourceDuration() const
 {
     switch (_track->GetType()) {

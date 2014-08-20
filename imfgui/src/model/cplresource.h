@@ -27,6 +27,9 @@ class CPLResource : public GenericItem
                                                   const std::string &cplEditRate,
                                                   const std::vector<std::shared_ptr<IMFTrack>> &tracks);
 
+        static std::shared_ptr<CPLResource> StandardResource(const std::shared_ptr<IMFTrack> &track,
+                                                              RationalNumber compositionPlaylistEditRate);
+
         // returns real playing time of referenced resource
         int GetIntrinsicDuration() const
         { return _track->GetDuration(); }

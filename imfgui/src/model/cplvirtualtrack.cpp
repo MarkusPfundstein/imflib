@@ -4,8 +4,7 @@
 
 CPLVirtualTrack::CPLVirtualTrack(const std::string &uuid)
     :
-    GenericItem(uuid),
-    _sequences()
+    GenericItem(uuid)
 {
     //ctor
 }
@@ -13,10 +12,5 @@ CPLVirtualTrack::CPLVirtualTrack(const std::string &uuid)
 CPLVirtualTrack::~CPLVirtualTrack()
 {
     //dtor
-}
-
-void CPLVirtualTrack::AddSequence(const std::shared_ptr<CPLSequence> &sequence)
-{
-    _sequences.push_back(sequence);
 }
 

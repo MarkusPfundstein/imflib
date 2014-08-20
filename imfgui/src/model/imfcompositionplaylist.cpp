@@ -140,7 +140,7 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
             std::shared_ptr<CPLSequence> sequence(new CPLSequence(sequenceId));
             sequence->SetVirtualTrackId(virtualTrackId);
 
-            segment->AddSequence(sequence);
+            segment->AppendItem(sequence);
 
             std::shared_ptr<CPLVirtualTrack> virtualTrack = playlist->FindVirtualTrackById(virtualTrackId);
             if (virtualTrack == nullptr) {
@@ -149,7 +149,7 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
                 std::cout << "-> New Virtual Track generated" << std::endl;
             }
 
-            virtualTrack->AddSequence(sequence);
+            virtualTrack->AppendItem(sequence);
 
             for (ptree::value_type const &resourceListNode : sequenceListNode.second.get_child("ResourceList")) {
                 if (resourceListNode.first == "Resource") {
@@ -161,7 +161,7 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
                             std::shared_ptr<CPLResource> resource = CPLResource::Load(resourceListNode.second,
                                                                                       cplEditRate,
                                                                                       tracks);
-                            sequence->AddResource(resource);
+                            sequence->AppendItem(resource);
                         } catch (IMFInvalidReferenceException &e) {
                             throw IMFCompositionPlaylistException(e.what());
                         }

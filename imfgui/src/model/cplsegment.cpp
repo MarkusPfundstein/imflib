@@ -6,8 +6,7 @@
 
 CPLSegment::CPLSegment(const std::string &uuid)
     :
-    GenericItem(uuid),
-    _sequences()
+    GenericItem(uuid)
 {
     //ctor
 }
@@ -15,11 +14,6 @@ CPLSegment::CPLSegment(const std::string &uuid)
 CPLSegment::~CPLSegment()
 {
     //dtor
-}
-
-void CPLSegment::AddSequence(const std::shared_ptr<CPLSequence> &sequence)
-{
-    _sequences.push_back(sequence);
 }
 
 int CPLSegment::GetDuration() const
@@ -31,7 +25,7 @@ int CPLSegment::GetDuration() const
     // and all sequences withing a segment shall have the same duration
     // This implies that all sequences are of the same length, Unfortunately this
     // is not a tautology. So we just find and return the longest
-    for (const std::shared_ptr<CPLSequence> &s : _sequences) {
+    for (const std::shared_ptr<CPLSequence> &s : _items) {
         int d = s->GetDuration();
         if (d > duration) {
             duration = d;
