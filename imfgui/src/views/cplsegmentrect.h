@@ -25,7 +25,7 @@ class CPLSegmentRect : public QObject, public CPLRenderRect, public CPLPackageIt
         virtual void mousePressEvent(QGraphicsSceneMouseEvent *ev);
 
      signals:
-        void RightMouseClickSignal(QPoint position, CPLSegmentRect &segmentRect);
+        void RightMouseClickSignal(QPointF position, CPLSegmentRect &segmentRect);
 
     protected:
     private:

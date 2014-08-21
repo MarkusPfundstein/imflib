@@ -42,7 +42,7 @@ class CPLSequenceView : public QGraphicsView
         void ShowRightClickMenuOnSequenceView(QPointF pos);
 
         // shows a right click menu when the user makes a right click on a segment
-        //void ShowRightClickMenuOnSegment(QPoint pos, CPLSegmentRect& segmentRect);
+        void ShowRightClickMenuOnSegmentView(QPointF position, CPLSegmentRect &segmentRect);
 
     protected:
     private:
@@ -51,6 +51,9 @@ class CPLSequenceView : public QGraphicsView
 
         // user requests to insert a track after or before a resource
         void InsertResourceAction(const CPLResourceRect& resourceRect, bool append);
+
+        // adds a resource to a track
+        void AddResourceAction(const CPLSegmentRect& segmentRect, QPointF position);
 
         // user requests to insert a track on a new segment after or before a segment
         void InsertSegmentAction(CPLResourceRect *resourceRect, bool append);

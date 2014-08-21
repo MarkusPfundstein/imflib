@@ -39,6 +39,17 @@ class CPLItemList
             _items.insert(it, item);
         }
 
+        PtrType FindItem(const std::string &id) const
+        {
+            auto it = std::find_if(_items.begin(),
+                                    _items.end(),
+                                    [&id](const PtrType &v) { return v->GetUUID() == id; });
+            if (it == _items.end()) {
+                return PtrType(nullptr);
+            }
+            return *it;
+        }
+
         const TypeList& GetItems() const
         {
             return _items;

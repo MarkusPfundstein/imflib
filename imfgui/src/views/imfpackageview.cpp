@@ -359,10 +359,43 @@ void IMFPackageView::NewCompositionPlaylist()
         return;
     }
 
+    QStringList framerates;
+    framerates.push_back("24000 1001");
+    framerates.push_back("24 1");
+    framerates.push_back("25000 1001");
+    framerates.push_back("25 1");
+    framerates.push_back("30000 1001");
+    framerates.push_back("30 1");
+    framerates.push_back("48000 1001");
+    framerates.push_back("48 1");
+    framerates.push_back("50000 1001");
+    framerates.push_back("50 1");
+    framerates.push_back("60000 1001");
+    framerates.push_back("60 1");
+    framerates.push_back("120000 1001");
+    framerates.push_back("120 1");
+
+    QString frame = QInputDialog::getItem(this,
+                                          tr("Have a minute?"),
+                                          tr("Edit rate: "),
+                                          framerates,
+                                          0,
+                                          false);
+    if (frame.isEmpty()) {
+        return;
+    }
+
+    RationalNumber er = RationalNumber::FromIMFString(frame.toStdString());
+    if (er.denum == 0) {
+        return;
+    }
+
+
     std::string uuid = UUIDGenerator().MakeUUID();
     std::string path = workingPackage->GetFullPath() + "/CPL_" + uuid + ".xml";
 
     std::shared_ptr<IMFCompositionPlaylist> newPlaylist(new IMFCompositionPlaylist(uuid, path));
+    newPlaylist->SetEditRate(er);
 
     workingPackage->AddCompositionPlaylist(newPlaylist);
     _packageModel.AppendItem(newPlaylist);

@@ -182,6 +182,27 @@ void CPLSequenceView::ShowRightClickMenuOnResource(QPoint position,
     }
 }
 
+void CPLSequenceView::ShowRightClickMenuOnSegmentView(QPointF position, CPLSegmentRect &segmentRect)
+{
+    QPoint global = mapToGlobal(QPoint(roundf(position.x()), roundf(position.y())));
+    QMenu *popUp = new QMenu(this);
+
+    QAction *addTrackAction = new QAction(tr("&Append Track"), this);
+    QAction *cancelAction = new QAction(tr("&Cancel"), this);
+    popUp->addAction(addTrackAction);
+    popUp->addAction(cancelAction);
+
+    QAction *execAction = popUp->exec(global);
+    if (execAction == cancelAction) {
+        return;
+    }
+
+    if (execAction == addTrackAction) {
+        std::cout << "add Track action" << std::endl;
+        AddResourceAction(segmentRect, position);
+    }
+}
+
 void CPLSequenceView::ShowRightClickMenuOnSequenceView(QPointF position)
 {
     QPoint global = mapToGlobal(QPoint(roundf(position.x()), roundf(position.y())));
@@ -336,8 +357,69 @@ void CPLSequenceView::InsertSegmentAction(CPLResourceRect *resourceRect, bool ap
     }
 }
 
+void CPLSequenceView::AddResourceAction(const CPLSegmentRect& segmentRect, QPointF position)
+{
+    if (_compositionPlaylist == nullptr) {
+        return;
+    }
+
+    IMFPackageView *packageView = dynamic_cast<IMFPackageView*>(parentWidget()->parentWidget());
+    if (packageView == nullptr) {
+        return;
+    }
+
+    std::shared_ptr<IMFPackageItem> packageItem = packageView->GetPackageTableView().GetFirstSelectedItem();
+    if (packageItem &&
+        (packageItem->GetType() == IMFPackageItem::TYPE::VIDEO ||
+         packageItem->GetType() == IMFPackageItem::TYPE::AUDIO)) {
+
+        bool newVirtualTrack = false;
+
+        std::shared_ptr<CPLSequence> sequence(nullptr);
+
+        std::shared_ptr<CPLVirtualTrack> virtualTrack = GetVirtualTrackFromY(position.y());
+        if (!virtualTrack) {
+            newVirtualTrack = true;
+            std::cout << "Make new Virtual Track" << std::endl;
+            virtualTrack = std::shared_ptr<CPLVirtualTrack>(new CPLVirtualTrack(UUIDGenerator().MakeUUID()));
+            _compositionPlaylist->AddVirtualTrack(virtualTrack);
+        } else {
+            // check if we need to make a sequence
+            // -> search in virtual track for sequence
+            for (const std::shared_ptr<CPLSequence> &s : segmentRect.GetItem()->GetItems()) {
+                sequence = virtualTrack->FindItem(s->GetUUID());
+                if (sequence) {
+                    break;
+                }
+            }
+        }
+        if (sequence == nullptr) {
+            std::cout << "Make new sequence" << std::endl;
+            sequence = std::shared_ptr<CPLSequence>(new CPLSequence(UUIDGenerator().MakeUUID()));
+            segmentRect.GetItem()->AppendItem(sequence);
+            virtualTrack->AppendItem(sequence);
+            sequence->SetVirtualTrackId(virtualTrack->GetUUID());
+        }
+
+        std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(std::static_pointer_cast<IMFTrack>(packageItem),
+                                                                                 _compositionPlaylist->GetEditRate());
+        sequence->AppendItem(newResource);
+
+        CompositionPlaylistChanged(_compositionPlaylist);
+
+    } else if (packageItem) {
+        QMessageBox::information(this, tr("Sorry"), tr("Only A/V/TT track can be inserted into playlist"));
+    } else {
+        QMessageBox::information(this, tr("Sorry"), tr("No track selected"));
+    }
+}
+
 void CPLSequenceView::InsertResourceAction(const CPLResourceRect &resourceRect, bool append)
 {
+    if (_compositionPlaylist == nullptr) {
+        return;
+    }
+
     IMFPackageView *packageView = dynamic_cast<IMFPackageView*>(parentWidget()->parentWidget());
     if (packageView == nullptr) {
         return;
@@ -443,6 +525,11 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
     for (const std::shared_ptr<CPLSequence> &s : segment->GetItems()) {
         AddSequence(newRect, s);
     }
+
+    connect(newRect,
+            SIGNAL(RightMouseClickSignal(QPointF, CPLSegmentRect &)),
+            this,
+            SLOT(ShowRightClickMenuOnSegmentView(QPointF, CPLSegmentRect &)));
 
     scene()->addItem(newRect);
 
