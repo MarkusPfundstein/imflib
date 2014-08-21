@@ -80,6 +80,16 @@ void IMFCompositionPlaylist::InsertSegmentAfter(const std::shared_ptr<CPLSegment
     _segments.insert(it, segment);
 }
 
+std::shared_ptr<CPLVirtualTrack> IMFCompositionPlaylist::GetVirtualTrackAtIndex(unsigned int index) const
+{
+    std::cout << "index: " << index << " size: " << _virtualTracks.size() << std::endl;
+    if (index < 0 || index >= _virtualTracks.size()) {
+        std::cout << "return nullptr" << std::endl;
+        return std::shared_ptr<CPLVirtualTrack>(nullptr);
+    }
+    return *std::next(_virtualTracks.begin(), index);
+}
+
 void IMFCompositionPlaylist::InsertSegmentBefore(const std::shared_ptr<CPLSegment> &segment, const std::shared_ptr<CPLSegment> &other)
 {
     auto it = std::find_if(_segments.begin(),

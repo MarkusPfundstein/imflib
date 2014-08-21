@@ -6,6 +6,7 @@
 
 class CPLResourceRect;
 class CPLSequence;
+class QGraphicsSceneMouseEvent;
 
 class CPLSequenceRect : public CPLRenderRect
 {
@@ -33,6 +34,8 @@ class CPLSequenceRect : public CPLRenderRect
 
         const std::shared_ptr<CPLSequence>& GetSequence() const
         { return _sequence; }
+
+        virtual void mousePressEvent(QGraphicsSceneMouseEvent *ev);
 
     protected:
     private:

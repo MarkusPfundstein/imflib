@@ -38,14 +38,25 @@ class CPLSequenceView : public QGraphicsView
         // shows a right click menu when the user makes a right click on a resource
         void ShowRightClickMenuOnResource(QPoint pos, CPLResourceRect& resourceRect);
 
+        // shows a right click menu when the user makesa  right click on sequence view
+        void ShowRightClickMenuOnSequenceView(QPointF pos);
+
+        // shows a right click menu when the user makes a right click on a segment
+        //void ShowRightClickMenuOnSegment(QPoint pos, CPLSegmentRect& segmentRect);
+
     protected:
     private:
+        // Returns Virtual Track in Composition Playlist from Y coorindate
+        std::shared_ptr<CPLVirtualTrack> GetVirtualTrackFromY(float y) const;
 
         // user requests to insert a track after or before a resource
         void InsertResourceAction(const CPLResourceRect& resourceRect, bool append);
 
         // user requests to insert a track on a new segment after or before a segment
         void InsertSegmentAction(CPLResourceRect *resourceRect, bool append);
+
+        // user requests to insert a new segment
+        void NewSegmentAction(QPointF position);
 
         // deletes a resource. and if parents are empty also parents
         void DeleteResourceAction(CPLResourceRect& resourceRect);

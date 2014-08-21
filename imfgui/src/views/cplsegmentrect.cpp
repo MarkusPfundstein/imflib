@@ -21,7 +21,8 @@ void CPLSegmentRect::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 {
     std::cout << "SegmentRect pressed: " << ev->pos().x() << std::endl;
     if (ev->button() == Qt::RightButton) {
-        //ev->accept();
+        ev->accept();
+        emit RightMouseClickSignal(QPoint(roundf(ev->pos().x()), roundf(ev->pos().y())), *this);
     }
 }
 

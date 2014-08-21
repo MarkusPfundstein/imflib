@@ -108,13 +108,24 @@ void CPLSequenceView::mousePressEvent(QMouseEvent *ev)
 {
 
     if (ev->button() == Qt::RightButton) {
+        if (_compositionPlaylist == nullptr) {
+            QMessageBox::information(this, tr("Sorry"), tr("No Composition Playlist selected"));
+            return;
+        }
+
         for (QGraphicsItem *cs : scene()->items()) {
             CPLResourceRect *r= dynamic_cast<CPLResourceRect*>(cs);
             if (r && r->boundingRect().contains(ev->pos())) {
                 QGraphicsView::mousePressEvent(ev);
                 return;
             }
+            CPLSegmentRect *s = dynamic_cast<CPLSegmentRect*>(cs);
+            if (s && s->boundingRect().contains(ev->pos())) {
+                QGraphicsView::mousePressEvent(ev);
+                return;
+            }
         }
+        ShowRightClickMenuOnSequenceView(ev->pos());
     }
     std::cout << "mousePressEvent" << std::endl;
     QGraphicsView::mousePressEvent(ev);
@@ -171,6 +182,26 @@ void CPLSequenceView::ShowRightClickMenuOnResource(QPoint position,
     }
 }
 
+void CPLSequenceView::ShowRightClickMenuOnSequenceView(QPointF position)
+{
+    QPoint global = mapToGlobal(QPoint(roundf(position.x()), roundf(position.y())));
+    QMenu *popUp = new QMenu(this);
+
+    QAction *addSegmentAction = new QAction(tr("&Add Segment"), this);
+    QAction *cancelAction = new QAction(tr("&Cancel"), this);
+    popUp->addAction(addSegmentAction);
+    popUp->addAction(cancelAction);
+
+    QAction *execAction = popUp->exec(global);
+    if (execAction == cancelAction) {
+        return;
+    }
+
+    if (execAction == addSegmentAction) {
+        NewSegmentAction(position);
+    }
+}
+
 void CPLSequenceView::DeleteResourceAction(CPLResourceRect &resourceRect)
 {
     QMessageBox::StandardButton reply = QMessageBox::question(this,
@@ -208,6 +239,55 @@ void CPLSequenceView::DeleteResourceAction(CPLResourceRect &resourceRect)
     CompositionPlaylistChanged(_compositionPlaylist);
 }
 
+void CPLSequenceView::NewSegmentAction(QPointF position)
+{
+    if (_compositionPlaylist == nullptr) {
+        return;
+    }
+    IMFPackageView *packageView = dynamic_cast<IMFPackageView*>(parentWidget()->parentWidget());
+    if (packageView == nullptr) {
+        return;
+    }
+
+    std::shared_ptr<IMFPackageItem> packageItem = packageView->GetPackageTableView().GetFirstSelectedItem();
+    if (packageItem &&
+        (packageItem->GetType() == IMFPackageItem::TYPE::VIDEO ||
+         packageItem->GetType() == IMFPackageItem::TYPE::AUDIO)) {
+
+        bool newVirtualTrack = false;
+        std::shared_ptr<CPLVirtualTrack> virtualTrack = GetVirtualTrackFromY(position.y());
+        if (!virtualTrack) {
+            newVirtualTrack = true;
+            std::cout << "Make new Virtual Track" << std::endl;
+            virtualTrack = std::shared_ptr<CPLVirtualTrack>(new CPLVirtualTrack(UUIDGenerator().MakeUUID()));
+        } else {
+            std::cout << "Got a virtual track" << std::endl;
+        }
+
+        // create all necessary stuff. new segment, new sequence, new resource
+        std::shared_ptr<CPLSegment> newSegment(new CPLSegment(UUIDGenerator().MakeUUID()));
+        std::shared_ptr<CPLSequence> newSequence(new CPLSequence(UUIDGenerator().MakeUUID()));
+        newSequence->SetVirtualTrackId(virtualTrack->GetUUID());
+
+        std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(std::static_pointer_cast<IMFTrack>(packageItem),
+                                                                                 _compositionPlaylist->GetEditRate());
+        newSequence->AppendItem(newResource);
+        newSegment->AppendItem(newSequence);
+        virtualTrack->AppendItem(newSequence);
+
+        _compositionPlaylist->AddSegment(newSegment);
+        if (newVirtualTrack) {
+            _compositionPlaylist->AddVirtualTrack(virtualTrack);
+        }
+
+        CompositionPlaylistChanged(_compositionPlaylist);
+    } else if (packageItem) {
+        QMessageBox::information(this, tr("Sorry"), tr("Only A/V/TT track can be inserted into playlist"));
+    } else {
+        QMessageBox::information(this, tr("Sorry"), tr("No track selected"));
+    }
+}
+
 void CPLSequenceView::InsertSegmentAction(CPLResourceRect *resourceRect, bool append)
 {
     IMFPackageView *packageView = dynamic_cast<IMFPackageView*>(parentWidget()->parentWidget());
@@ -220,40 +300,35 @@ void CPLSequenceView::InsertSegmentAction(CPLResourceRect *resourceRect, bool ap
         (packageItem->GetType() == IMFPackageItem::TYPE::VIDEO ||
          packageItem->GetType() == IMFPackageItem::TYPE::AUDIO)) {
 
-        // if user has clicked on a resourceRect
-        if (resourceRect) {
-            if (packageItem->GetType() != resourceRect->GetResource()->GetTrack()->GetType()) {
-                QMessageBox::information(this, tr("Sorry"), tr("Cant insert track into sequence of different type"));
-                return;
-            }
-
-            CPLSegmentRect *segmentRect = static_cast<CPLSegmentRect*>(resourceRect->parentItem()->parentItem());
-
-            // we need to get virtual track of resource we have clicked on
-            CPLSequenceRect *sequenceRect = static_cast<CPLSequenceRect*>(resourceRect->parentItem());
-            std::shared_ptr<CPLVirtualTrack> virtualTrack = *std::next(_compositionPlaylist->GetVirtualTracks().begin(), sequenceRect->GetTrackIndex());
-
-            // creat all necessary stuff. new segment, new sequence, new resource
-            std::shared_ptr<CPLSegment> newSegment(new CPLSegment(UUIDGenerator().MakeUUID()));
-            std::shared_ptr<CPLSequence> newSequence(new CPLSequence(UUIDGenerator().MakeUUID()));
-            newSequence->SetVirtualTrackId(virtualTrack->GetUUID());
-
-            std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(std::static_pointer_cast<IMFTrack>(packageItem),
-                                                                                     _compositionPlaylist->GetEditRate());
-            newSequence->AppendItem(newResource);
-            newSegment->AppendItem(newSequence);
-            virtualTrack->AppendItem(newSequence);
-
-            if (append) {
-                _compositionPlaylist->InsertSegmentAfter(newSegment, segmentRect->GetItem());
-            } else {
-                _compositionPlaylist->InsertSegmentBefore(newSegment, segmentRect->GetItem());
-            }
-
-            CompositionPlaylistChanged(_compositionPlaylist);
-        } else {
-            // if not, we get index of virtual track, if not exists we need to create a new virtual track
+        if (packageItem->GetType() != resourceRect->GetResource()->GetTrack()->GetType()) {
+            QMessageBox::information(this, tr("Sorry"), tr("Cant insert track into sequence of different type"));
+            return;
         }
+
+        CPLSegmentRect *segmentRect = static_cast<CPLSegmentRect*>(resourceRect->parentItem()->parentItem());
+
+        // we need to get virtual track of resource we have clicked on
+        CPLSequenceRect *sequenceRect = static_cast<CPLSequenceRect*>(resourceRect->parentItem());
+        std::shared_ptr<CPLVirtualTrack> virtualTrack = *std::next(_compositionPlaylist->GetVirtualTracks().begin(), sequenceRect->GetTrackIndex());
+
+        // creat all necessary stuff. new segment, new sequence, new resource
+        std::shared_ptr<CPLSegment> newSegment(new CPLSegment(UUIDGenerator().MakeUUID()));
+        std::shared_ptr<CPLSequence> newSequence(new CPLSequence(UUIDGenerator().MakeUUID()));
+        newSequence->SetVirtualTrackId(virtualTrack->GetUUID());
+
+        std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(std::static_pointer_cast<IMFTrack>(packageItem),
+                                                                                 _compositionPlaylist->GetEditRate());
+        newSequence->AppendItem(newResource);
+        newSegment->AppendItem(newSequence);
+        virtualTrack->AppendItem(newSequence);
+
+        if (append) {
+            _compositionPlaylist->InsertSegmentAfter(newSegment, segmentRect->GetItem());
+        } else {
+            _compositionPlaylist->InsertSegmentBefore(newSegment, segmentRect->GetItem());
+        }
+
+        CompositionPlaylistChanged(_compositionPlaylist);
     } else if (packageItem) {
         QMessageBox::information(this, tr("Sorry"), tr("Only A/V/TT track can be inserted into playlist"));
     } else {
@@ -329,6 +404,16 @@ void CPLSequenceView::paintScence()
         QLine line(0, horizontalOffset, scene()->width(), horizontalOffset);
         scene()->addLine(line, QPen(QColor(0, 0, 0, 188), 1, Qt::DashLine));
     }
+}
+
+std::shared_ptr<CPLVirtualTrack> CPLSequenceView::GetVirtualTrackFromY(float y) const
+{
+    if (_compositionPlaylist == nullptr) {
+        return std::shared_ptr<CPLVirtualTrack>(nullptr);
+    }
+    int index = floorf(y / _heightPerTrack);
+    std::cout << "index: " << index << std::endl;
+    return _compositionPlaylist->GetVirtualTrackAtIndex(index);
 }
 
 void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)

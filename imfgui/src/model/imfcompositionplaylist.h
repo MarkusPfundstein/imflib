@@ -59,6 +59,9 @@ class IMFCompositionPlaylist : public IMFPackageItem
         // checks if a virtual track with a certain id exists already
         bool VirtualTrackExists(const std::string &id) const;
 
+        // returns virtual track at index
+        std::shared_ptr<CPLVirtualTrack> GetVirtualTrackAtIndex(unsigned int index) const;
+
         const std::list<std::shared_ptr<CPLVirtualTrack>>& GetVirtualTracks() const
         { return _virtualTracks; }
 
