@@ -68,9 +68,19 @@ void IMFCompositionPlaylist::AddSegment(const std::shared_ptr<CPLSegment> &segme
     _segments.push_back(segment);
 }
 
+void IMFCompositionPlaylist::DeleteSegment(const std::shared_ptr<CPLSegment> &segment)
+{
+    _segments.remove_if([&segment](const std::shared_ptr<CPLSegment> &s) { return s->GetUUID() == segment->GetUUID(); });
+}
+
 void IMFCompositionPlaylist::AddVirtualTrack(const std::shared_ptr<CPLVirtualTrack> &vt)
 {
     _virtualTracks.push_back(vt);
+}
+
+void IMFCompositionPlaylist::DeleteVirtualTrack(const std::shared_ptr<CPLVirtualTrack> &vt)
+{
+    _virtualTracks.remove_if([&vt](const std::shared_ptr<CPLVirtualTrack> &v) { return v->GetUUID() == vt->GetUUID();});
 }
 
 bool IMFCompositionPlaylist::VirtualTrackExists(const std::string &id) const

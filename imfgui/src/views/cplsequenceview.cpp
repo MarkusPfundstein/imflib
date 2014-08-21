@@ -106,7 +106,7 @@ void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompos
 
 void CPLSequenceView::mousePressEvent(QMouseEvent *ev)
 {
-    std::cout << "mousePressEvent" << std::endl;
+    /*std::cout << "mousePressEvent" << std::endl;
     if (ev->button() == Qt::RightButton) {
         std::cout << "Right mouse button called" << std::endl;
         for (QGraphicsItem *cs : scene()->items()) {
@@ -117,10 +117,11 @@ void CPLSequenceView::mousePressEvent(QMouseEvent *ev)
                 break;
             }
         }
-    }
+    }*/
+    QGraphicsView::mousePressEvent(ev);
 }
 
-void CPLSequenceView::ShowRightClickMenuOnResource(const QPoint &position,
+void CPLSequenceView::ShowRightClickMenuOnResource(QPoint position,
                                                     CPLResourceRect& resourceRect)
 {
 
@@ -130,9 +131,11 @@ void CPLSequenceView::ShowRightClickMenuOnResource(const QPoint &position,
 
     QAction *insertAfterAction = new QAction(tr("&Insert After"), this);
     QAction *insertBeforeAction = new QAction(tr("&Insert Before"), this);
+    QAction *deleteAction = new QAction(tr("&Delete"), this);
     QAction *cancelAction = new QAction(tr("&Cancel"), this);
     popUp->addAction(insertAfterAction);
     popUp->addAction(insertBeforeAction);
+    popUp->addAction(deleteAction);
     popUp->addAction(cancelAction);
 
     QAction *execAction = popUp->exec(global);
@@ -144,7 +147,45 @@ void CPLSequenceView::ShowRightClickMenuOnResource(const QPoint &position,
         InsertResourceAction(resourceRect, true);
     } else if (execAction == insertBeforeAction) {
         InsertResourceAction(resourceRect, false);
+    } else if (execAction == deleteAction) {
+        DeleteResourceAction(resourceRect);
     }
+}
+
+void CPLSequenceView::DeleteResourceAction(CPLResourceRect &resourceRect)
+{
+    QMessageBox::StandardButton reply = QMessageBox::question(this,
+                                                              "May I have a second?", "Are you sure you want to delete the resource?",
+                                                              QMessageBox::Yes | QMessageBox::No);
+    if (reply == QMessageBox::No) {
+        return;
+    }
+
+    CPLSequenceRect *sequenceRect = static_cast<CPLSequenceRect*>(resourceRect.parentItem());
+
+    sequenceRect->GetSequence()->DeleteItem(resourceRect.GetResource());
+
+    // if sequence is empty we have to do some clean up work
+    if (sequenceRect->GetSequence()->IsEmpty()) {
+        // delete from segment
+        CPLSegmentRect *segmentRect = static_cast<CPLSegmentRect*>(sequenceRect->parentItem());
+        segmentRect->GetItem()->DeleteItem(sequenceRect->GetSequence());
+
+        // delete from virtual track
+        std::shared_ptr<CPLVirtualTrack> virtualTrack = *std::next(_compositionPlaylist->GetVirtualTracks().begin(), sequenceRect->GetTrackIndex());
+        virtualTrack->DeleteItem(sequenceRect->GetSequence());
+
+        // update composition playlist if necessary
+        if (segmentRect->GetItem()->IsEmpty()) {
+            _compositionPlaylist->DeleteSegment(segmentRect->GetItem());
+        }
+
+        if (virtualTrack->IsEmpty()) {
+            _compositionPlaylist->DeleteVirtualTrack(virtualTrack);
+        }
+    }
+
+    CompositionPlaylistChanged(_compositionPlaylist);
 }
 
 void CPLSequenceView::InsertResourceAction(const CPLResourceRect &resourceRect, bool afterResourceRect)
@@ -159,6 +200,11 @@ void CPLSequenceView::InsertResourceAction(const CPLResourceRect &resourceRect, 
         (packageItem->GetType() == IMFPackageItem::TYPE::VIDEO ||
          packageItem->GetType() == IMFPackageItem::TYPE::AUDIO)) {
 
+        if (packageItem->GetType() != resourceRect.GetResource()->GetTrack()->GetType()) {
+            QMessageBox::information(this, tr("Sorry"), tr("Cant insert track into sequence of different type"));
+            return;
+        }
+
         std::cout << "insert track: " << packageItem->GetFileName();
         if (afterResourceRect) {
             std::cout << " after: ";
@@ -167,6 +213,8 @@ void CPLSequenceView::InsertResourceAction(const CPLResourceRect &resourceRect, 
         }
         std::cout << resourceRect.GetResource()->GetTrack()->GetFileName() << std::endl;
 
+        // create plain resource
+        // TO-DO: Set some parameters in CPLResource::StandardResource like Hash, KeyId etc after user input
         std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(std::static_pointer_cast<IMFTrack>(packageItem),
                                                                                  _compositionPlaylist->GetEditRate());
         if (afterResourceRect) {
@@ -175,6 +223,10 @@ void CPLSequenceView::InsertResourceAction(const CPLResourceRect &resourceRect, 
             static_cast<CPLSequenceRect*>(resourceRect.parentItem())->GetSequence()->InsertItemBefore(newResource, resourceRect.GetResource());
         }
         CompositionPlaylistChanged(_compositionPlaylist);
+    } else if (packageItem) {
+        QMessageBox::information(this, tr("Sorry"), tr("Only A/V/TT track can be inserted into playlist"));
+    } else {
+        QMessageBox::information(this, tr("Sorry"), tr("No track selected"));
     }
 }
 
@@ -192,6 +244,7 @@ void CPLSequenceView::paintScence()
     std::cout << "heightPerTrack: " << _heightPerTrack << std::endl;
 
     if (_compositionPlaylist) {
+        std::cout << "Render: " << _compositionPlaylist->GetSegments().size() << " Segments " << std::endl;
         for (const std::shared_ptr<CPLSegment> segment : _compositionPlaylist->GetSegments()) {
             AppendSegment(segment);
         }
@@ -217,7 +270,7 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
         lastIndex = lastSegmentRect->GetIndex();
     }
 
-    CPLSegmentRect *newRect = new CPLSegmentRect();
+    CPLSegmentRect *newRect = new CPLSegmentRect(nullptr, segment);
     QRect drawingRect(renderOffsetX, 0, roundf(segment->GetDuration() / _zoomFactor), height());
     newRect->SetDrawingRect(drawingRect);
     newRect->SetIndex(lastIndex + 1);
@@ -228,6 +281,7 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
         newRect->SetColor(QColor(107, 107, 107));
     }
 
+    std::cout << "Render " << segment->GetItems().size() << " sequences" << std::endl;
     for (const std::shared_ptr<CPLSequence> &s : segment->GetItems()) {
         AddSequence(newRect, s);
     }
@@ -298,6 +352,12 @@ CPLResourceRect *CPLSequenceView::AppendResource(CPLSequenceRect *sequenceRect, 
                                                         shadowColors[sequenceRect->GetTrackIndex() % 2],
                                                         *image);
     resourceRect->SetShadowOffsets(shadowOffsetX, shadowOffsetY);
+
+    connect(resourceRect,
+            SIGNAL(RightMouseClickSignal(QPoint, CPLResourceRect&)),
+            this,
+            SLOT(ShowRightClickMenuOnResource(QPoint, CPLResourceRect&)));
+
     return resourceRect;
 }
 

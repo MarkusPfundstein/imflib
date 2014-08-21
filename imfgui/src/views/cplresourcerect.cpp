@@ -53,7 +53,11 @@ void CPLResourceRect::hoverLeaveEvent(QGraphicsSceneHoverEvent* ev)
 void CPLResourceRect::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 {
     std::cout << "Custom item clicked." << std::endl;
-    update();
+    if (ev->button() == Qt::RightButton) {
+        ev->accept();
+        emit RightMouseClickSignal(QPoint(roundf(ev->pos().x()), roundf(ev->pos().y())), *this);
+    }
+    //update();
 }
 
 void CPLResourceRect::paint(QPainter* painter, const QStyleOptionGraphicsItem* /*item*/, QWidget* /*widget*/)
@@ -89,3 +93,5 @@ void CPLResourceRect::paint(QPainter* painter, const QStyleOptionGraphicsItem* /
     painter->drawImage(imageRect, _identifierItem);
     painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, QString::fromStdString(_resource->GetTrack()->GetFileName()));
 }
+
+#include "../moc_cplresourcerect.cpp"

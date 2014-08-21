@@ -9,8 +9,10 @@
 class CPLResource;
 class QGraphicsScenceMouseEvent;
 
-class CPLResourceRect : public CPLRenderRect
+class CPLResourceRect : public QObject, public CPLRenderRect
 {
+    Q_OBJECT
+
     public:
         CPLResourceRect(QGraphicsItem *parent,
                         const std::shared_ptr<CPLResource> &resource,
@@ -31,6 +33,9 @@ class CPLResourceRect : public CPLRenderRect
         virtual void mousePressEvent(QGraphicsSceneMouseEvent *ev);
         virtual void hoverEnterEvent(QGraphicsSceneHoverEvent *ev);
         virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent *ev);
+
+    signals:
+        void RightMouseClickSignal(QPoint position, CPLResourceRect &resourceRect);
 
     private:
         QColor _drawingRectBorderColor;

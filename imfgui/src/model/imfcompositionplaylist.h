@@ -6,7 +6,7 @@
 #include "imfaudiotrack.h"
 #include "imfexceptions.h"
 
-#include <vector>
+#include <list>
 #include <memory>
 
 #include <boost/property_tree/ptree.hpp>
@@ -38,8 +38,14 @@ class IMFCompositionPlaylist : public IMFPackageItem
         // pushes a segment onto list
         void AddSegment(const std::shared_ptr<CPLSegment> &segment);
 
+        // removes a segment from list
+        void DeleteSegment(const std::shared_ptr<CPLSegment> &segment);
+
         // pushes a virtual track onto list
         void AddVirtualTrack(const std::shared_ptr<CPLVirtualTrack> &vt);
+
+        // removes a virtual track from list
+        void DeleteVirtualTrack(const std::shared_ptr<CPLVirtualTrack> &vt);
 
         // returns nullptr or virtual track if in it with ID
         std::shared_ptr<CPLVirtualTrack> FindVirtualTrackById(const std::string &id) const;
@@ -47,10 +53,10 @@ class IMFCompositionPlaylist : public IMFPackageItem
         // checks if a virtual track with a certain id exists already
         bool VirtualTrackExists(const std::string &id) const;
 
-        const std::vector<std::shared_ptr<CPLVirtualTrack>>& GetVirtualTracks() const
+        const std::list<std::shared_ptr<CPLVirtualTrack>>& GetVirtualTracks() const
         { return _virtualTracks; }
 
-        const std::vector<std::shared_ptr<CPLSegment>>& GetSegments() const
+        const std::list<std::shared_ptr<CPLSegment>>& GetSegments() const
         { return _segments; }
 
         int GetDurationInFrames() const;
@@ -61,8 +67,8 @@ class IMFCompositionPlaylist : public IMFPackageItem
         // global edit rate of playlist
         RationalNumber _editRate;
 
-        std::vector<std::shared_ptr<CPLSegment>> _segments;
-        std::vector<std::shared_ptr<CPLVirtualTrack>> _virtualTracks;
+        std::list<std::shared_ptr<CPLSegment>> _segments;
+        std::list<std::shared_ptr<CPLVirtualTrack>> _virtualTracks;
 
 
 };

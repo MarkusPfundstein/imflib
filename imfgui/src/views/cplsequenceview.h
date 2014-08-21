@@ -35,13 +35,17 @@ class CPLSequenceView : public QGraphicsView
         // Composition playlist changed
         void CompositionPlaylistChanged(const std::shared_ptr<IMFCompositionPlaylist> &newPlaylist);
 
+        // shows a right click menu when the user makes a right click on a resource
+        void ShowRightClickMenuOnResource(QPoint pos, CPLResourceRect& resourceRect);
+
     protected:
     private:
-        // shows a right click menu when the user makes a right click on a resource
-        void ShowRightClickMenuOnResource(const QPoint &pos, CPLResourceRect& resourceRect);
 
         // user requests to insert a track after or before a resource
         void InsertResourceAction(const CPLResourceRect& resourceRect, bool afterResourceRect);
+
+        // deletes a resource. and if parents are empty also parents
+        void DeleteResourceAction(CPLResourceRect& resourceRect);
 
         // appends a segment at the end of the scene
         void AppendSegment(const std::shared_ptr<CPLSegment> &segment);

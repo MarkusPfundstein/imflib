@@ -15,7 +15,8 @@ imfgui_MOC_FILES = \
 	moc_imfpackageview.cpp \
 	moc_cplsequenceview.cpp \
 	moc_cplsequencecontrolview.cpp \
-	moc_packagetableview.cpp
+	moc_packagetableview.cpp \
+	moc_cplresourcerect.cpp
 
 # please somebody explain to me what this does
 $(imfgui_OBJECTS) : $(imfgui_MOC_FILES)

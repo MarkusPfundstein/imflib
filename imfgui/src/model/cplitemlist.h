@@ -9,42 +9,46 @@
 template <typename Type>
 class CPLItemList
 {
-    typedef std::list<std::shared_ptr<Type>> TypeList;
+    typedef std::shared_ptr<Type> PtrType;
+    typedef std::list<PtrType> TypeList;
 
     public:
-        std::shared_ptr<Type> FindItemById(const std::string &uuid) const
+        // returns pointer to item (if found), otherwise nullptr
+        PtrType FindTrackItemById(const std::string &uuid) const
         {
             auto it = std::find_if(_items.begin(),
                                     _items.end(),
-                                    [&uuid](const std::shared_ptr<Type> &i) { return i->GetTrack()->GetUUID() == uuid; });
+                                    [&uuid](const PtrType &i) { return i->GetTrack()->GetUUID() == uuid; });
             if (it != _items.end()) {
                 return *it;
             }
 
-            return std::shared_ptr<Type>(nullptr);
+            return PtrType(nullptr);
         }
 
-        void AppendItem(const std::shared_ptr<Type> &i)
+        void AppendItem(const PtrType &i)
         {
             _items.push_back(i);
         }
 
-        void InsertItemAfter(const std::shared_ptr<Type> &item, const std::shared_ptr<Type> &other)
+        // inserts item item after other
+        void InsertItemAfter(const PtrType &item, const PtrType &other)
         {
             auto it = std::find_if(_items.begin(),
                                     _items.end(),
-                                    [&other](const std::shared_ptr<Type> &v) { return v->GetTrack()->GetUUID() == other->GetTrack()->GetUUID(); });
+                                    [&other](const PtrType &v) { return v->GetUUID() == other->GetUUID(); });
             if (it != _items.end()) {
                 it++;
             }
             _items.insert(it, item);
         }
 
-        void InsertItemBefore(const std::shared_ptr<Type> &item, const std::shared_ptr<Type> &other)
+        // inserts item item before other item
+        void InsertItemBefore(const PtrType &item, const PtrType &other)
         {
             auto it = std::find_if(_items.begin(),
                                     _items.end(),
-                                    [&other](const std::shared_ptr<Type> &v) { return v->GetTrack()->GetUUID() == other->GetTrack()->GetUUID(); });
+                                    [&other](const PtrType &v) { return v->GetUUID() == other->GetUUID(); });
             if (it != _items.begin()) {
                 it--;
             }
@@ -52,7 +56,26 @@ class CPLItemList
         }
 
         const TypeList& GetItems() const
-        { return _items; }
+        {
+            return _items;
+        }
+
+        // deletes item if its in the list. otherwise doesn't do anything
+        void DeleteItem(const PtrType &item)
+        {
+            _items.remove_if([&item](const PtrType& s) { return s->GetUUID() == item->GetUUID(); });
+        }
+
+        // checks if list is empty
+        bool IsEmpty() const
+        {
+            return _items.empty();
+        }
+
+        int Size() const
+        {
+            return _items.size();
+        }
 
     protected:
         TypeList _items;
