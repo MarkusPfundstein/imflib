@@ -38,6 +38,12 @@ class IMFCompositionPlaylist : public IMFPackageItem
         // pushes a segment onto list
         void AddSegment(const std::shared_ptr<CPLSegment> &segment);
 
+        // inserts a segment after another
+        void InsertSegmentAfter(const std::shared_ptr<CPLSegment> &segment, const std::shared_ptr<CPLSegment> &other);
+
+        // inserts a segment before another
+        void InsertSegmentBefore(const std::shared_ptr<CPLSegment> &segment, const std::shared_ptr<CPLSegment> &other);
+
         // removes a segment from list
         void DeleteSegment(const std::shared_ptr<CPLSegment> &segment);
 

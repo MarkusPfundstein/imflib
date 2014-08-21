@@ -68,6 +68,26 @@ void IMFCompositionPlaylist::AddSegment(const std::shared_ptr<CPLSegment> &segme
     _segments.push_back(segment);
 }
 
+void IMFCompositionPlaylist::InsertSegmentAfter(const std::shared_ptr<CPLSegment> &segment, const std::shared_ptr<CPLSegment> &other)
+{
+    auto it = std::find_if(_segments.begin(),
+                            _segments.end(),
+                            [&other](const std::shared_ptr<CPLSegment> &v) { return v->GetUUID() == other->GetUUID(); });
+    //std::cout << (*--it)->GetUUID() << " - " << other->GetUUID() << std::endl;
+    if (it != _segments.end()) {
+        it++;
+    }
+    _segments.insert(it, segment);
+}
+
+void IMFCompositionPlaylist::InsertSegmentBefore(const std::shared_ptr<CPLSegment> &segment, const std::shared_ptr<CPLSegment> &other)
+{
+    auto it = std::find_if(_segments.begin(),
+                            _segments.end(),
+                            [&other](const std::shared_ptr<CPLSegment> &v) { return v->GetUUID() == other->GetUUID(); });
+    _segments.insert(it, segment);
+}
+
 void IMFCompositionPlaylist::DeleteSegment(const std::shared_ptr<CPLSegment> &segment)
 {
     _segments.remove_if([&segment](const std::shared_ptr<CPLSegment> &s) { return s->GetUUID() == segment->GetUUID(); });

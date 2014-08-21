@@ -1,14 +1,17 @@
 #ifndef CPLSEGMENTRECT_H
 #define CPLSEGMENTRECT_H
 
+#include <QObject>
 #include "cplrenderrect.h"
 #include "cplpackageitemcontainer.h"
 
 class CPLSegment;
 class QGraphicsSceneMouseEvent;
 
-class CPLSegmentRect : public CPLRenderRect, public CPLPackageItemContainer<CPLSegment>
+class CPLSegmentRect : public QObject, public CPLRenderRect, public CPLPackageItemContainer<CPLSegment>
 {
+    Q_OBJECT
+
     public:
         CPLSegmentRect(QGraphicsItem *parent, const std::shared_ptr<CPLSegment> &segment);
         virtual ~CPLSegmentRect();
@@ -20,6 +23,9 @@ class CPLSegmentRect : public CPLRenderRect, public CPLPackageItemContainer<CPLS
         { return _index; }
 
         virtual void mousePressEvent(QGraphicsSceneMouseEvent *ev);
+
+     signals:
+        void RightMouseClickSignal(QPoint position, CPLSegmentRect &segmentRect);
 
     protected:
     private:

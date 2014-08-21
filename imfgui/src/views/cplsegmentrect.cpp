@@ -20,5 +20,9 @@ CPLSegmentRect::~CPLSegmentRect()
 void CPLSegmentRect::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 {
     std::cout << "SegmentRect pressed: " << ev->pos().x() << std::endl;
-    QGraphicsItem::mousePressEvent(ev);
+    if (ev->button() == Qt::RightButton) {
+        //ev->accept();
+    }
 }
+
+#include "../moc_cplsegmentrect.cpp"

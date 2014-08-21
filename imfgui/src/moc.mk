@@ -14,3 +14,6 @@ moc_packagetableview.cpp:
 
 moc_cplresourcerect.cpp:
 	$(MOC) -i -o $@ views/cplresourcerect.h
+
+moc_cplsegmentrect.cpp:
+	$(MOC) -i -o $@ views/cplsegmentrect.h

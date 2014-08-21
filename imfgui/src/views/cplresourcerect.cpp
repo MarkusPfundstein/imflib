@@ -50,9 +50,14 @@ void CPLResourceRect::hoverLeaveEvent(QGraphicsSceneHoverEvent* ev)
     update();
 }
 
+void CPLResourceRect::mouseReleaseEvent(QGraphicsSceneMouseEvent *ev)
+{
+    //_mouseIsOver = false;
+}
+
 void CPLResourceRect::mousePressEvent(QGraphicsSceneMouseEvent *ev)
 {
-    std::cout << "Custom item clicked." << std::endl;
+    std::cout << "ResourceRect pressed" << std::endl;
     if (ev->button() == Qt::RightButton) {
         ev->accept();
         emit RightMouseClickSignal(QPoint(roundf(ev->pos().x()), roundf(ev->pos().y())), *this);

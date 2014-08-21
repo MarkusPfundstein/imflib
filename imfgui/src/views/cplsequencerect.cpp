@@ -8,7 +8,8 @@ CPLSequenceRect::CPLSequenceRect(QGraphicsItem *_parent, const std::shared_ptr<C
     CPLRenderRect(_parent),
     _sequence(sequence),
     _trackIndex(0),
-    _lastItem(nullptr)
+    _lastItem(nullptr),
+    _firstItem(nullptr)
 {
     //ctor
 }

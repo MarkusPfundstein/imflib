@@ -19,6 +19,12 @@ class CPLSequenceRect : public CPLRenderRect
         CPLResourceRect* GetLastItem() const
         { return _lastItem; }
 
+        void SetFirstItem(CPLResourceRect* f)
+        { _firstItem = f; }
+
+        CPLResourceRect* GetFirstItem() const
+        { return _firstItem; }
+
         void SetTrackIndex(int t)
         { _trackIndex = t; }
 
@@ -38,6 +44,9 @@ class CPLSequenceRect : public CPLRenderRect
 
         // pointer to last item
         CPLResourceRect *_lastItem;
+
+        // pointer to first item
+        CPLResourceRect *_firstItem;
 };
 
 #endif // CPLSEQUENCERECT_H

@@ -42,7 +42,10 @@ class CPLSequenceView : public QGraphicsView
     private:
 
         // user requests to insert a track after or before a resource
-        void InsertResourceAction(const CPLResourceRect& resourceRect, bool afterResourceRect);
+        void InsertResourceAction(const CPLResourceRect& resourceRect, bool append);
+
+        // user requests to insert a track on a new segment after or before a segment
+        void InsertSegmentAction(CPLResourceRect *resourceRect, bool append);
 
         // deletes a resource. and if parents are empty also parents
         void DeleteResourceAction(CPLResourceRect& resourceRect);

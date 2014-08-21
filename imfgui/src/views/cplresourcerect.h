@@ -31,6 +31,7 @@ class CPLResourceRect : public QObject, public CPLRenderRect
         { return _resource; }
 
         virtual void mousePressEvent(QGraphicsSceneMouseEvent *ev);
+        virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *ev);
         virtual void hoverEnterEvent(QGraphicsSceneHoverEvent *ev);
         virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent *ev);
 

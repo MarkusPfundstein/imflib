@@ -13,19 +13,6 @@ class CPLItemList
     typedef std::list<PtrType> TypeList;
 
     public:
-        // returns pointer to item (if found), otherwise nullptr
-        PtrType FindTrackItemById(const std::string &uuid) const
-        {
-            auto it = std::find_if(_items.begin(),
-                                    _items.end(),
-                                    [&uuid](const PtrType &i) { return i->GetTrack()->GetUUID() == uuid; });
-            if (it != _items.end()) {
-                return *it;
-            }
-
-            return PtrType(nullptr);
-        }
-
         void AppendItem(const PtrType &i)
         {
             _items.push_back(i);
@@ -49,9 +36,6 @@ class CPLItemList
             auto it = std::find_if(_items.begin(),
                                     _items.end(),
                                     [&other](const PtrType &v) { return v->GetUUID() == other->GetUUID(); });
-            if (it != _items.begin()) {
-                it--;
-            }
             _items.insert(it, item);
         }
 
