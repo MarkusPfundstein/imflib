@@ -81,6 +81,15 @@ QSize CPLSequenceView::sizeHint() const
     return QSize(parentWidget()->width(), 256);
 }
 
+std::shared_ptr<CPLVirtualTrack> CPLSequenceView::GetVirtualTrackFromY(float Y) const
+{
+    if (_compositionPlaylist == nullptr) {
+        return std::shared_ptr<CPLVirtualTrack>(nullptr);
+    }
+    int index = floorf(Y / _heightPerTrack);
+    return _compositionPlaylist->GetVirtualTrackAtIndex(index);
+}
+
 void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompositionPlaylist> &newPlaylist)
 {
     _compositionPlaylist = newPlaylist;
@@ -242,6 +251,10 @@ void CPLSequenceView::dropEvent(QDropEvent *ev)
             emitChange = true;
         } else {
             bool attach = false;
+
+            // loop through all items and check if we attach to it. if yes attach the draggedResource
+            // to the item or to the segment
+            // this loop is a bit messy. I know, but fuck it! it works for now
             for (QGraphicsItem *cs : scene()->items()) {
                 CPLRenderRect *r= dynamic_cast<CPLRenderRect*>(cs);
                 if (r && r != _draggedResourceRect) {
@@ -280,6 +293,19 @@ void CPLSequenceView::dropEvent(QDropEvent *ev)
                         r->SetDrawAttachAreaRight(false);
                         r->SetDrawAttachAreaLeft(false);
                         r->update();
+                        emitChange = true;
+                        break;
+                    }
+                }
+            }
+            // we didnt attach to an item. check if our mouse position is inside a segment
+            if (attach == false) {
+                // yes loop again. -.- .. now we are at O(2n) with n = GraphicItems.
+                // should be optimized
+                for (QGraphicsItem *cs : scene()->items()) {
+                    CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(cs);
+                    if (segmentRect && segmentRect->mapRectToScene(segmentRect->rect()).contains(ev->pos())) {
+                        AddResourceAction(*segmentRect, track, ev->pos().y());
                         emitChange = true;
                         break;
                     }
@@ -394,79 +420,57 @@ void CPLSequenceView::CreateFirstSegmentAction(const std::shared_ptr<IMFTrack> &
         return;
     }
 
-    std::shared_ptr<CPLVirtualTrack> virtualTrack(new CPLVirtualTrack(UUIDGenerator().MakeUUID()));
-
     // create all necessary stuff. new segment, new resource
     std::shared_ptr<CPLSegment> newSegment(new CPLSegment(UUIDGenerator().MakeUUID()));
     std::shared_ptr<CPLSequence> newSequence(new CPLSequence(UUIDGenerator().MakeUUID()));
+    newSegment->AppendItem(newSequence);
+
+    std::shared_ptr<CPLVirtualTrack> virtualTrack(new CPLVirtualTrack(UUIDGenerator().MakeUUID()));
     newSequence->SetVirtualTrackId(virtualTrack->GetUUID());
+    virtualTrack->AppendItem(newSequence);
 
     std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(track,
                                                                              _compositionPlaylist->GetEditRate());
     newSequence->AppendItem(newResource);
-    newSegment->AppendItem(newSequence);
-    virtualTrack->AppendItem(newSequence);
 
     _compositionPlaylist->AddSegment(newSegment);
     _compositionPlaylist->AddVirtualTrack(virtualTrack);
 }
 
 
-void CPLSequenceView::AddResourceAction(const CPLSegmentRect& segmentRect, QPointF position)
+void CPLSequenceView::AddResourceAction(const CPLSegmentRect &segmentRect, const std::shared_ptr<IMFTrack> &track, int Y)
 {
-    if (_compositionPlaylist == nullptr) {
+    if (_compositionPlaylist == nullptr || track == nullptr) {
         return;
     }
 
-    IMFPackageView *packageView = dynamic_cast<IMFPackageView*>(parentWidget()->parentWidget());
-    if (packageView == nullptr) {
-        return;
-    }
-
-    std::shared_ptr<IMFPackageItem> packageItem = packageView->GetPackageTableView().GetFirstSelectedItem();
-    if (packageItem &&
-        (packageItem->GetType() == IMFPackageItem::TYPE::VIDEO ||
-         packageItem->GetType() == IMFPackageItem::TYPE::AUDIO)) {
-
-        bool newVirtualTrack = false;
-
-        std::shared_ptr<CPLSequence> sequence(nullptr);
-
-        std::shared_ptr<CPLVirtualTrack> virtualTrack = GetVirtualTrackFromY(position.y());
-        if (!virtualTrack) {
-            newVirtualTrack = true;
-            std::cout << "Make new Virtual Track" << std::endl;
-            virtualTrack = std::shared_ptr<CPLVirtualTrack>(new CPLVirtualTrack(UUIDGenerator().MakeUUID()));
-            _compositionPlaylist->AddVirtualTrack(virtualTrack);
-        } else {
-            // check if we need to make a sequence
-            // -> search in virtual track for sequence
-            for (const std::shared_ptr<CPLSequence> &s : segmentRect.GetItem()->GetItems()) {
-                sequence = virtualTrack->FindItem(s->GetUUID());
-                if (sequence) {
-                    break;
-                }
+    std::shared_ptr<CPLSequence> sequence(nullptr);
+    std::shared_ptr<CPLVirtualTrack> virtualTrack = GetVirtualTrackFromY(Y);
+    if (!virtualTrack) {
+        std::cout << "Make new Virtual Track" << std::endl;
+        virtualTrack = std::shared_ptr<CPLVirtualTrack>(new CPLVirtualTrack(UUIDGenerator().MakeUUID()));
+        _compositionPlaylist->AddVirtualTrack(virtualTrack);
+    } else {
+        // check if we need to make a sequence
+        // -> search in virtual track for sequence
+        for (const std::shared_ptr<CPLSequence> &s : segmentRect.GetItem()->GetItems()) {
+            sequence = virtualTrack->FindItem(s->GetUUID());
+            if (sequence) {
+                break;
             }
         }
-        if (sequence == nullptr) {
-            std::cout << "Make new sequence" << std::endl;
-            sequence = std::shared_ptr<CPLSequence>(new CPLSequence(UUIDGenerator().MakeUUID()));
-            segmentRect.GetItem()->AppendItem(sequence);
-            virtualTrack->AppendItem(sequence);
-            sequence->SetVirtualTrackId(virtualTrack->GetUUID());
-        }
-
-        std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(std::static_pointer_cast<IMFTrack>(packageItem),
-                                                                                 _compositionPlaylist->GetEditRate());
-        sequence->AppendItem(newResource);
-
-        CompositionPlaylistChanged(_compositionPlaylist);
-
-    } else if (packageItem) {
-        QMessageBox::information(this, tr("Sorry"), tr("Only A/V/TT track can be inserted into playlist"));
-    } else {
-        QMessageBox::information(this, tr("Sorry"), tr("No track selected"));
     }
+    if (sequence == nullptr) {
+        std::cout << "Make new sequence" << std::endl;
+        sequence = std::shared_ptr<CPLSequence>(new CPLSequence(UUIDGenerator().MakeUUID()));
+        segmentRect.GetItem()->AppendItem(sequence);
+        virtualTrack->AppendItem(sequence);
+        sequence->SetVirtualTrackId(virtualTrack->GetUUID());
+    }
+
+    std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(track,
+                                                                             _compositionPlaylist->GetEditRate());
+    sequence->AppendItem(newResource);
 }
 
 void CPLSequenceView::paintScence()
@@ -480,7 +484,7 @@ void CPLSequenceView::paintScence()
         numberTracks = 8;
     }
     //int heightPerTrack = 36; //floorf((height() - 10) / numberTracks);
-    std::cout << "heightPerTrack: " << _heightPerTrack << std::endl;
+    //std::cout << "heightPerTrack: " << _heightPerTrack << std::endl;
 
     if (_compositionPlaylist) {
         std::cout << "Render: " << _compositionPlaylist->GetSegments().size() << " Segments " << std::endl;
@@ -495,15 +499,6 @@ void CPLSequenceView::paintScence()
         QLine line(0, horizontalOffset, scene()->width(), horizontalOffset);
         scene()->addLine(line, QPen(QColor(0, 0, 0, 188), 1, Qt::DashLine));
     }
-}
-
-std::shared_ptr<CPLVirtualTrack> CPLSequenceView::GetVirtualTrackFromY(float Y) const
-{
-    if (_compositionPlaylist == nullptr) {
-        return std::shared_ptr<CPLVirtualTrack>(nullptr);
-    }
-    int index = floorf(Y / _heightPerTrack);
-    return _compositionPlaylist->GetVirtualTrackAtIndex(index);
 }
 
 void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
@@ -584,7 +579,6 @@ CPLResourceRect *CPLSequenceView::AppendResource(CPLSequenceRect *sequenceRect, 
     if (lastResourceRect) {
         startX = lastResourceRect->pos().x() + lastResourceRect->rect().width() + (shadowOffsetX - 1);
     }
-    int startY = sequenceRect->GetTrackIndex() * _heightPerTrack;
 
     int length = roundf(resource->GetNormalizedSourceDuration() / _zoomFactor);
 

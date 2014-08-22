@@ -57,8 +57,8 @@ class CPLSequenceView : public QGraphicsView
         // user requests to create the first segment
         void CreateFirstSegmentAction(const std::shared_ptr<IMFTrack> &track);
 
-        // adds a resource to a track
-        void AddResourceAction(const CPLSegmentRect& segmentRect, QPointF position);
+        // appends a resource to a virtual track in a segment.
+        void AddResourceAction(const CPLSegmentRect &segmentRect, const std::shared_ptr<IMFTrack> &track, int Y);
 
 
         // deletes a resource. and if parents are empty also parents
