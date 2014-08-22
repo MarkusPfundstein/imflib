@@ -128,7 +128,6 @@ void CPLSequenceView::mousePressEvent(QMouseEvent *ev)
 void CPLSequenceView::ShowRightClickMenuOnResource(QPoint position,
                                                     CPLResourceRect& resourceRect)
 {
-    QPointF scenePos = position;
     QMenu *popUp = new QMenu(this);
 
     QAction *deleteAction = new QAction(tr("&Delete Selected Item"), this);
@@ -137,7 +136,7 @@ void CPLSequenceView::ShowRightClickMenuOnResource(QPoint position,
     popUp->addAction(deleteAction);
     popUp->addAction(cancelAction);
 
-    QAction *execAction = popUp->exec(scenePos.toPoint());
+    QAction *execAction = popUp->exec(position);
     if (execAction == cancelAction) {
         return;
     } else if (execAction == deleteAction) {
@@ -238,87 +237,90 @@ void CPLSequenceView::dragMoveEvent(QDragMoveEvent *ev)
 
 void CPLSequenceView::dropEvent(QDropEvent *ev)
 {
+    if (_compositionPlaylist == nullptr || _draggedResourceRect == nullptr) {
+        return;
+    }
+
     // set this to true if you want to emit a change of the composition playlist
     bool emitChange = false;
-    if (_compositionPlaylist && _draggedResourceRect) {
 
-        // track we will insert
-        std::shared_ptr<IMFTrack> track = _draggedResourceRect->GetResource()->GetTrack();
+    // track we will insert
+    std::shared_ptr<IMFTrack> track = _draggedResourceRect->GetResource()->GetTrack();
 
-        if (_compositionPlaylist->GetSegments().empty()) {
-            // empty playlist and drop event. create segment, sequence, virtual track and stuff
-            CreateFirstSegmentAction(track);
-            emitChange = true;
-        } else {
-            bool attach = false;
+    if (_compositionPlaylist->GetSegments().empty()) {
+        // empty playlist and drop event. create segment, sequence, virtual track and stuff
+        CreateFirstSegmentAction(track);
+        emitChange = true;
+    } else {
+        bool attach = false;
 
-            // loop through all items and check if we attach to it. if yes attach the draggedResource
-            // to the item or to the segment
-            // this loop is a bit messy. I know, but fuck it! it works for now
-            // whats happening here is this:
-            // we loop through all items and check if one of their attachment areas is activated
-            // if yes we check if user has pressed ctrl. if yes we insert resource on new segment,
-            // if no we insert resource in current segment
-            for (QGraphicsItem *cs : scene()->items()) {
-                CPLRenderRect *r= dynamic_cast<CPLRenderRect*>(cs);
-                if (r && r != _draggedResourceRect) {
-                    if (r->GetDrawAttachAreaRight()) {
-                        if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
-                            CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(r);
-                            if (segmentRect) {
-                                attach = true;
-                                InsertSegmentAction(*segmentRect, track, ev->pos().y(), true);
-                            }
-                        } else {
-                            CPLResourceRect *resourceRect = dynamic_cast<CPLResourceRect*>(r);
-                            if (resourceRect) {
-                                attach = true;
-                                InsertResourceAction(*resourceRect, track, true);
-                            }
+        // loop through all items and check if we attach to it. if yes attach the draggedResource
+        // to the item or to the segment
+        // this loop is a bit messy. I know, but fuck it! it works for now
+        // whats happening here is this:
+        // we loop through all items and check if one of their attachment areas is activated
+        // if yes we check if user has pressed ctrl. if yes we insert resource on new segment,
+        // if no we insert resource in current segment
+        for (QGraphicsItem *cs : scene()->items()) {
+            CPLRenderRect *r= dynamic_cast<CPLRenderRect*>(cs);
+            if (r && r != _draggedResourceRect) {
+                if (r->GetDrawAttachAreaRight()) {
+                    if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
+                        CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(r);
+                        if (segmentRect) {
+                            attach = true;
+                            InsertSegmentAction(*segmentRect, track, ev->pos().y(), true);
                         }
-                    } else if (r->GetDrawAttachAreaLeft()) {
-
-                        if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
-                            CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(r);
-                            if (segmentRect) {
-                                attach = true;
-                                InsertSegmentAction(*segmentRect, track, ev->pos().y(), false);
-                            }
-                        } else {
-                            CPLResourceRect *resourceRect = dynamic_cast<CPLResourceRect*>(r);
-                            if (resourceRect) {
-                                attach = true;
-                                InsertResourceAction(*resourceRect, track, false);
-                            }
+                    } else {
+                        CPLResourceRect *resourceRect = dynamic_cast<CPLResourceRect*>(r);
+                        if (resourceRect) {
+                            attach = true;
+                            InsertResourceAction(*resourceRect, track, true);
                         }
                     }
+                } else if (r->GetDrawAttachAreaLeft()) {
 
-                    if (attach) {
-                        r->SetDrawAttachAreaRight(false);
-                        r->SetDrawAttachAreaLeft(false);
-                        r->update();
-                        emitChange = true;
-                        break;
+                    if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
+                        CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(r);
+                        if (segmentRect) {
+                            attach = true;
+                            InsertSegmentAction(*segmentRect, track, ev->pos().y(), false);
+                        }
+                    } else {
+                        CPLResourceRect *resourceRect = dynamic_cast<CPLResourceRect*>(r);
+                        if (resourceRect) {
+                            attach = true;
+                            InsertResourceAction(*resourceRect, track, false);
+                        }
                     }
                 }
+
+                if (attach) {
+                    r->SetDrawAttachAreaRight(false);
+                    r->SetDrawAttachAreaLeft(false);
+                    r->update();
+                    emitChange = true;
+                    break;
+                }
             }
-            // we didnt attach to an item. check if our mouse position is inside a segment
-            if (attach == false) {
-                // yes loop again. -.- .. now we are at O(2n) with n = GraphicItems.
-                // should be optimized
-                for (QGraphicsItem *cs : scene()->items()) {
-                    CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(cs);
-                    if (segmentRect && segmentRect->mapRectToScene(segmentRect->rect()).contains(ev->pos())) {
-                        AddResourceAction(*segmentRect, track, ev->pos().y());
-                        emitChange = true;
-                        break;
-                    }
+        }
+        // we didnt attach to an item. check if our mouse position is inside a segment
+        if (attach == false) {
+            // yes loop again. -.- .. now we are at O(2n) with n = GraphicItems.
+            // should be optimized
+            for (QGraphicsItem *cs : scene()->items()) {
+                CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(cs);
+                if (segmentRect && segmentRect->mapRectToScene(segmentRect->rect()).contains(mapToScene(ev->pos()))) {
+                    AddResourceAction(*segmentRect, track, ev->pos().y());
+                    emitChange = true;
+                    break;
                 }
             }
         }
     }
 
-    // clean up shit
+
+    // clean up shit.
     if (_draggedResourceRect) {
         delete _draggedResourceRect;
         _draggedResourceRect = nullptr;
