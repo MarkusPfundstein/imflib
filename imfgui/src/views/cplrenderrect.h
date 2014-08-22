@@ -20,14 +20,17 @@ class CPLRenderRect : public QGraphicsRectItem
         void SetRenderBackground(bool b)
         { _renderBackground = b; }
 
-        void SetDrawAttachAreaRight(bool r) { _drawAttachAreaRight = r; }
-        void SetDrawAttachAreaLeft(bool r) { _drawAttachAreaLeft = r; }
+        void SetDrawAttachAreaRight(bool r)
+        { _drawAttachAreaRight = _acceptAttachment && r; }
+
+        void SetDrawAttachAreaLeft(bool r)
+        { _drawAttachAreaLeft = _acceptAttachment && r; }
 
         bool GetDrawAttachAreaRight() const
-        { return _drawAttachAreaRight; }
+        { return _acceptAttachment && _drawAttachAreaRight; }
 
         bool GetDrawAttachAreaLeft() const
-        { return _drawAttachAreaLeft; }
+        { return _acceptAttachment && _drawAttachAreaLeft; }
 
         virtual QRect RightIntersectionRect() const;
         virtual QRect LeftIntersectionRect() const;

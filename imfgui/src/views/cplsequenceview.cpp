@@ -255,6 +255,10 @@ void CPLSequenceView::dropEvent(QDropEvent *ev)
             // loop through all items and check if we attach to it. if yes attach the draggedResource
             // to the item or to the segment
             // this loop is a bit messy. I know, but fuck it! it works for now
+            // whats happening here is this:
+            // we loop through all items and check if one of their attachment areas is activated
+            // if yes we check if user has pressed ctrl. if yes we insert resource on new segment,
+            // if no we insert resource in current segment
             for (QGraphicsItem *cs : scene()->items()) {
                 CPLRenderRect *r= dynamic_cast<CPLRenderRect*>(cs);
                 if (r && r != _draggedResourceRect) {
@@ -548,7 +552,6 @@ void CPLSequenceView::AddSequence(CPLSegmentRect *segmentRect, const std::shared
                     trackIdx * _heightPerTrack);
     newRect->SetTrackIndex(trackIdx);
 
-
     for (const std::shared_ptr<CPLResource> &resource : sequence->GetItems()) {
         CPLResourceRect *resourceRect = AppendResource(newRect, resource);
         newRect->SetLastItem(resourceRect);
@@ -592,7 +595,6 @@ CPLResourceRect *CPLSequenceView::AppendResource(CPLSequenceRect *sequenceRect, 
     if (image == nullptr) {
         std::cout << "[ERROR] Null image" << std::endl;
     }
-
 
     QRect drawingRect(0, 0, length - (shadowOffsetX - 1), _heightPerTrack - 5);
     CPLResourceRect *resourceRect = new CPLResourceRect(sequenceRect,
