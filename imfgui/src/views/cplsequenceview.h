@@ -48,17 +48,18 @@ class CPLSequenceView : public QGraphicsView
 
         /* ACTIONS */
 
-        // user requests to insert a track after or before a resource
+        // user requests to insert a track after or before a existing resource
         void InsertResourceAction(const CPLResourceRect& resourceRect, const std::shared_ptr<IMFTrack> &track, bool append);
 
-        // user requests to insert a track on a new segment after or before a segment
+        // user requests to insert a track on a new segment after or before a existing segment
         void InsertSegmentAction(const CPLSegmentRect &segmentRect, const std::shared_ptr<IMFTrack> &track, int Y, bool append);
+
+        // user requests to create the first segment
+        void CreateFirstSegmentAction(const std::shared_ptr<IMFTrack> &track);
 
         // adds a resource to a track
         void AddResourceAction(const CPLSegmentRect& segmentRect, QPointF position);
 
-        // user requests to insert a new segment
-        void NewSegmentAction(QPointF position);
 
         // deletes a resource. and if parents are empty also parents
         void DeleteResourceAction(CPLResourceRect& resourceRect);
