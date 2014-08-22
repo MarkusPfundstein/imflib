@@ -30,10 +30,16 @@ class CPLResourceRect : public QObject, public CPLRenderRect
         const std::shared_ptr<CPLResource>& GetResource() const
         { return _resource; }
 
-        virtual void mousePressEvent(QGraphicsSceneMouseEvent *ev);
-        virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *ev);
-        virtual void hoverEnterEvent(QGraphicsSceneHoverEvent *ev);
-        virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent *ev);
+        void setPos(const QPointF &pos);
+        void setPos(qreal x, qreal y);
+
+        QRect RightIntersectionRect() const;
+        QRect LeftIntersectionRect() const;
+
+        void mousePressEvent(QGraphicsSceneMouseEvent *ev);
+        void mouseReleaseEvent(QGraphicsSceneMouseEvent *ev);
+        void hoverEnterEvent(QGraphicsSceneHoverEvent *ev);
+        void hoverLeaveEvent(QGraphicsSceneHoverEvent *ev);
 
     signals:
         void RightMouseClickSignal(QPoint position, CPLResourceRect &resourceRect);
@@ -48,6 +54,8 @@ class CPLResourceRect : public QObject, public CPLRenderRect
 
         int _shadowOffsetX;
         int _shadowOffsetY;
+
+        int _verticalOffset;
 };
 
 #endif // CPLResourceRect_H

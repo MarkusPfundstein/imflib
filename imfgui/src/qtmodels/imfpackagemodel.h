@@ -38,6 +38,8 @@ class IMFPackageModel : public QAbstractTableModel
         // returns IMFPackage in row
         const std::shared_ptr<IMFPackageItem> IMFPackageInRow(int row) const;
 
+        Qt::ItemFlags flags(const QModelIndex &index) const;
+
     protected:
     private:
         // tries to cast item to IMFTrack and returns duration in frames as string

@@ -16,6 +16,7 @@
 #include "../model/cplsequence.h"
 #include "../model/cplvirtualtrack.h"
 #include "../model/imftrack.h"
+#include "../qtmodels/sharedpointermimedata.h"
 
 #include "../utils/uuidgenerator.h"
 
@@ -35,13 +36,15 @@ CPLSequenceView::CPLSequenceView(QWidget *_parent)
     _audioIcon(),
     _heightPerTrack(36),
     _lastSegmentRect(nullptr),
-    _zoomFactor(8)
+    _zoomFactor(8),
+    _draggedResourceRect(nullptr)
 {
     setBackgroundRole(QPalette::Shadow);
     setAutoFillBackground(true);
     setAlignment(Qt::AlignLeft | Qt::AlignTop);
     setMouseTracking(true);
     viewport()->setMouseTracking(true);
+    setAcceptDrops(true);
 
     //QGraphicsScene *gscene = new QGraphicsScene(0, 0, width(), height());
     //setScene(gscene);
@@ -60,6 +63,10 @@ CPLSequenceView::~CPLSequenceView()
 {
     if (scene()) {
         scene()->clear();
+    }
+    if (_draggedResourceRect) {
+        delete _draggedResourceRect;
+        _draggedResourceRect = nullptr;
     }
     std::cout << "delete sequence view " << std::endl;
 }
@@ -107,7 +114,7 @@ void CPLSequenceView::CompositionPlaylistChanged(const std::shared_ptr<IMFCompos
 void CPLSequenceView::mousePressEvent(QMouseEvent *ev)
 {
 
-    if (ev->button() == Qt::RightButton) {
+    /*if (ev->button() == Qt::RightButton) {
         if (_compositionPlaylist == nullptr) {
             QMessageBox::information(this, tr("Sorry"), tr("No Composition Playlist selected"));
             return;
@@ -125,9 +132,10 @@ void CPLSequenceView::mousePressEvent(QMouseEvent *ev)
                 return;
             }
         }
-        ShowRightClickMenuOnSequenceView(ev->pos());
+        //ShowRightClickMenuOnSequenceView(ev->pos());
     }
     std::cout << "mousePressEvent" << std::endl;
+    */
     QGraphicsView::mousePressEvent(ev);
 }
 
@@ -136,9 +144,9 @@ void CPLSequenceView::ShowRightClickMenuOnResource(QPoint position,
 {
 
 
-    QPoint global = mapToGlobal(position);
+    QPointF scenePos = position; //mapToGlobal(position);
     QMenu *popUp = new QMenu(this);
-
+/*
     QAction *insertAfterAction = new QAction(tr("&Append Track"), this);
     QAction *insertBeforeAction = new QAction(tr("&Prepend Track"), this);
     popUp->addAction(insertAfterAction);
@@ -155,7 +163,7 @@ void CPLSequenceView::ShowRightClickMenuOnResource(QPoint position,
     if (sequenceRect->GetFirstItem() == &resourceRect) {
         prependSegmentAction = new QAction(tr("&Prepend New Segment with Track"), this);
         popUp->addAction(prependSegmentAction);
-    }
+    }*/
 
     QAction *deleteAction = new QAction(tr("&Delete Selected Item"), this);
     QAction *cancelAction = new QAction(tr("&Cancel"), this);
@@ -163,23 +171,23 @@ void CPLSequenceView::ShowRightClickMenuOnResource(QPoint position,
     popUp->addAction(deleteAction);
     popUp->addAction(cancelAction);
 
-    QAction *execAction = popUp->exec(global);
+    QAction *execAction = popUp->exec(scenePos.toPoint());
     if (execAction == cancelAction) {
         return;
+    } else if (execAction == deleteAction) {
+        DeleteResourceAction(resourceRect);
     }
-
-    if (execAction == insertAfterAction) {
+/*
+    else if (execAction == insertAfterAction) {
         InsertResourceAction(resourceRect, true);
     } else if (execAction == insertBeforeAction) {
         InsertResourceAction(resourceRect, false);
-    } else if (execAction == deleteAction) {
-        DeleteResourceAction(resourceRect);
     } else if (appendSegmentAction && appendSegmentAction == execAction) {
         // yeah the first cast is terrible
         InsertSegmentAction(&resourceRect, true);
     } else if (prependSegmentAction && prependSegmentAction == execAction) {
         InsertSegmentAction(&resourceRect, false);
-    }
+    }*/
 }
 
 void CPLSequenceView::ShowRightClickMenuOnSegmentView(QPointF position, CPLSegmentRect &segmentRect)
@@ -309,7 +317,163 @@ void CPLSequenceView::NewSegmentAction(QPointF position)
     }
 }
 
-void CPLSequenceView::InsertSegmentAction(CPLResourceRect *resourceRect, bool append)
+void CPLSequenceView::dragEnterEvent(QDragEnterEvent *ev)
+{
+    std::cout << "drag enter" << std::endl;
+    const SharedPointerMimeData<IMFTrack> *data = dynamic_cast<const SharedPointerMimeData<IMFTrack>*>(ev->mimeData());
+    if (_compositionPlaylist && data) {
+        std::shared_ptr<IMFTrack> track = data->GetStoredPointer();
+        if (track) {
+            std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(track,
+                                                                                     _compositionPlaylist->GetEditRate());
+
+            int length = roundf(newResource->GetNormalizedSourceDuration() / _zoomFactor);
+
+            QRect renderRect(0, 0, length - 1, _heightPerTrack - 5);
+
+            QImage *image = nullptr;
+            IMFPackageItem::TYPE resourceType = track->GetType();
+            if (resourceType == IMFPackageItem::TYPE::VIDEO) {
+                image = &_videoIcon;
+            } else if (resourceType == IMFPackageItem::TYPE::AUDIO) {
+                image = &_audioIcon; // TO-DO: this stuff should be cached
+            }
+            if (image == nullptr) {
+                std::cout << "[ERROR] Null image" << std::endl;
+            }
+
+            _draggedResourceRect = new CPLResourceRect(nullptr,
+                                                        newResource,
+                                                        renderRect,
+                                                        QColor(51, 102, 152),
+                                                        QColor(20, 41, 61),
+                                                        *image);
+            _draggedResourceRect->SetShadowOffsets(2, 1);
+            scene()->addItem(_draggedResourceRect);
+
+            ev->acceptProposedAction();
+        }
+    }
+}
+
+void CPLSequenceView::dragLeaveEvent(QDragLeaveEvent *ev)
+{
+    std::cout << "drag leave" << std::endl;
+    if (_draggedResourceRect) {
+        delete _draggedResourceRect;
+        _draggedResourceRect = nullptr;
+    }
+    for (QGraphicsItem *cs : scene()->items()) {
+            CPLResourceRect *r= dynamic_cast<CPLResourceRect*>(cs);
+            if (r && r != _draggedResourceRect) {
+                r->SetDrawAttachAreaRight(false);
+                r->SetDrawAttachAreaLeft(false);
+                r->update();
+            }
+    }
+    ev->accept();
+}
+
+void CPLSequenceView::dropEvent(QDropEvent *ev)
+{
+    std::cout << "dropEvent" << std::endl;
+    if (_compositionPlaylist && _draggedResourceRect) {
+        bool attach = false;
+        for (QGraphicsItem *cs : scene()->items()) {
+            CPLRenderRect *r= dynamic_cast<CPLRenderRect*>(cs);
+            if (r && r != _draggedResourceRect) {
+                if (r->GetDrawAttachAreaRight()) {
+                    if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
+                        CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(r);
+                        if (segmentRect) {
+                            attach = true;
+                            InsertSegmentAction(*segmentRect, ev->pos().y(), true);
+                        }
+                    } else {
+                        CPLResourceRect *resourceRect = dynamic_cast<CPLResourceRect*>(r);
+                        if (resourceRect) {
+                            attach = true;
+                            InsertResourceAction(*resourceRect, true);
+                        }
+                    }
+                } else if (r->GetDrawAttachAreaLeft()) {
+
+                    if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
+                        CPLSegmentRect *segmentRect = dynamic_cast<CPLSegmentRect*>(r);
+                        if (segmentRect) {
+                            attach = true;
+                            InsertSegmentAction(*segmentRect, ev->pos().y(), false);
+                        }
+                    } else {
+                        CPLResourceRect *resourceRect = dynamic_cast<CPLResourceRect*>(r);
+                        if (resourceRect) {
+                            attach = true;
+                            InsertResourceAction(*resourceRect, false);
+                        }
+                    }
+                }
+
+                if (attach) {
+                    r->SetDrawAttachAreaRight(false);
+                    r->SetDrawAttachAreaLeft(false);
+                    r->update();
+                    break;
+                }
+            }
+        }
+        if (_draggedResourceRect) {
+            delete _draggedResourceRect;
+            _draggedResourceRect = nullptr;
+        }
+
+
+        if (attach) {
+            emit CompositionPlaylistChanged(_compositionPlaylist);
+        }
+    }
+}
+
+void CPLSequenceView::dragMoveEvent(QDragMoveEvent *ev)
+{
+    if (_compositionPlaylist && _draggedResourceRect) {
+        QPointF scenePos = mapToScene(ev->pos());
+        _draggedResourceRect->setPos(scenePos);
+        _draggedResourceRect->update();
+
+        for (QGraphicsItem *cs : scene()->items()) {
+            CPLRenderRect *r= dynamic_cast<CPLRenderRect*>(cs);
+            if (r && r != _draggedResourceRect) {
+                bool checkForContain = true;
+                if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
+                    CPLSegmentRect *test = dynamic_cast<CPLSegmentRect*>(r);
+                    if (test == nullptr) {
+                        checkForContain = false;;
+                    }
+                } else {
+                    CPLResourceRect *test = dynamic_cast<CPLResourceRect*>(r);
+                    if (test == nullptr) {
+                        checkForContain = false;;
+                    }
+                }
+                QRectF sceneRectRight = r->mapRectToScene(r->RightIntersectionRect());
+                QRectF sceneRectLeft = r->mapRectToScene(r->LeftIntersectionRect());
+                if (checkForContain && sceneRectRight.contains(scenePos)) {
+                    r->SetDrawAttachAreaRight(true);
+                } else if (checkForContain && sceneRectLeft.contains(scenePos)) {
+                    r->SetDrawAttachAreaLeft(true);
+                } else {
+                    r->SetDrawAttachAreaRight(false);
+                    r->SetDrawAttachAreaLeft(false);
+                }
+                r->update();
+            }
+        }
+
+        ev->acceptProposedAction();
+    }
+}
+
+void CPLSequenceView::InsertSegmentAction(const CPLSegmentRect &segmentRect, int Y, bool append)
 {
     IMFPackageView *packageView = dynamic_cast<IMFPackageView*>(parentWidget()->parentWidget());
     if (packageView == nullptr) {
@@ -321,35 +485,35 @@ void CPLSequenceView::InsertSegmentAction(CPLResourceRect *resourceRect, bool ap
         (packageItem->GetType() == IMFPackageItem::TYPE::VIDEO ||
          packageItem->GetType() == IMFPackageItem::TYPE::AUDIO)) {
 
-        if (packageItem->GetType() != resourceRect->GetResource()->GetTrack()->GetType()) {
-            QMessageBox::information(this, tr("Sorry"), tr("Cant insert track into sequence of different type"));
-            return;
-        }
-
-        CPLSegmentRect *segmentRect = static_cast<CPLSegmentRect*>(resourceRect->parentItem()->parentItem());
-
-        // we need to get virtual track of resource we have clicked on
-        CPLSequenceRect *sequenceRect = static_cast<CPLSequenceRect*>(resourceRect->parentItem());
-        std::shared_ptr<CPLVirtualTrack> virtualTrack = *std::next(_compositionPlaylist->GetVirtualTracks().begin(), sequenceRect->GetTrackIndex());
-
-        // creat all necessary stuff. new segment, new sequence, new resource
+        // create new segment and new sequence
         std::shared_ptr<CPLSegment> newSegment(new CPLSegment(UUIDGenerator().MakeUUID()));
         std::shared_ptr<CPLSequence> newSequence(new CPLSequence(UUIDGenerator().MakeUUID()));
-        newSequence->SetVirtualTrackId(virtualTrack->GetUUID());
+        newSegment->AppendItem(newSequence);
 
+        // check for virtual track at Y position. if no make one
+        std::shared_ptr<CPLVirtualTrack> virtualTrack = GetVirtualTrackFromY(Y);
+        if (!virtualTrack) {
+            std::cout << "Make new Virtual Track" << std::endl;
+            virtualTrack = std::shared_ptr<CPLVirtualTrack>(new CPLVirtualTrack(UUIDGenerator().MakeUUID()));
+            _compositionPlaylist->AddVirtualTrack(virtualTrack);
+        }
+
+        // set virtual track id of sequence
+        newSequence->SetVirtualTrackId(virtualTrack->GetUUID());
+        virtualTrack->AppendItem(newSequence);
+
+        // generate new resource
         std::shared_ptr<CPLResource> newResource = CPLResource::StandardResource(std::static_pointer_cast<IMFTrack>(packageItem),
                                                                                  _compositionPlaylist->GetEditRate());
         newSequence->AppendItem(newResource);
-        newSegment->AppendItem(newSequence);
-        virtualTrack->AppendItem(newSequence);
 
         if (append) {
-            _compositionPlaylist->InsertSegmentAfter(newSegment, segmentRect->GetItem());
+            _compositionPlaylist->InsertSegmentAfter(newSegment, segmentRect.GetItem());
         } else {
-            _compositionPlaylist->InsertSegmentBefore(newSegment, segmentRect->GetItem());
+            _compositionPlaylist->InsertSegmentBefore(newSegment, segmentRect.GetItem());
         }
 
-        CompositionPlaylistChanged(_compositionPlaylist);
+        //CompositionPlaylistChanged(_compositionPlaylist);
     } else if (packageItem) {
         QMessageBox::information(this, tr("Sorry"), tr("Only A/V/TT track can be inserted into playlist"));
     } else {
@@ -452,7 +616,6 @@ void CPLSequenceView::InsertResourceAction(const CPLResourceRect &resourceRect, 
         } else {
             static_cast<CPLSequenceRect*>(resourceRect.parentItem())->GetSequence()->InsertItemBefore(newResource, resourceRect.GetResource());
         }
-        CompositionPlaylistChanged(_compositionPlaylist);
     } else if (packageItem) {
         QMessageBox::information(this, tr("Sorry"), tr("Only A/V/TT track can be inserted into playlist"));
     } else {
@@ -506,13 +669,14 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
     int lastIndex = 0;
 
     if (lastSegmentRect) {
-        renderOffsetX = lastSegmentRect->boundingRect().x() + lastSegmentRect->boundingRect().width() + 1;
+        renderOffsetX = lastSegmentRect->pos().x() + lastSegmentRect->rect().width() + 1;
         lastIndex = lastSegmentRect->GetIndex();
     }
 
     CPLSegmentRect *newRect = new CPLSegmentRect(nullptr, segment);
-    QRect drawingRect(renderOffsetX, 0, roundf(segment->GetDuration() / _zoomFactor), height());
+    QRect drawingRect(0, 0, roundf(segment->GetDuration() / _zoomFactor), height());
     newRect->SetDrawingRect(drawingRect);
+    newRect->setPos(renderOffsetX, 0);
     newRect->SetIndex(lastIndex + 1);
 
     if ((newRect->GetIndex() % 2) == 0) {
@@ -522,6 +686,7 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
     }
 
     std::cout << "Render " << segment->GetItems().size() << " sequences" << std::endl;
+    scene()->addItem(newRect);
     for (const std::shared_ptr<CPLSequence> &s : segment->GetItems()) {
         AddSequence(newRect, s);
     }
@@ -531,7 +696,7 @@ void CPLSequenceView::AppendSegment(const std::shared_ptr<CPLSegment> &segment)
             this,
             SLOT(ShowRightClickMenuOnSegmentView(QPointF, CPLSegmentRect &)));
 
-    scene()->addItem(newRect);
+    //scene()->addItem(newRect);
 
     _lastSegmentRect = newRect;
 }
@@ -542,10 +707,12 @@ void CPLSequenceView::AddSequence(CPLSegmentRect *segmentRect, const std::shared
 
     CPLSequenceRect *newRect = new CPLSequenceRect(segmentRect, sequence);
     newRect->SetRenderBackground(true);
-    newRect->SetDrawingRect(QRect(segmentRect->boundingRect().x(),
-                                  trackIdx * _heightPerTrack,
+    newRect->SetDrawingRect(QRect(0,
+                                  0,
                                   floorf(sequence->GetDuration() / _zoomFactor),
                                   _heightPerTrack));
+    newRect->setPos(0,
+                    trackIdx * _heightPerTrack);
     newRect->SetTrackIndex(trackIdx);
 
 
@@ -572,9 +739,12 @@ CPLResourceRect *CPLSequenceView::AppendResource(CPLSequenceRect *sequenceRect, 
         QColor(82, 0, 41)
     };
 
-    int startX = sequenceRect->boundingRect().x();
+    int shadowOffsetX = 2;
+    int shadowOffsetY = 1;
+
+    int startX = sequenceRect->pos().x();
     if (lastResourceRect) {
-        startX = lastResourceRect->boundingRect().x() + lastResourceRect->boundingRect().width();
+        startX = lastResourceRect->pos().x() + lastResourceRect->rect().width() + (shadowOffsetX - 1);
     }
     int startY = sequenceRect->GetTrackIndex() * _heightPerTrack;
 
@@ -591,9 +761,8 @@ CPLResourceRect *CPLSequenceView::AppendResource(CPLSequenceRect *sequenceRect, 
         std::cout << "[ERROR] Null image" << std::endl;
     }
 
-    int shadowOffsetX = 2;
-    int shadowOffsetY = 1;
-    QRect drawingRect(startX, startY + 3, length - 1, _heightPerTrack - 5);
+
+    QRect drawingRect(0, 0, length - (shadowOffsetX - 1), _heightPerTrack - 5);
     CPLResourceRect *resourceRect = new CPLResourceRect(sequenceRect,
                                                         resource,
                                                         drawingRect,
@@ -601,6 +770,7 @@ CPLResourceRect *CPLSequenceView::AppendResource(CPLSequenceRect *sequenceRect, 
                                                         shadowColors[sequenceRect->GetTrackIndex() % 2],
                                                         *image);
     resourceRect->SetShadowOffsets(shadowOffsetX, shadowOffsetY);
+    resourceRect->setPos(startX, 0);
 
     connect(resourceRect,
             SIGNAL(RightMouseClickSignal(QPoint, CPLResourceRect&)),

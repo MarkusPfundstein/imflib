@@ -3,6 +3,7 @@
 
 #include <QFileInfo>
 #include <cmath>
+#include <QStringListModel>
 #include "../model/imftrack.h"
 
 IMFPackageModel::IMFPackageModel(QObject *_parent)
@@ -125,6 +126,15 @@ void IMFPackageModel::Clear()
     _data.clear();
     reset();
 }
+
+ Qt::ItemFlags IMFPackageModel::flags(const QModelIndex &index) const
+ {
+     Qt::ItemFlags defaultFlags = QAbstractTableModel::flags(index);
+
+     if (index.isValid()) {
+         return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | defaultFlags;
+     }
+ }
 
 const std::shared_ptr<IMFPackageItem> IMFPackageModel::IMFPackageInRow(int row) const
 {

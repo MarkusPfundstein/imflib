@@ -10,6 +10,7 @@ CPLSegmentRect::CPLSegmentRect(QGraphicsItem *_parent, const std::shared_ptr<CPL
     _index(0)
 {
     //ctor
+    SetAcceptAttachment(true);
 }
 
 CPLSegmentRect::~CPLSegmentRect()
