@@ -58,6 +58,33 @@ int CPLResource::GetNormalizedSourceDuration() const
     return -1;
 }
 
+void CPLResource::Write(boost::property_tree::ptree &pt) const
+{
+    using namespace boost::property_tree;
+
+    ptree resource;
+
+    std::string type = "TrackFileResourceType";
+
+    resource.put("<xmlattr>.xsi:type", type);
+    resource.put("Id", UUIDStr(GetUUID()));
+    resource.put("Annotation", "");
+    resource.put("EditRate", GetEditRate().AsIMFString());
+    resource.put("IntrinsicDuration", GetIntrinsicDuration());
+    resource.put("EntryPoint", GetEntryPoint());
+    resource.put("SourceDuration", GetSourceDuration());
+    resource.put("RepeatCount", GetRepeatCount());
+    resource.put("SourceEncoding", UUIDStr(GetSourceEncoding()));
+    resource.put("TrackFileId", UUIDStr(GetTrackFileId()));
+    if (!GetKeyId().empty())
+        resource.put("KeyId", GetKeyId());
+    if (!GetHash().empty())
+        resource.put("Hash", GetHash());
+
+    pt.add_child("Resource", resource);
+
+}
+
 std::shared_ptr<CPLResource> CPLResource ::Load(const boost::property_tree::ptree &pt,
                                                 const std::string &cplEditRate,
                                                 const std::vector<std::shared_ptr<IMFTrack>> &tracks)

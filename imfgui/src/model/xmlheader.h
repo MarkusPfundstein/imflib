@@ -96,7 +96,7 @@ struct XMLHeaderCompositionPlaylist
             ptree.put("Issuer", issuer);
         if (!creator.empty())
             ptree.put("Creator", creator);
-        if (contentOriginator.empty())
+        if (!contentOriginator.empty())
             ptree.put("ContentOriginator", contentOriginator);
         ptree.put("ContentTitle", contentTitle);
         if (!contentKind.empty())

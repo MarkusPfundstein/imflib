@@ -259,13 +259,17 @@ void IMFPackage::ParseAndAddTrack(const std::string& fullPath)
 
 void IMFPackage::Write() const
 {
-    // write composition playlists
-    for (const std::shared_ptr<IMFCompositionPlaylist> &cpl : _compositionPlaylists) {
-        cpl->Write();
-    }
+    try {
+        // write composition playlists
+        for (const std::shared_ptr<IMFCompositionPlaylist> &cpl : _compositionPlaylists) {
+            cpl->Write();
+        }
 
-    // last but not least. write map of all assets
-    WriteAssetMap(_location + "/" + _name + "/ASSETMAP.xml");
+        // last but not least. write map of all assets
+        WriteAssetMap(_location + "/" + _name + "/ASSETMAP.xml");
+    } catch (IMFCompositionPlaylistException &e) {
+        throw IMFPackageException(e.what());
+    }
 }
 
 void IMFPackage::WriteAssetMap(const std::string& filename) const

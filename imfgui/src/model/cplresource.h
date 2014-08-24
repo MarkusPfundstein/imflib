@@ -30,6 +30,8 @@ class CPLResource : public GenericItem
         static std::shared_ptr<CPLResource> StandardResource(const std::shared_ptr<IMFTrack> &track,
                                                               RationalNumber compositionPlaylistEditRate);
 
+        void Write(boost::property_tree::ptree &pt) const;
+
         // returns real playing time of referenced resource
         int GetIntrinsicDuration() const
         { return _track->GetDuration(); }

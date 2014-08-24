@@ -45,7 +45,19 @@ void IMFCompositionPlaylist::Write() const
 
     _header.Write(rootNode);
 
+    ptree essenceDescriptorList;
     // dump essence descriptorlist
+    bool writeEssenceDescriptors = false;
+    for (const std::string &s : _essenceDescriptors) {
+        writeEssenceDescriptors = true;
+        ptree essenceDescriptor;
+        essenceDescriptor.put("Id", UUIDStr(s));
+        essenceDescriptorList.add_child("EssenceDescriptor", essenceDescriptor);
+    }
+
+    if (writeEssenceDescriptors) {
+        rootNode.add_child("EssenceDescriptorList", essenceDescriptorList);
+    }
 
     rootNode.put("EditRate", boost::lexical_cast<std::string>(_editRate.num) + " " + boost::lexical_cast<std::string>(_editRate.denum));
 
@@ -53,7 +65,7 @@ void IMFCompositionPlaylist::Write() const
 
     // write segments list
     for (const std::shared_ptr<CPLSegment> &segment : _segments) {
-
+        segment->Write(segmentList);
     }
 
     rootNode.add_child("SegmentList", segmentList);

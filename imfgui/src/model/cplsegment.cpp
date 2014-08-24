@@ -1,7 +1,7 @@
 #include "cplsegment.h"
 
 #include "cplsequence.h"
-
+#include "../utils/uuidgenerator.h"
 #include <iostream>
 
 CPLSegment::CPLSegment(const std::string &uuid)
@@ -33,4 +33,23 @@ int CPLSegment::GetDuration() const
     }
 
     return duration;
+}
+
+void CPLSegment::Write(boost::property_tree::ptree &pt) const
+{
+    using namespace boost::property_tree;
+
+    ptree segment;
+
+    segment.put("Id", UUIDStr(GetUUID()));
+
+    ptree sequenceList;
+
+    for (const std::shared_ptr<CPLSequence> &s : GetItems()) {
+        s->Write(sequenceList);
+    }
+
+    segment.add_child("SequenceList", sequenceList);
+
+    pt.add_child("Segment", segment);
 }
