@@ -236,6 +236,8 @@ void IMFPackageView::OpenFile()
         // draw first composition playlist
         if (newPackage->GetCompositionPlaylists().empty() == false) {
             emit CompositionPlaylistDoubleClick(newPackage->GetCompositionPlaylists()[0]);
+        } else {
+            emit CompositionPlaylistDoubleClick(std::shared_ptr<IMFCompositionPlaylist>(nullptr));
         }
 
         UpdateMenu();

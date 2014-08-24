@@ -20,7 +20,8 @@ IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string &uuid, const st
     IMFPackageItem(uuid, filename, IMFPackageItem::TYPE::CPL),
     _editRate(0, 0),
     _segments(),
-    _virtualTracks()
+    _virtualTracks(),
+    _header()
 {
     //ctor
 }
@@ -40,13 +41,7 @@ void IMFCompositionPlaylist::Write() const
     rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/2067-3/XXXX");
     rootNode.put("<xmlattr>.xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
     rootNode.put("Id", UUIDStr(GetUUID()));
-    rootNode.put("Annotation", XML_HEADER_ANNOTATION);
-    rootNode.put("Creator", XML_HEADER_CREATOR);
-    rootNode.put("IssueDate", "");
-    rootNode.put("Issuer", XML_HEADER_ISSUER);
-    rootNode.put("ContentOriginator", XML_HEADER_ISSUER);
-    rootNode.put("ContentTitle", "TestPackage");
-    rootNode.put("ContentKind", "Test");
+
     rootNode.put("EditRate", boost::lexical_cast<std::string>(_editRate.num) + " " + boost::lexical_cast<std::string>(_editRate.denum));
 
     ptree segmentList;
@@ -142,6 +137,11 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
     UUIDClean(cplUUID);
 
     std::shared_ptr<IMFCompositionPlaylist> playlist(new IMFCompositionPlaylist(cplUUID, path));
+
+    ptree &headerNode = pt.get_child("CompositionPlaylist");
+    playlist->_header.Read(headerNode);
+
+    playlist->_header.Dump();
 
     std::string cplEditRate = pt.get<std::string>("CompositionPlaylist.EditRate");
     playlist->SetEditRate(RationalNumber::FromIMFString(cplEditRate));

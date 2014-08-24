@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "imfexceptions.h"
+#include "xmlheader.h"
 
 // forward references
 class IMFVideoTrack;
@@ -124,6 +125,8 @@ class IMFPackage
 
         // array of output profiles
         std::vector<std::shared_ptr<IMFOutputProfile>> _outputProfiles;
+
+        XMLHeaderAssetMap _headerAssetMap;
 };
 
 #endif // IMFPACKAGE_H

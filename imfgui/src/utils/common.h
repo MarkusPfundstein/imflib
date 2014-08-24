@@ -41,8 +41,4 @@ struct RationalNumber {
     }
 };
 
-static const std::string XML_HEADER_ISSUER("ContentCoders (Research and Development)");
-static const std::string XML_HEADER_CREATOR("ODMedia IMF Suite dev-0.1");
-static const std::string XML_HEADER_ANNOTATION("For testing purposes only");
-
 #endif // COMMON_H_INCLUDED

@@ -27,7 +27,8 @@ IMFPackage::IMFPackage()
     _videoTracks(),
     _audioTracks(),
     _compositionPlaylists(),
-    _outputProfiles()
+    _outputProfiles(),
+    _headerAssetMap()
 {
     //ctor
     std::cout << "create new package" << std::endl;
@@ -146,6 +147,11 @@ void IMFPackage::ReadAssetMap(const std::string& filename)
         SetUUID(packageId);
 
         std::cout << "UUID: " << packageId << std::endl;
+
+        ptree &headerChild = pt.get_child("AssetMap");
+        _headerAssetMap.Read(headerChild);
+
+        _headerAssetMap.Dump();
 
         for (ptree::value_type const &assetChild : pt.get_child("AssetMap.AssetList")) {
 
@@ -271,11 +277,8 @@ void IMFPackage::WriteAssetMap(const std::string& filename) const
 
     rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/429-9/2007/AM");
     rootNode.put("Id", UUIDStr(_uuid));
-    rootNode.put("Annotation", XML_HEADER_ANNOTATION);
-    rootNode.put("Creator", XML_HEADER_CREATOR);
-    rootNode.put("IssueDate", "");
-    rootNode.put("Issuer", XML_HEADER_ISSUER);
-    rootNode.put("VolumeCount", "1");
+
+    _headerAssetMap.Write(rootNode);
 
     ptree assetListNode;
 

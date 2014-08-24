@@ -8,7 +8,7 @@
 
 #include <list>
 #include <memory>
-
+#include "xmlheader.h"
 #include <boost/property_tree/ptree.hpp>
 
 class CPLSegment;
@@ -79,7 +79,7 @@ class IMFCompositionPlaylist : public IMFPackageItem
         std::list<std::shared_ptr<CPLSegment>> _segments;
         std::list<std::shared_ptr<CPLVirtualTrack>> _virtualTracks;
 
-
+        XMLHeaderCompositionPlaylist _header;
 };
 
 #endif // IMFCOMPOSITIONPLAYLIST_H
