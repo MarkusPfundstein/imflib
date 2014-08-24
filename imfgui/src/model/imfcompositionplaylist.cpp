@@ -21,6 +21,7 @@ IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string &uuid, const st
     _editRate(0, 0),
     _segments(),
     _virtualTracks(),
+    _essenceDescriptors(),
     _header()
 {
     //ctor
@@ -42,14 +43,18 @@ void IMFCompositionPlaylist::Write() const
     rootNode.put("<xmlattr>.xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
     rootNode.put("Id", UUIDStr(GetUUID()));
 
+    _header.Write(rootNode);
+
+    // dump essence descriptorlist
+
     rootNode.put("EditRate", boost::lexical_cast<std::string>(_editRate.num) + " " + boost::lexical_cast<std::string>(_editRate.denum));
 
     ptree segmentList;
 
     // write segments list
-    /*for (const std::shared_ptr<Segment> &segment : _segments) {
+    for (const std::shared_ptr<CPLSegment> &segment : _segments) {
 
-    }*/
+    }
 
     rootNode.add_child("SegmentList", segmentList);
     pt.add_child("CompositionPlaylist", rootNode);
@@ -140,7 +145,6 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
 
     ptree &headerNode = pt.get_child("CompositionPlaylist");
     playlist->_header.Read(headerNode);
-
     playlist->_header.Dump();
 
     std::string cplEditRate = pt.get<std::string>("CompositionPlaylist.EditRate");
@@ -201,6 +205,7 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
                             std::shared_ptr<CPLResource> resource = CPLResource::Load(resourceListNode.second,
                                                                                       cplEditRate,
                                                                                       tracks);
+                            playlist->_essenceDescriptors.insert(resource->GetSourceEncoding());
                             sequence->AppendItem(resource);
                         } catch (IMFInvalidReferenceException &e) {
                             throw IMFCompositionPlaylistException(e.what());
@@ -211,6 +216,11 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
             }
         }
    }
+
+    std::cout << "found essence descriptors: " << std::endl;
+    for (const std::string& s : playlist->_essenceDescriptors) {
+        std::cout << "\t" << s << std::endl;
+    }
 
     return playlist;
 }
