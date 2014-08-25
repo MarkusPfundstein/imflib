@@ -176,7 +176,7 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
     AESEncContext* context = nullptr;
     HMACContext* HMAC = nullptr;
     AS_02::JP2K::MXFWriter writer;
-    JP2K::FrameBuffer frameBuffer(4 * Kumu::Megabyte);
+    JP2K::FrameBuffer frameBuffer(12 * Kumu::Megabyte); // enough?
     JP2K::SequenceParser parser;
     //byte_t IV_buf[CBC_BLOCK_SIZE];
     Kumu::FortunaRNG rng;

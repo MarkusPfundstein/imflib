@@ -33,6 +33,7 @@ AC_CHECK_LIB([boost_program_options], [main], [], [AC_MSG_ERROR([libboost_progra
 # FIXME: Replace `main' with a function in `-lboost_system':
 AC_CHECK_LIB([boost_system], [main], [], [AC_MSG_ERROR([libboost_system was not found])])
 # FIXME: Replace `main' with a function in `-lkumu':
+AC_CHECK_LIB([boost_thread], [main], [], [AC_MSG_ERROR([libboost_threads was not found])])
 AC_CHECK_LIB([kumu], [main], [], [AC_MSG_ERROR([libkumu was not found])])
 # FIXME: Replace `main' with a function in `-lswresample':
 AC_CHECK_LIB([swresample], [main], [], [AC_MSG_ERROR([libswresample was not found])])
