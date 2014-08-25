@@ -9,11 +9,11 @@
 #include <functional>
 #include <cmath>
 
-J2KEncoder::J2KEncoder(BIT_RATE targetBitDepth, PROFILE profile, bool useTiles, RationalNumber fps, int width, int height, bool doMct)
+J2KEncoder::J2KEncoder(BIT_RATE targetBitDepth, PROFILE profile, bool useTiles, RationalNumber fps, int width, int height, bool doMct, bool sc)
     :
     _targetBitDepth(targetBitDepth), _profile(profile), _useTiles(useTiles), _fps(fps),
     _componentParameter(nullptr), _widthUsed(width), _heightUsed(height), _encodingParameters(), _bigEndian(false),
-    _colorSpace(OPJ_CLRSPC_SRGB), _mct(doMct)
+    _colorSpace(OPJ_CLRSPC_SRGB), _mct(doMct), _subsampledChroma(sc)
 {
     _encodingParameters.cp_comment = nullptr;
 }
@@ -51,8 +51,8 @@ void J2KEncoder::InitEncoder()
         _componentParameter[i].prec = (uint32_t) _targetBitDepth;
         _componentParameter[i].bpp = (uint32_t) _targetBitDepth;
         _componentParameter[i].sgnd = (uint32_t) _bigEndian;
-        _componentParameter[i].dx = (uint32_t) _encodingParameters.subsampling_dx;// * (i > 0 ? subsamplingDx : 1);
-        _componentParameter[i].dy = (uint32_t) _encodingParameters.subsampling_dy;// * (i > 0 ? subsamplingDy : 1);
+        _componentParameter[i].dx = (uint32_t) i == 0 ? 1 : _encodingParameters.subsampling_dx;
+        _componentParameter[i].dy = (uint32_t) i == 0 ? 1 : _encodingParameters.subsampling_dy;
         _componentParameter[i].w = (uint32_t) _widthUsed;
         _componentParameter[i].h = (uint32_t) _heightUsed;
     }
@@ -70,8 +70,8 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
 
     image->x0 = (uint32_t) _encodingParameters.image_offset_x0;
     image->y0 = (uint32_t) _encodingParameters.image_offset_y0;
-    image->x1 = (uint32_t) _encodingParameters.image_offset_x0 + (uint32_t) (_widthUsed - 1) * (uint32_t) _encodingParameters.subsampling_dx + 1;
-    image->y1 = (uint32_t) _encodingParameters.image_offset_y0 + (uint32_t) (_heightUsed - 1) * (uint32_t) _encodingParameters.subsampling_dy + 1;
+    image->x1 = (uint32_t) _encodingParameters.image_offset_x0 + (uint32_t) (_widthUsed);//((uint32_t) _encodingParameters.subsampling_dx + 1);
+    image->y1 = (uint32_t) _encodingParameters.image_offset_y0 + (uint32_t) (_heightUsed);//(uint32_t) _encodingParameters.subsampling_dy + 1;
 
     if (rawFrame.planar) {
         FillImagePlanar(image, rawFrame);
@@ -124,16 +124,24 @@ void J2KEncoder::FillImagePlanar(opj_image_t *image, const RawVideoFrame &rawFra
     for (int i = 0; i < 3; ++i) {
         int jpegIndex = 0;
         unsigned char *dataPtr = rawFrame.videoData[bgrTable[i]];
-        for (int y = 0; y < _heightUsed; ++y) {
-            for (int x = 0; x < _widthUsed; ++x) {
+
+        int h = _heightUsed;
+        int w = _widthUsed;
+        if (i > 0 && _subsampledChroma) {
+            h /= 2;
+            w /= 2;
+        }
+
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
                 if (_targetBitDepth == BR_8bit) {
 
-                    image->comps[i].data[jpegIndex] = dataPtr[y * _widthUsed + x];
+                    image->comps[i].data[jpegIndex] = dataPtr[y * w + x];
 
                 } else if (_targetBitDepth == BR_10bit || _targetBitDepth == BR_12bit) {
                     int rgbIndex = x * 2;
-                    unsigned char c1 = dataPtr[y * 2 * _widthUsed + (rgbIndex + 0)];
-                    unsigned char c2 = dataPtr[y * 2 * _widthUsed + (rgbIndex + 1)];
+                    unsigned char c1 = dataPtr[y * 2 * w + (rgbIndex + 0)];
+                    unsigned char c2 = dataPtr[y * 2 * w + (rgbIndex + 1)];
                     unsigned short color = (unsigned short)(c2 << 8) + c1;
                     image->comps[i].data[jpegIndex] = (unsigned short)color;
                 }
@@ -151,7 +159,6 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame)
         std::cerr << "[J2K] error creating j2k codec" << std::endl;
         return false;
     }
-
 
     //opj_set_info_handler(codec, [](const char* s, void *) { std::cout << "[J2K] " << s; }, nullptr);
     opj_set_warning_handler(codec, [](const char* s, void *) { std::cerr << "[J2K] " << s; }, nullptr);
@@ -172,28 +179,10 @@ bool J2KEncoder::EncodeImage(opj_image_t *image, J2kFrame &encodedFrame)
     if (success == false)  {
         std::cerr << "[J2K] ERROR opj_start_compress" << std::endl;
     } else {
-        /* this routine doesnt work. seems to be experimental
-        if (false && _useTiles && (_profile == PROFILE::BCP_MT_6 || _profile == PROFILE::BCP_MT_7)) {
-            std::cout << "[J2K] Write Tiles" << std::endl;
-            OPJ_BYTE *data;
-            OPJ_UINT32 dataSize = (widthUsed / 2) * (heightUsed / 2) * 3;
-            data = (OPJ_BYTE*) malloc( dataSize * sizeof(OPJ_BYTE));
-            memset(data, 0, dataSize );
-            for (int i = 0; i < 4; ++i) {
-                success = opj_write_tile(codec, i, data, dataSize, stream);
-                if (success == false) {
-                    std::cout << "ERROR opj_write_tile" << std::endl;
-                    break;
-                }
-            }
-            free(data);
-        } else {
-        */
-            success = success && opj_encode(codec, stream);
-            if (success == false) {
-                std::cerr << "[J2K] ERROR opj_encode" << std::endl;
-            }
-        //}
+        success = success && opj_encode(codec, stream);
+        if (success == false) {
+            std::cerr << "[J2K] ERROR opj_encode" << std::endl;
+        }
     }
     success = success && opj_end_compress(codec, stream);
     if (success == false)  {
@@ -219,11 +208,18 @@ void J2KEncoder::SetBroadcastProfile()
 {
     _encodingParameters.cp_comment = (char*)malloc(32);
     strcpy(_encodingParameters.cp_comment, "ODMedia J2K");
-    _encodingParameters.subsampling_dx = 1;
-    _encodingParameters.subsampling_dy = 1;
     _encodingParameters.tcp_mct = (int)_mct;        // I really wonder what this does???
+    if (!_subsampledChroma) {
+        _encodingParameters.subsampling_dx = 1;
+        _encodingParameters.subsampling_dy = 1;
+    } else {
+        _encodingParameters.subsampling_dx = 2;
+        _encodingParameters.subsampling_dy = 1;
+    }
+
 
     std::cout << "[J2K] MCT enabled: " << _mct << std::endl;
+    std::cout << "Subsampling x/y : " << _encodingParameters.subsampling_dx << "/" << _encodingParameters.subsampling_dy << std::endl;
 
     // one layer only
     _encodingParameters.tcp_rates[0] = 0;	// MOD antonin : losslessbug
@@ -256,18 +252,6 @@ void J2KEncoder::SetBroadcastProfile()
         _encodingParameters.prcw_init[i] = 256;
         _encodingParameters.prch_init[i] = 256;
     }
-
-    // To-DO: Set rates
-    //"JPEG 2000 Profile-3 and 4 (2k/4k dc profile) requires:\n"
-      //                "Maximum 1302083 compressed bytes @ 24fps\n"
-        //              "-> Specified rate exceeds this limit. Rate will be forced to 1302083 bytes.\n");
-        //parameters->max_cs_size = OPJ_CINEMA_24_CS;
-
-    //"Maximum 1041666 compressed bytes @ 24fps\n"
-      //                "-> Specified rate exceeds this limit. Rate will be forced to 1041666 bytes.\n");
-        //parameters->max_comp_size = OPJ_CINEMA_24_COMP;
-    //parameters->tcp_rates[0] = (OPJ_FLOAT32) (image->numcomps * image->comps[0].w * image->comps[0].h * image->comps[0].prec)/
-            //(OPJ_FLOAT32)(((OPJ_UINT32)parameters->max_cs_size) * 8 * image->comps[0].dx * image->comps[0].dy);
 
     switch (_profile) {
         case PROFILE::BCP_ST_1:
