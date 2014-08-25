@@ -42,6 +42,9 @@ void CPLSegment::Write(boost::property_tree::ptree &pt) const
     ptree segment;
 
     segment.put("Id", UUIDStr(GetUUID()));
+    if (false) {
+        segment.put("Annotation", "");
+    }
 
     ptree sequenceList;
 
