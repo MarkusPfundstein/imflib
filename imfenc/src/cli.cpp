@@ -17,6 +17,9 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/lockfree/queue.hpp>
+#include <boost/chrono.hpp>
 
 using namespace boost;
 
@@ -25,6 +28,14 @@ using namespace boost;
 std::list<std::string> j2kFiles;
 // storage for all wav files
 std::list<std::string> wavFiles;
+
+class ThreadContext
+{
+
+};
+
+// queue for encoding
+lockfree::queue<ThreadContext> encodingQueue(3);
 
 typedef struct {
     /* cmd line stuff */
@@ -37,6 +48,7 @@ typedef struct {
     bool useTiles;
     bool fullRange;
     bool doMct;
+    int threads;
 
     std::string inputFile;
     std::string tempFilePath;
@@ -52,11 +64,12 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     using namespace boost::program_options;
 
     int profile;
-    bool fullRange;
+    bool fullRange = true;
     bool forceOverwrite = false;
     bool useTiles = false;
     int bitDepth;
     int sampleRate;
+    int threads;
     std::string colorFormat;
     std::string inputFile;
     std::string outDirectory;
@@ -74,7 +87,8 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         ("sample_rate,r", value<int>(&sampleRate)->default_value(48000), "target audio samplerate (48000 or 96000)")
         ("pixel_fmt,p", value<std::string>(&colorFormat)->default_value("YUV444"), "pixel format of output. (YUV444, YUV422, RGB444)")
         ("use_tiles", "use tiles (only broadcast profile 6 and 7) [default: false]")
-        ("full_range", value<bool>(&fullRange)->default_value(true), "full range color space (rgb essence only), else SMPTE 274M-2008 constraints are used");
+        ("threads", value<int>(&threads), "number of threads for jpeg2000 encoding");
+        //("full_range", value<bool>(&fullRange)->default_value(true), "full range color space (rgb essence only), else SMPTE 274M-2008 constraints are used");
 
     variables_map vm;
     store(parse_command_line(argc, argv, description), vm);
@@ -107,6 +121,11 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         useTiles = true;
     }
 
+    if (vm.count("threads") == 0) {
+        std::cerr << "you must specify number of threads (--threads)" << std::endl;
+        return false;
+    }
+
     if (profile < 1 || profile > 7) {
         std::cerr << "profile must be between 1 and 7" << std::endl;
         return false;
@@ -119,17 +138,17 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         std::cerr << "sample rate must be 48000 or 96000" << std::endl;
         return false;
     }
-    if (colorFormat == "RGB444") {
+    if (colorFormat == "RGB444" || colorFormat == "rgb444" || colorFormat == "RGB" || colorFormat == "rgb") {
         options.colorFormat = COLOR_FORMAT::CF_RGB444;
         options.doMct = true;
-    } else if (colorFormat == "YUV444") {
+    } else if (colorFormat == "YUV444" || colorFormat == "yuv444" || colorFormat == "yuv444p") {
         options.colorFormat = COLOR_FORMAT::CF_YUV444;
         options.doMct = false;
-    } else if (colorFormat == "YUV422") {
+    } else if (colorFormat == "YUV422" || colorFormat == "yuv422" || colorFormat == "yuv422p") {
         options.colorFormat = COLOR_FORMAT::CF_YUV422;
         options.doMct = false;
     } else {
-        std::cerr << "invalid color format. Must be RGB444, YUV444 or YUV422" << std::endl;
+        std::cerr << "invalid color format: " << colorFormat << ". Must be RGB444, YUV444 or YUV422" << std::endl;
         return false;
     }
 
@@ -142,6 +161,7 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     options.inputFile = inputFile;
     options.tempFilePath = tempDirectory;
     options.outputPath = outDirectory;
+    options.threads = threads;
 
     // sanity checks
     if (!filesystem::is_directory(options.tempFilePath)) {
@@ -172,17 +192,16 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     return true;
 }
 
-/*
 void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
 {
 
-    static std::ofstream debugFile("/home/markus/Documents/IMF/TestFiles/DEBUG_RAW.raw", std::ios::binary | std::ios::out);
-    static std::string debugRawFileDirectory("/home/markus/Documents/IMF/TestFiles/RAWFILES");
+    static std::ofstream debugFile("/home/markus/Documents/DEBUG_RAW.raw", std::ios::binary | std::ios::out);
+    //static std::string debugRawFileDirectory("/home/markus/Documents/IMF/TestFiles/RAWFILES");
     static int rawCount = 0;
     // write a raw video file
-    debugFile.write((const char*)rawFrame.videoData[0], rawFrame.linesize[0] * rawFrame.height);
+    debugFile.write((const char*)rawFrame.videoData[2], rawFrame.linesize[2] * rawFrame.height);
     debugFile.flush();
-
+/*
     // write frame in separate raw image
     std::stringstream ss;
     ss << debugRawFileDirectory << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawCount << ".raw";
@@ -190,11 +209,11 @@ void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
     std::ofstream of(targetFile, std::ios::binary | std::ios::out);
     of.write((const char*)rawFrame.videoData[0], rawFrame.linesize[0] * rawFrame.height);
     of.flush();
-    of.close();
+    of.close();*/
 
     rawCount++;
 }
-*/
+
 
 void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
 {
@@ -202,11 +221,39 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
     of.write((const char*)&encodedFrame.data[0], encodedFrame.data.size());
 }
 
-bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
+void EncodeVideoFromQueue()
+{
+    ThreadContext threadContext;
+    while (true) {
+        while (encodingQueue.pop(threadContext)) {
+            std::cout << "popped thread context" << std::endl;
+            this_thread::sleep_for(boost::chrono::seconds(2));
+        }
+    }
+}
+
+bool HandleVideoFrame_MT(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
 {
     std::stringstream ss;
-    ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << outFiles.size() << ".j2k";
+    ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawFrame.frameNumber << ".j2k";
     std::string targetFile(ss.str());
+
+    ThreadContext threadContext;
+
+    std::cout << "PUSH" << std::endl;
+    while (!encodingQueue.push(threadContext))
+        ;
+
+    return true;
+}
+
+bool HandleVideoFrame_ST(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
+{
+    std::stringstream ss;
+    ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawFrame.frameNumber << ".j2k";
+    std::string targetFile(ss.str());
+
+    //WriteRawFrameToFile(rawFrame);
 
     J2kFrame j2kFrame;
     j2kEncoder.EncodeRawFrame(rawFrame, j2kFrame);
@@ -214,7 +261,7 @@ bool HandleVideoFrame(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std
     WriteToFile(j2kFrame, targetFile);
     outFiles.push_back(targetFile);
 
-    std::cout << "Frame: " << outFiles.size() << '\xd';
+    std::cout << "Frame: " << rawFrame.frameNumber << '\xd';
     std::cout.flush();
 
     return true;
@@ -328,7 +375,8 @@ int main(int argc, char **argv)
                               editRate,
                               decoder.GetVideoWidth(),
                               decoder.GetVideoHeight(),
-                              options.doMct);
+                              options.doMct,
+                              options.colorFormat == CF_YUV422);
 
         if (decoder.HasVideoTrack()) {
             finalVideoFile = GetVideoFileName(options, decoder.GetVideoWidth(), decoder.GetVideoHeight(), editRate);
@@ -379,8 +427,26 @@ int main(int argc, char **argv)
             audioFiles.push_back(audioFilePath);
         }
 
-        decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
+        if (options.threads == 1) {
+            std::cout << "Single Threaded Decoding" << std::endl;
+            decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame_ST(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
                        [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
+        } else {
+            std::cout << "Start " << options.threads << " workers" << std::endl;
+
+            thread_group encoder_threads;
+
+            for (int i = 0; i < options.threads; ++i) {
+                encoder_threads.create_thread(EncodeVideoFromQueue);
+            }
+
+            decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame_MT(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
+                           [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
+
+            encoder_threads.join_all();
+
+        }
+
 
         if (decoder.HasVideoTrack() && j2kFiles.empty() == false) {
             MXFWriter::MXFOptionsVideo videoOptions;
