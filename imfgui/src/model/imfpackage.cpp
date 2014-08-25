@@ -11,7 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#define BOOST_NO_SCOPED_ENUMS
+#define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -103,7 +103,7 @@ void IMFPackage::CopyTrackFiles() const
             std::cout << "Copy " << asset->GetFileName() << " to package.... can take a bit..." << std::endl;
             try {
                 copy_file(src, target);
-            } catch (boost::filesystem3::filesystem_error &e) {
+            } catch (boost::filesystem::filesystem_error &e) {
                 throw IMFPackageException(e.what());
             }
             asset->SetPath(target.string());
@@ -174,9 +174,9 @@ void IMFPackage::ReadAssetMap(const std::string& filename)
                     std::cout << "\tVolumeIndex: " << volumeIndex << std::endl;
 
                     std::string fullPath = _location + "/" + _name + "/" + name;
-                    if (boost::filesystem3::path(name).extension().string() == ".mxf") {
+                    if (boost::filesystem::path(name).extension().string() == ".mxf") {
                         ParseAndAddTrack(fullPath);
-                    } else if (boost::filesystem3::path(name).extension().string() == ".xml") {
+                    } else if (boost::filesystem::path(name).extension().string() == ".xml") {
                         xmlFiles.push_back(fullPath);
                     }
                 }
