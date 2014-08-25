@@ -85,13 +85,14 @@ class InputStreamDecoder
 
         struct VideoStreamContext {
             VideoStreamContext()
-                : stream(nullptr), context(nullptr) {}
+                : stream(nullptr), context(nullptr), currentFrame(0) {}
 
             VideoStreamContext(const VideoStreamContext& ) = delete;
             VideoStreamContext* operator=(const VideoStreamContext& ) = delete;
 
             AVStream *stream;
             CodecContextPtr context;
+            int currentFrame;
         } _videoStreamContext;
 
         struct AudioStreamContext {

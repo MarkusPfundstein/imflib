@@ -30,7 +30,7 @@ InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, CO
         } else if (targetColorFormat == CF_YUV444) {
             _targetVideoPixelFormat = AV_PIX_FMT_YUV444P;
         } else if (targetColorFormat == CF_YUV422) {
-            //_targetVideoPixelFormat = AV_PIX_FMT_YUV422P;
+            _targetVideoPixelFormat = AV_PIX_FMT_YUV422P;
         }
     } else if (bitDepth == 10) {
         if (targetColorFormat == CF_RGB444) {
@@ -38,7 +38,7 @@ InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, CO
         } else if (targetColorFormat == CF_YUV444) {
             _targetVideoPixelFormat = AV_PIX_FMT_YUV444P10;
         } else if (targetColorFormat == CF_YUV422) {
-            //_targetVideoPixelFormat = AV_PIX_FMT_YUV422P10;
+            _targetVideoPixelFormat = AV_PIX_FMT_YUV422P10;
         }
     } else if (bitDepth == 12) {
         if (targetColorFormat == CF_RGB444) {
@@ -46,7 +46,7 @@ InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, CO
         } else if (targetColorFormat == CF_YUV444) {
             _targetVideoPixelFormat = AV_PIX_FMT_YUV444P12;
         } else if (targetColorFormat == CF_YUV422) {
-            //_targetVideoPixelFormat = AV_PIX_FMT_YUV422P12;
+            _targetVideoPixelFormat = AV_PIX_FMT_YUV422P12;
         }
     }
 
@@ -175,13 +175,15 @@ void InputStreamDecoder::AddVideoStream(AVStream *stream, const CodecContextPtr 
     _videoStreamContext.context->width = stream->codec->width;
     _videoStreamContext.context->height = stream->codec->height;
 
+    int flags = SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP | SWS_ACCURATE_RND | SWS_BITEXACT | SWS_POINT;
+
     _swsContext = sws_getContext(stream->codec->width,
                                  stream->codec->height,
                                  (PixelFormat) stream->codec->pix_fmt,
                                  stream->codec->width,
                                  stream->codec->height,
                                  (PixelFormat) _targetVideoPixelFormat,
-                                 SWS_BILINEAR,
+                                 SWS_BILINEAR | SWS_ACCURATE_RND | SWS_BITEXACT | SWS_PRINT_INFO /*flags*/,
                                  nullptr,
                                  nullptr,
                                  nullptr);
@@ -432,7 +434,7 @@ bool InputStreamDecoder::HandleVideoFrame(AVFrame& decodedFrame, GotVideoFrameCa
                             _targetVideoPixelFormat == AV_PIX_FMT_YUV422P10 ||
                             _targetVideoPixelFormat == AV_PIX_FMT_YUV422P12;
 
-    // TO-DO: Give owhership over data to _videoStreamContext
+    // TO-DO: Give owhership over data to _videoStreamContext (note that this is only assignment of pointers)
     for (int i = 0; i < 4; ++i) {
         videoFrame.videoData[i] = pic.data[i];
         videoFrame.linesize[i] = pic.linesize[i];
@@ -440,6 +442,8 @@ bool InputStreamDecoder::HandleVideoFrame(AVFrame& decodedFrame, GotVideoFrameCa
 
     // pass RawVideoFrame to user so that she can do what she wants.
     try {
+        _videoStreamContext.currentFrame++;
+        videoFrame.frameNumber = _videoStreamContext.currentFrame;
         success = videoCallback(videoFrame);
         avpicture_free(&pic);
     } catch (...) {
