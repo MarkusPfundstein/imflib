@@ -91,7 +91,7 @@ void J2KEncoder::EncodeRawFrame(const RawVideoFrame &rawFrame, J2kFrame &encoded
 void J2KEncoder::FillImagePacked(opj_image_t *image, const RawVideoFrame &rawFrame)
 {
     int jpegIndex = 0;
-    unsigned char* dataPtr = rawFrame.videoData[0];
+    unsigned char* dataPtr = (unsigned char*)&rawFrame.videoData[0].front();
     for (int y = 0; y < _heightUsed; ++y) {
         for (int x = 0; x < _widthUsed; ++x) {
             if (_targetBitDepth == BR_8bit) {
@@ -107,6 +107,7 @@ void J2KEncoder::FillImagePacked(opj_image_t *image, const RawVideoFrame &rawFra
             }
         }
     }
+
 }
 
 void J2KEncoder::FillImagePlanar(opj_image_t *image, const RawVideoFrame &rawFrame)
@@ -123,7 +124,7 @@ void J2KEncoder::FillImagePlanar(opj_image_t *image, const RawVideoFrame &rawFra
     }
     for (int i = 0; i < 3; ++i) {
         int jpegIndex = 0;
-        unsigned char *dataPtr = rawFrame.videoData[bgrTable[i]];
+        unsigned char *dataPtr = (unsigned char*)&rawFrame.videoData[bgrTable[i]].front();
 
         int h = _heightUsed;
         int w = _widthUsed;

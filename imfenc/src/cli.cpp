@@ -13,15 +13,16 @@
 #include <iomanip>
 #include <list>
 
+
 #include <signal.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/lockfree/queue.hpp>
-#include <boost/chrono.hpp>
+#include "bound_queue.hpp"
 
 using namespace boost;
+
 
 // needs to be global for signal handler
 // storage for all j2k files. we need that later for asdcp lib
@@ -29,13 +30,22 @@ std::list<std::string> j2kFiles;
 // storage for all wav files
 std::list<std::string> wavFiles;
 
-class ThreadContext
+struct ThreadContext
 {
+    ThreadContext() : encoder(nullptr), videoFrame(), targetFile(""), outFiles(nullptr) {}
+    ThreadContext(J2KEncoder *e, const RawVideoFrame &v, const std::string &s, std::list<std::string> &out) : encoder(e), videoFrame(v), targetFile(s), outFiles(&out) {}
 
+    J2KEncoder *encoder;
+    RawVideoFrame videoFrame;
+    std::string targetFile;
+    std::list<std::string> *outFiles;
 };
 
 // queue for encoding
-lockfree::queue<ThreadContext> encodingQueue(3);
+bound_queue<ThreadContext, 8> encodingQueue;
+// mutex for encoding queue
+std::mutex outFilesMutex;
+bool g_done;
 
 typedef struct {
     /* cmd line stuff */
@@ -199,8 +209,8 @@ void WriteRawFrameToFile(const RawVideoFrame &rawFrame)
     //static std::string debugRawFileDirectory("/home/markus/Documents/IMF/TestFiles/RAWFILES");
     static int rawCount = 0;
     // write a raw video file
-    debugFile.write((const char*)rawFrame.videoData[2], rawFrame.linesize[2] * rawFrame.height);
-    debugFile.flush();
+    //debugFile.write((const char*)rawFrame.videoData[2], rawFrame.linesize[2] * rawFrame.height);
+    //debugFile.flush();
 /*
     // write frame in separate raw image
     std::stringstream ss;
@@ -223,12 +233,23 @@ void WriteToFile(const J2kFrame &encodedFrame, const std::string &targetFile)
 
 void EncodeVideoFromQueue()
 {
-    ThreadContext threadContext;
-    while (true) {
-        while (encodingQueue.pop(threadContext)) {
-            std::cout << "popped thread context" << std::endl;
-            this_thread::sleep_for(boost::chrono::seconds(2));
+    while (encodingQueue.size() > 0 || g_done == false) {
+        ThreadContext threadContext = encodingQueue.pop();
+        //std::cout << "Popped VideoFrame: " << threadContext.videoFrame.frameNumber << std::endl;
+
+        J2kFrame j2kFrame;
+        threadContext.encoder->EncodeRawFrame(threadContext.videoFrame, j2kFrame);
+
+        WriteToFile(j2kFrame, threadContext.targetFile);
+
+        {
+            std::unique_lock<std::mutex> lock(outFilesMutex);
+            threadContext.outFiles->push_back(threadContext.targetFile);
         }
+
+        std::cout << "Frame: " << threadContext.videoFrame.frameNumber << " done" << '\xd';
+        std::cout.flush();
+
     }
 }
 
@@ -238,11 +259,10 @@ bool HandleVideoFrame_MT(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, 
     ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawFrame.frameNumber << ".j2k";
     std::string targetFile(ss.str());
 
-    ThreadContext threadContext;
+    ThreadContext threadContext(&j2kEncoder, rawFrame, targetFile, outFiles);
 
-    std::cout << "PUSH" << std::endl;
-    while (!encodingQueue.push(threadContext))
-        ;
+    //std::cout << "PUSH videoFrame: " << rawFrame.frameNumber << std::endl;
+    encodingQueue.push(threadContext);
 
     return true;
 }
@@ -428,7 +448,7 @@ int main(int argc, char **argv)
         }
 
         if (options.threads == 1) {
-            std::cout << "Single Threaded Decoding" << std::endl;
+            std::cout << "Single Threaded Encoding" << std::endl;
             decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame_ST(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
                        [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
         } else {
@@ -440,11 +460,15 @@ int main(int argc, char **argv)
                 encoder_threads.create_thread(EncodeVideoFromQueue);
             }
 
+            g_done = false;
+
+            decoder.SetDoneCallback([&g_done]() { g_done = true; });
             decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame_MT(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
                            [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
 
             encoder_threads.join_all();
 
+            j2kFiles.sort();
         }
 
 

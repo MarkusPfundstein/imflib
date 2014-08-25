@@ -21,7 +21,7 @@ extern "C" {
 #include <cmath>
 
 InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, COLOR_FORMAT targetColorFormat, int audioRate)
-    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetVideoPixelFormat(-1), _targetAudioSampleRate(audioRate)
+    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetVideoPixelFormat(-1), _targetAudioSampleRate(audioRate), _doneCallback()
 {
 
     if (bitDepth == 8) {
@@ -382,6 +382,10 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
     for (unsigned int i = 0; i < _audioStreams.size(); ++i) {
         HandleDelayedAudioFrames(i, audioCallback);
     }
+
+    if (_doneCallback) {
+        _doneCallback();
+    }
 }
 
 bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback,
@@ -435,11 +439,13 @@ bool InputStreamDecoder::HandleVideoFrame(AVFrame& decodedFrame, GotVideoFrameCa
                             _targetVideoPixelFormat == AV_PIX_FMT_YUV422P12;
 
     // TO-DO: Give owhership over data to _videoStreamContext (note that this is only assignment of pointers)
+
     for (int i = 0; i < 4; ++i) {
-        videoFrame.videoData[i] = pic.data[i];
+        for (int j = 0; j < pic.linesize[i] * stream->codec->height; ++j) {
+            videoFrame.videoData[i].push_back(pic.data[i][j]);
+        }
         videoFrame.linesize[i] = pic.linesize[i];
     }
-
     // pass RawVideoFrame to user so that she can do what she wants.
     try {
         _videoStreamContext.currentFrame++;

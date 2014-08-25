@@ -63,6 +63,9 @@ class InputStreamDecoder
 
         bool HasVideoTrack() const;
 
+        void SetDoneCallback(std::function<void(void)> doneCallback)
+        { _doneCallback = doneCallback; }
+
     protected:
     private:
         typedef std::shared_ptr<AVCodecContext> CodecContextPtr;
@@ -119,6 +122,8 @@ class InputStreamDecoder
         int _targetVideoPixelFormat;
 
         int _targetAudioSampleRate;
+
+        std::function<void(void)> _doneCallback;
 };
 
 #endif // INPUTSTREAMDECODER_H
