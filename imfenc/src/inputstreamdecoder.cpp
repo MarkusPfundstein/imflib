@@ -424,17 +424,17 @@ bool InputStreamDecoder::HandleVideoFrame(AVFrame& decodedFrame, GotVideoFrameCa
     avpicture_alloc(&pic, (PixelFormat)_targetVideoPixelFormat, decodedFrame.width, decodedFrame.height);
     sws_scale(_swsContext, decodedFrame.data, decodedFrame.linesize, 0, decodedFrame.height, pic.data, pic.linesize);
 
-    RawVideoFrame videoFrame;
-    videoFrame.width = stream->codec->width;
-    videoFrame.height = stream->codec->height;
-    videoFrame.pixelFormat = stream->codec->pix_fmt;
-    videoFrame.fieldOrder = stream->codec->field_order;
-    videoFrame.pixelFormat = _targetVideoPixelFormat;
-    videoFrame.planar = _targetVideoPixelFormat != AV_PIX_FMT_RGB24;   // PIX_FMT_24 is only packed format (here)
-    videoFrame.yuv = _targetVideoPixelFormat != AV_PIX_FMT_RGB24 &&
+    RawVideoFrame *videoFrame = new RawVideoFrame();
+    videoFrame->width = stream->codec->width;
+    videoFrame->height = stream->codec->height;
+    videoFrame->pixelFormat = stream->codec->pix_fmt;
+    videoFrame->fieldOrder = stream->codec->field_order;
+    videoFrame->pixelFormat = _targetVideoPixelFormat;
+    videoFrame->planar = _targetVideoPixelFormat != AV_PIX_FMT_RGB24;   // PIX_FMT_24 is only packed format (here)
+    videoFrame->yuv = _targetVideoPixelFormat != AV_PIX_FMT_RGB24 &&
                      _targetVideoPixelFormat != AV_PIX_FMT_GBRP10 &&
                      _targetVideoPixelFormat != AV_PIX_FMT_GBRP12;
-    videoFrame.subsampled = _targetVideoPixelFormat == AV_PIX_FMT_YUV422P ||
+    videoFrame->subsampled = _targetVideoPixelFormat == AV_PIX_FMT_YUV422P ||
                             _targetVideoPixelFormat == AV_PIX_FMT_YUV422P10 ||
                             _targetVideoPixelFormat == AV_PIX_FMT_YUV422P12;
 
@@ -442,14 +442,14 @@ bool InputStreamDecoder::HandleVideoFrame(AVFrame& decodedFrame, GotVideoFrameCa
 
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < pic.linesize[i] * stream->codec->height; ++j) {
-            videoFrame.videoData[i].push_back(pic.data[i][j]);
+            videoFrame->videoData[i].push_back(pic.data[i][j]);
         }
-        videoFrame.linesize[i] = pic.linesize[i];
+        videoFrame->linesize[i] = pic.linesize[i];
     }
     // pass RawVideoFrame to user so that she can do what she wants.
     try {
         _videoStreamContext.currentFrame++;
-        videoFrame.frameNumber = _videoStreamContext.currentFrame;
+        videoFrame->frameNumber = _videoStreamContext.currentFrame;
         success = videoCallback(videoFrame);
         avpicture_free(&pic);
     } catch (...) {

@@ -32,11 +32,11 @@ std::list<std::string> wavFiles;
 
 struct ThreadContext
 {
-    ThreadContext() : encoder(nullptr), videoFrame(), targetFile(""), outFiles(nullptr) {}
-    ThreadContext(J2KEncoder *e, const RawVideoFrame &v, const std::string &s, std::list<std::string> &out) : encoder(e), videoFrame(v), targetFile(s), outFiles(&out) {}
+    ThreadContext() : encoder(nullptr), videoFrame(nullptr), targetFile(""), outFiles(nullptr) {}
+    ThreadContext(J2KEncoder *e, RawVideoFrame *v, const std::string &s, std::list<std::string> &out) : encoder(e), videoFrame(v), targetFile(s), outFiles(&out) {}
 
     J2KEncoder *encoder;
-    RawVideoFrame videoFrame;
+    RawVideoFrame *videoFrame;
     std::string targetFile;
     std::list<std::string> *outFiles;
 };
@@ -238,7 +238,7 @@ void EncodeVideoFromQueue()
         //std::cout << "Popped VideoFrame: " << threadContext.videoFrame.frameNumber << std::endl;
 
         J2kFrame j2kFrame;
-        threadContext.encoder->EncodeRawFrame(threadContext.videoFrame, j2kFrame);
+        threadContext.encoder->EncodeRawFrame(*threadContext.videoFrame, j2kFrame);
 
         WriteToFile(j2kFrame, threadContext.targetFile);
 
@@ -247,16 +247,18 @@ void EncodeVideoFromQueue()
             threadContext.outFiles->push_back(threadContext.targetFile);
         }
 
-        std::cout << "Frame: " << threadContext.videoFrame.frameNumber << " done" << '\xd';
+        std::cout << "Frame: " << threadContext.videoFrame->frameNumber << " done" << '\xd';
         std::cout.flush();
+
+        delete threadContext.videoFrame;
 
     }
 }
 
-bool HandleVideoFrame_MT(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
+bool HandleVideoFrame_MT(RawVideoFrame *rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
 {
     std::stringstream ss;
-    ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawFrame.frameNumber << ".j2k";
+    ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawFrame->frameNumber << ".j2k";
     std::string targetFile(ss.str());
 
     ThreadContext threadContext(&j2kEncoder, rawFrame, targetFile, outFiles);
@@ -267,22 +269,24 @@ bool HandleVideoFrame_MT(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, 
     return true;
 }
 
-bool HandleVideoFrame_ST(const RawVideoFrame &rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
+bool HandleVideoFrame_ST(RawVideoFrame *rawFrame, J2KEncoder &j2kEncoder, std::list<std::string> &outFiles, const std::string& outFilePath)
 {
     std::stringstream ss;
-    ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawFrame.frameNumber << ".j2k";
+    ss << outFilePath << "/" << std::setw( 7 ) << std::setfill( '0' ) << rawFrame->frameNumber << ".j2k";
     std::string targetFile(ss.str());
 
     //WriteRawFrameToFile(rawFrame);
 
     J2kFrame j2kFrame;
-    j2kEncoder.EncodeRawFrame(rawFrame, j2kFrame);
+    j2kEncoder.EncodeRawFrame(*rawFrame, j2kFrame);
 
     WriteToFile(j2kFrame, targetFile);
     outFiles.push_back(targetFile);
 
-    std::cout << "Frame: " << rawFrame.frameNumber << '\xd';
+    std::cout << "Frame: " << rawFrame->frameNumber << '\xd';
     std::cout.flush();
+
+    delete rawFrame;
 
     return true;
 }
@@ -449,7 +453,7 @@ int main(int argc, char **argv)
 
         if (options.threads == 1) {
             std::cout << "Single Threaded Encoding" << std::endl;
-            decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame_ST(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
+            decoder.Decode([&] (RawVideoFrame *rawFrame) { return HandleVideoFrame_ST(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
                        [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
         } else {
             std::cout << "Start " << options.threads << " workers" << std::endl;
@@ -463,7 +467,7 @@ int main(int argc, char **argv)
             g_done = false;
 
             decoder.SetDoneCallback([&g_done]() { g_done = true; });
-            decoder.Decode([&] (RawVideoFrame &rawFrame) { return HandleVideoFrame_MT(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
+            decoder.Decode([&] (RawVideoFrame *rawFrame) { return HandleVideoFrame_MT(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
                            [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
 
             encoder_threads.join_all();

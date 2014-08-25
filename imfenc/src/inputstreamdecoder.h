@@ -37,7 +37,7 @@ class InputStreamDecoder
             SUBTITLES = 2
         };
 
-        typedef std::function<bool(RawVideoFrame&)> GotVideoFrameCallbackFunction;
+        typedef std::function<bool(RawVideoFrame*)> GotVideoFrameCallbackFunction;
         typedef std::function<bool(RawAudioFrame&, int)> GotAudioFrameCallbackFunction;
 
         static void RegisterAVFormat();
