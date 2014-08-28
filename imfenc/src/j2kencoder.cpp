@@ -129,7 +129,6 @@ void J2KEncoder::FillImagePlanar(opj_image_t *image, const RawVideoFrame &rawFra
         int h = _heightUsed;
         int w = _widthUsed;
         if (i > 0 && _subsampledChroma) {
-            h /= 2;
             w /= 2;
         }
 
