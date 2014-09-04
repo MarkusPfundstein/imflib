@@ -39,7 +39,7 @@ void IMFCompositionPlaylist::Write() const
 
     ptree rootNode;
 
-    rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/2067-3/XXXX");
+    rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/2067-3/2013");
     rootNode.put("<xmlattr>.xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
     rootNode.put("Id", UUIDStr(GetUUID()));
 
