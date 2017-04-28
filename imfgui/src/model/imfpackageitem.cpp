@@ -54,7 +54,7 @@ std::string IMFPackageItem::ApplicationType() const
         case CPL:
         case OPL:
 	case PKL:
-		return "application/xml";
+		return "text/xml";
         default: return "ERR_TYPE";
     }
 }

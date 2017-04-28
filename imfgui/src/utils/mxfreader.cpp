@@ -163,12 +163,6 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
         }
 
         rgbaDescriptor->Dump();
-        /*
-        Kumu::UUID uuid = rgbaDescriptor->InstanceUID;
-        char buf[41];
-        uuid.EncodeHex(buf, 40);
-        std::cout << "buf: " << buf << std::endl;
-        */
     } else {
         // check if we have a cdci (yuv) descriptor
         result = reader.OP1aHeader().GetMDObjectByType(
@@ -189,16 +183,10 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
             editRate = cdciDescriptor->SampleRate;
             bits = cdciDescriptor->ComponentDepth;
             cdciDescriptor->Dump();
-
         } else {
             reader.Close();
             throw MXFReaderException("No essence descriptor found");
         }
-
-        /*Kumu::UUID uuid = cdciDescriptor->InstanceUID;
-        char buf[41];
-        uuid.EncodeHex(buf, 40);
-        std::cout << "buf: " << buf << std::endl;*/
     }
     if (duration == -1) {
         std::cout << "[Warning] ContainerDuration not set in file descriptor, attempting to use index duration." << std::endl;
