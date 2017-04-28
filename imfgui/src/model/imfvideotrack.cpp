@@ -1,8 +1,8 @@
 #include "imfvideotrack.h"
 
-IMFVideoTrack::IMFVideoTrack(const std::string &uuid, const std::string& filename)
+IMFVideoTrack::IMFVideoTrack(const std::string &uuid, const std::string& filename, std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor)
     :
-    IMFTrack(uuid, filename, TYPE::VIDEO),
+    IMFTrack(uuid, filename, TYPE::VIDEO, essenceDescriptor),
     _colorSpace(IMF_COLOR_SPACE::INVALID)
 {
     //ctor

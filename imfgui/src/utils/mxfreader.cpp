@@ -6,6 +6,7 @@
 
 #include "../model/imfvideotrack.h"
 #include "../model/imfaudiotrack.h"
+#include "uuidgenerator.h"
 
 #include <KM_util.h>
 
@@ -47,6 +48,8 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
 {
     AS_02::PCM::MXFReader reader;
     ASDCP::MXF::WaveAudioDescriptor *waveDescriptor = nullptr;
+
+    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(UUIDGenerator().MakeUUID(), IMFEssenceDescriptor::TYPE::WaveAudioDescriptor));
 
     ASDCP::Result_t result = reader.OpenRead(_filename);
     if (KM_FAILURE(result)) {
@@ -101,7 +104,7 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
     std::stringstream ss;
     ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
 
-    std::shared_ptr<IMFAudioTrack> track(new IMFAudioTrack(ss.str(), _filename));
+    std::shared_ptr<IMFAudioTrack> track(new IMFAudioTrack(ss.str(), _filename, essenceDescriptor));
     track->SetBits(bits);
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(waveDescriptor->SampleRate.Numerator, waveDescriptor->SampleRate.Denominator));
@@ -115,6 +118,8 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
     AS_02::JP2K::MXFReader reader;
     ASDCP::MXF::RGBAEssenceDescriptor *rgbaDescriptor = nullptr;
     ASDCP::MXF::CDCIEssenceDescriptor *cdciDescriptor = nullptr;
+
+    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(UUIDGenerator().MakeUUID()));
 
     ASDCP::Result_t result = reader.OpenRead(_filename);
     if (KM_FAILURE(result)) {
@@ -134,6 +139,7 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
 
     if (KM_SUCCESS(result)) {
         // we have a rgba descriptor
+	essenceDescriptor->SetType(IMFEssenceDescriptor::TYPE::RGBAEssenceDescriptor);
         colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::RGB444;
         if (rgbaDescriptor->ContainerDuration.empty() == false) {
             duration = rgbaDescriptor->ContainerDuration;
@@ -165,10 +171,13 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
         */
     } else {
         // check if we have a cdci (yuv) descriptor
-        result = reader.OP1aHeader().GetMDObjectByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_CDCIEssenceDescriptor),
-							 reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&cdciDescriptor));
+        result = reader.OP1aHeader().GetMDObjectByType(
+		ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_CDCIEssenceDescriptor),
+		reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&cdciDescriptor));
 
         if (KM_SUCCESS(result)) {
+	    essenceDescriptor->SetType(IMFEssenceDescriptor::TYPE::CDCIEssenceDescriptor);
+
             if ((cdciDescriptor->HorizontalSubsampling == 1)) {
                 colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::YUV444;
             } else if (cdciDescriptor->HorizontalSubsampling == 2) {
@@ -219,7 +228,7 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
     std::stringstream ss;
     ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
 
-    std::shared_ptr<IMFVideoTrack> track(new IMFVideoTrack(ss.str(), _filename));
+    std::shared_ptr<IMFVideoTrack> track(new IMFVideoTrack(ss.str(), _filename, essenceDescriptor));
     track->SetBits(bits);
     track->SetColorSpace(colorSpace);
     track->SetDuration(duration);

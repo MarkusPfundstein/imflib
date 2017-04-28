@@ -14,11 +14,13 @@ class IMFVideoTrack;
 class IMFAudioTrack;
 class IMFOutputProfile;
 class IMFCompositionPlaylist;
+class IMFPackageList;
 
 class IMFPackage
 {
     public:
         IMFPackage();
+	IMFPackage(const std::shared_ptr<IMFPackageList> &other);
         virtual ~IMFPackage();
 
         IMFPackage(const IMFPackage& other) = delete;
@@ -52,7 +54,7 @@ class IMFPackage
         bool HasAudioTrackFile(const std::string &file) const;
 
         // writes whole package to disk
-        void Write() const;
+        void Write() /*const*/;
 
         // copies all files into package directory
         void CopyTrackFiles() const;
@@ -125,6 +127,9 @@ class IMFPackage
 
         // array of output profiles
         std::vector<std::shared_ptr<IMFOutputProfile>> _outputProfiles;
+
+	// the package list
+	std::shared_ptr<IMFPackageList> _packageList;	
 
         XMLHeaderAssetMap _headerAssetMap;
 };

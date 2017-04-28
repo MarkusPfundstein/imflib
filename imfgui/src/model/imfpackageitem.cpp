@@ -40,6 +40,21 @@ std::string IMFPackageItem::TypeString() const
         case AUDIO: return "Audio";
         case CPL: return "CPL";
         case OPL: return "OPL";
+	case PKL: return "PKL";
+        default: return "ERR_TYPE";
+    }
+}
+
+std::string IMFPackageItem::ApplicationType() const
+{
+    switch (_type) {
+        case VIDEO: 
+        case AUDIO:
+		return "application/mxf";
+        case CPL:
+        case OPL:
+	case PKL:
+		return "application/xml";
         default: return "ERR_TYPE";
     }
 }

@@ -79,7 +79,6 @@ class IMFCompositionPlaylist : public IMFPackageItem
 
         std::list<std::shared_ptr<CPLSegment>> _segments;
         std::list<std::shared_ptr<CPLVirtualTrack>> _virtualTracks;
-        std::set<std::string> _essenceDescriptors;
 
         XMLHeaderCompositionPlaylist _header;
 };

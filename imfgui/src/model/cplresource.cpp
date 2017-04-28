@@ -1,3 +1,4 @@
+#include <iostream>
 #include "cplresource.h"
 
 #include "../utils/uuidgenerator.h"
@@ -9,7 +10,6 @@ CPLResource::CPLResource(const std::string &uuid, const std::shared_ptr<IMFTrack
     _repeatCount(0),
     _entryPoint(0),
     _sourceDuration(0),
-    _sourceEncoding(""),
     _keyId(""),
     _hash(""),
     _playlistEditRate(0, 0)
@@ -34,7 +34,6 @@ std::shared_ptr<CPLResource> CPLResource::StandardResource(const std::shared_ptr
     // To-DO: Fix me
     newResource->SetKeyId("");
     newResource->SetHash("");
-    newResource->SetSourceEncoding(UUIDGenerator().MakeUUID());
     return newResource;
 }
 
@@ -74,7 +73,7 @@ void CPLResource::Write(boost::property_tree::ptree &pt) const
     resource.put("EntryPoint", GetEntryPoint());
     resource.put("SourceDuration", GetSourceDuration());
     resource.put("RepeatCount", GetRepeatCount());
-    resource.put("SourceEncoding", UUIDStr(GetSourceEncoding()));
+    resource.put("SourceEncoding", UUIDStr(_track->GetEssenceDescriptor().GetUUID()));
     resource.put("TrackFileId", UUIDStr(GetTrackFileId()));
     if (!GetKeyId().empty())
         resource.put("KeyId", GetKeyId());
@@ -132,7 +131,6 @@ std::shared_ptr<CPLResource> CPLResource ::Load(const boost::property_tree::ptre
     cplResource->SetEntryPoint(entryPoint);
     cplResource->SetSourceDuration(sourceDuration);
     cplResource->SetRepeatCount(repeatCount);
-    cplResource->SetSourceEncoding(sourceEncodingId);
     cplResource->SetKeyId(keyId);
     cplResource->SetHash(hash);
     cplResource->SetPlaylistEditRate(RationalNumber::FromIMFString(cplEditRate));

@@ -3,14 +3,14 @@
 
 #include "genericitem.h"
 
-class IMFPackageItem : public GenericItem
-{
-    public:
-        enum TYPE {
-            VIDEO = 1,
+class IMFPackageItem : public GenericItem { 
+	public: 
+	enum TYPE { 
+	    VIDEO = 1,
             AUDIO = 2,
             CPL = 3,
-            OPL = 4
+            OPL = 4,
+	    PKL = 5
         };
 
         explicit IMFPackageItem(const std::string &uuid, const std::string &filename, TYPE type);
@@ -26,6 +26,7 @@ class IMFPackageItem : public GenericItem
         { return _type; }
 
         virtual std::string TypeString() const;
+	std::string ApplicationType() const;
 
         // returns _filename without path
         std::string GetFileName() const;

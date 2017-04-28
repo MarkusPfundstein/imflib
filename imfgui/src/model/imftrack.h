@@ -2,14 +2,19 @@
 #define IMFTRACK_H
 
 #include "imfpackageitem.h"
+#include "imfessencedescriptor.h"
 #include "../utils/common.h"
 
+#include <memory>
 #include <string>
 
 class IMFTrack : public IMFPackageItem
 {
     public:
-        IMFTrack(const std::string &uuid, const std::string& filename, TYPE type);
+        IMFTrack(const std::string &uuid, 
+		 const std::string& filename, 
+		 TYPE type,
+		 std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor);
 
         virtual ~IMFTrack();
 
@@ -31,18 +36,15 @@ class IMFTrack : public IMFPackageItem
         RationalNumber GetEditRate() const
         { return _editRate; }
 
-        const std::string& GetSourceEncodingUUID() const
-        { return _sourceEncodingUUID; }
-
-        void SetSourceEncodingUUID(const std::string &val)
-        { _sourceEncodingUUID = val; }
+	const IMFEssenceDescriptor& GetEssenceDescriptor() const
+	{ return *_essenceDescriptor; }
 
     protected:
         int _bits;
         int _duration;
         RationalNumber _editRate;
 
-        std::string _sourceEncodingUUID;
+	std::shared_ptr<IMFEssenceDescriptor> _essenceDescriptor;
 };
 
 #endif // IMFTRACK_H

@@ -4,6 +4,7 @@
 #include "imfaudiotrack.h"
 #include "imfcompositionplaylist.h"
 #include "imfoutputprofile.h"
+#include "imfpackagelist.h"
 
 #include "../utils/uuidgenerator.h"
 #include "../utils/mxfreader.h"
@@ -28,11 +29,36 @@ IMFPackage::IMFPackage()
     _audioTracks(),
     _compositionPlaylists(),
     _outputProfiles(),
+    _packageList(),
     _headerAssetMap()
 {
     //ctor
     std::cout << "create new package" << std::endl;
+
+//    std::string uuid = UUIDStr(GetUUID());
+//    std::string pklName = "PKL_" + uuid + ".xml";
+
+//    _packageList = std::shared_ptr<IMFPackageList>(new IMFPackageList(uuid, pklName));
 }
+
+IMFPackage::IMFPackage(const std::shared_ptr<IMFPackageList> &other)
+    :
+    _name(""),
+    _saved(false),
+    _location(""),
+    _uuid(""),
+    _videoTracks(),
+    _audioTracks(),
+    _compositionPlaylists(),
+    _outputProfiles(),
+    _packageList(other),
+    _headerAssetMap()
+{
+    //ctor
+    std::cout << "open package with EXISTING package list" << std::endl;
+}
+
+
 
 IMFPackage::~IMFPackage()
 {
@@ -257,13 +283,34 @@ void IMFPackage::ParseAndAddTrack(const std::string& fullPath)
     }
 }
 
-void IMFPackage::Write() const
+// TO-DO: MAKE const AGAIN
+void IMFPackage::Write() /*const*/
 {
     try {
         // write composition playlists
         for (const std::shared_ptr<IMFCompositionPlaylist> &cpl : _compositionPlaylists) {
             cpl->Write();
         }
+
+	// Write PackageList
+//	WritePackageList(_location + "/" + _name + "/
+	if (!_packageList) {
+	    std::string uuid = UUIDStr(GetUUID());
+	    UUIDClean(uuid);
+	    std::string pklPath = _location + "/" + _name + "/PKL_" + uuid + ".xml";
+
+	    std::cout << "CREATE NEW PKL: " << pklPath << std::endl;
+
+	    _packageList.reset(new IMFPackageList(uuid, pklPath));
+	}
+
+	std::vector<std::shared_ptr<IMFPackageItem>> assets;
+        assets.insert(assets.end(), _videoTracks.begin(), _videoTracks.end());
+        assets.insert(assets.end(), _audioTracks.begin(), _audioTracks.end());
+        assets.insert(assets.end(), _compositionPlaylists.begin(), _compositionPlaylists.end());
+        assets.insert(assets.end(), _outputProfiles.begin(), _outputProfiles.end());
+
+	_packageList->Write(assets);
 
         // last but not least. write map of all assets
         WriteAssetMap(_location + "/" + _name + "/ASSETMAP.xml");
@@ -292,19 +339,26 @@ void IMFPackage::WriteAssetMap(const std::string& filename) const
     assets.insert(assets.end(), _audioTracks.begin(), _audioTracks.end());
     assets.insert(assets.end(), _compositionPlaylists.begin(), _compositionPlaylists.end());
     assets.insert(assets.end(), _outputProfiles.begin(), _outputProfiles.end());
+    assets.push_back(_packageList);
 
     for (const std::shared_ptr<IMFPackageItem>& item : assets) {
         ptree chunkNode;
         chunkNode.put("Path", item->GetFileName());
         chunkNode.put("VolumeIndex", "1");
-        chunkNode.put("Offset", "0");
-        chunkNode.put("Length", boost::lexical_cast<std::string>(item->GetFileSize()));
+        // only for video nodes
+        //if (item->GetType() == IMFPackageItem::VIDEO || item->GetType() == IMFPackageItem::AUDIO) {
+            chunkNode.put("Offset", "0");
+       	    chunkNode.put("Length", boost::lexical_cast<std::string>(item->GetFileSize()));
+	//}
 
         ptree chunkListNode;
         chunkListNode.add_child("Chunk", chunkNode);
 
         ptree assetNode;
         assetNode.put("Id", UUIDStr(item->GetUUID()));
+	if (item->GetType() == IMFPackageItem::PKL) {
+	    assetNode.put("PackingList", "true");	
+	}
         assetNode.add_child("ChunkList", chunkListNode);
 
         assetListNode.add_child("Asset", assetNode);
@@ -313,7 +367,7 @@ void IMFPackage::WriteAssetMap(const std::string& filename) const
     rootNode.add_child("AssetList", assetListNode);
     pt.add_child("AssetMap", rootNode);
 
-    boost::property_tree::xml_writer_settings<char> settings('\t', 1);
+    boost::property_tree::xml_writer_settings<std::string> settings('\t', 1);
     write_xml(filename, pt, std::locale(), settings);
 
     return;

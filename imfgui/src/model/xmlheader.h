@@ -4,11 +4,12 @@
 #include <string>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/lexical_cast.hpp>
+#include <iostream>
 
 static const std::string XML_HEADER_ISSUER("ContentCoders (Research and Development)");
 static const std::string XML_HEADER_CREATOR("ODMedia IMF Suite dev-0.1");
 static const std::string XML_HEADER_ANNOTATION("For testing purposes only");
-static const std::string XML_HEADER_CONTENT_KIND("test");
+static const std::string XML_HEADER_CONTENT_KIND("TestPackage");
 
 struct XMLHeaderAssetMap
 {
@@ -16,7 +17,7 @@ struct XMLHeaderAssetMap
         annotation(XML_HEADER_ANNOTATION),
         issuer(XML_HEADER_ISSUER),
         creator(XML_HEADER_CREATOR),
-        issueDate("ISSUE_DATE"),
+        issueDate("2017-03-01T21:56:47.4247570Z"),
         volumeCount(1) {}
 
     // optional stuff
@@ -33,9 +34,7 @@ struct XMLHeaderAssetMap
         if (!annotation.empty())
             ptree.put("AnnotationText", annotation);
         if (!creator.empty())
-            ptree.put("Creator", creator);
-        ptree.put("VolumeCount", boost::lexical_cast<std::string>(volumeCount));
-        ptree.put("IssueDate", issueDate);
+            ptree.put("Creator", creator); ptree.put("VolumeCount", boost::lexical_cast<std::string>(volumeCount)); ptree.put("IssueDate", issueDate);
         if (!issuer.empty())
             ptree.put("Issuer", issuer);
 
@@ -69,7 +68,7 @@ struct XMLHeaderCompositionPlaylist
         issuer(XML_HEADER_ISSUER),
         creator(XML_HEADER_CREATOR),
         contentKind(XML_HEADER_CONTENT_KIND),
-        issueDate("ISSUE_DATE"),
+        issueDate("2017-03-01T21:56:47.4247570Z"),
         contentTitle("CONTENT_TITLE") {}
 
     // optional stuff
@@ -125,5 +124,44 @@ struct XMLHeaderCompositionPlaylist
         std::cout << "ContentKind: " << contentKind << std::endl;
     }
 };
+
+struct XMLHeaderPackageList
+{
+    XMLHeaderPackageList() :
+        issuer(XML_HEADER_ISSUER),
+        creator(XML_HEADER_CREATOR),
+        issueDate("2017-03-01T21:56:47.4247570Z")
+        {}
+
+    // required stuff
+    std::string issuer;             // entity that created the composition
+    std::string creator;            // device/software that created the composition
+    std::string issueDate;          // time and date when content was issued
+
+    virtual void Write(boost::property_tree::ptree &ptree) const
+    {
+        ptree.put("IssueDate", issueDate);
+        if (!issuer.empty())
+            ptree.put("Issuer", issuer);
+        if (!creator.empty())
+            ptree.put("Creator", creator);
+    }
+
+    virtual void Read(const boost::property_tree::ptree &ptree)
+    {
+        creator = ptree.get<std::string>("Creator");
+        issueDate = ptree.get<std::string>("IssueDate");
+        issuer = ptree.get<std::string>("Issuer");
+
+    }
+
+    virtual void Dump() const
+    {
+        std::cout << "Creator: " << creator << std::endl;
+        std::cout << "IssueDate: " << issueDate << std::endl;
+        std::cout << "Issuer: " << issuer << std::endl;
+    }
+};
+
 
 #endif // XMLHEADER_H_INCLUDED

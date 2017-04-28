@@ -64,8 +64,8 @@ void CPLSequence::Write(boost::property_tree::ptree &pt) const
     sequence.add_child("ResourceList", resourceList);
 
     if (hasItem && allAudio) {
-        pt.add_child("MainAudioSequence", sequence);
+        pt.add_child("imf:MainAudioSequence", sequence);
     } else if (hasItem && allVideo) {
-        pt.add_child("MainImageSequence", sequence);
+        pt.add_child("imf:MainImageSequence", sequence);
     }
 }

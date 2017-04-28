@@ -2,6 +2,7 @@
 #define IMFVIDEOTRACK_H
 
 #include "imftrack.h"
+#include "imfessencedescriptor.h"
 
 class IMFVideoTrack : public IMFTrack
 {
@@ -13,7 +14,7 @@ class IMFVideoTrack : public IMFTrack
             YUV422  = 3
         };
 
-        IMFVideoTrack(const std::string &uuid, const std::string& filename);
+        IMFVideoTrack(const std::string &uuid, const std::string& filename, std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor);
         virtual ~IMFVideoTrack();
 
         std::string TypeString() const;

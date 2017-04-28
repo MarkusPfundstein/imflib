@@ -3,7 +3,7 @@
 AC_PREREQ([2.62])
 AC_INIT([imfsuite-projects], [0.1])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 #LT_PREREQ([2.2])
 #LT_INIT([dlopen])
 

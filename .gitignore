@@ -22,3 +22,5 @@ config.h.in~
 *.cache
 *.log
 *.status
+.deps
+.dirstamp

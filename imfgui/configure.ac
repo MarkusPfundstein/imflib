@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.68])
 AC_INIT([imfgui], [0.1], [markus@odmedia.nl])
-AM_INIT_AUTOMAKE([-Wall -Werror])
+AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
 
 AC_LANG(C++)
 
@@ -15,6 +15,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX
 AC_PROG_INSTALL
 
+AC_CHECK_LIB([kumu], [main], [], [AC_MSG_ERROR([libkumu not found])])
 AC_CHECK_LIB([as02], [main], [], [AC_MSG_ERROR([libas02 was not found])])
 AC_CHECK_LIB([asdcp], [main], [], [AC_MSG_ERROR([libasdcp was not found])])
 AC_CHECK_LIB([boost_system], [main], [], [AC_MSG_ERROR([boost_system not installed])])

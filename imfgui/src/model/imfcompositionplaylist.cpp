@@ -21,7 +21,6 @@ IMFCompositionPlaylist::IMFCompositionPlaylist(const std::string &uuid, const st
     _editRate(0, 0),
     _segments(),
     _virtualTracks(),
-    _essenceDescriptors(),
     _header()
 {
     //ctor
@@ -39,20 +38,45 @@ void IMFCompositionPlaylist::Write() const
 
     ptree rootNode;
 
-    rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/2067-3/XXXX");
+    rootNode.put("<xmlattr>.xmlns", "http://www.smpte-ra.org/schemas/2067-3/2013");
     rootNode.put("<xmlattr>.xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+    rootNode.put("<xmlattr>.xmlns:imf", "http://www.smpte-ra.org/schemas/2067-2/2013");
     rootNode.put("Id", UUIDStr(GetUUID()));
 
     _header.Write(rootNode);
 
     ptree essenceDescriptorList;
+/*
+	xmlns:r0="http://www.smpte-ra.org/reg/395/2014/13/1/aaf"
+        xmlns:r1="http://www.smpte-ra.org/reg/335/2012"
+        xmlns:r2="http://www.smpte-ra.org/reg/2003/2012">
+*/
+    essenceDescriptorList.put("<xmlattr>.xmlns:r0", "http://www.smpte-ra.org/reg/395/2014/13/1/aaf");
+    essenceDescriptorList.put("<xmlattr>.xmlns:r1", "http://www.smpte-ra.org/reg/335/2012");
+    essenceDescriptorList.put("<xmlattr>.xmlns:r2", "http://www.smpte-ra.org/reg/2003/2012");
+
     // dump essence descriptorlist
     bool writeEssenceDescriptors = false;
-    for (const std::string &s : _essenceDescriptors) {
-        writeEssenceDescriptors = true;
-        ptree essenceDescriptor;
-        essenceDescriptor.put("Id", UUIDStr(s));
-        essenceDescriptorList.add_child("EssenceDescriptor", essenceDescriptor);
+
+    for (const std::shared_ptr<CPLSegment> &segment : _segments) {
+	for (const std::shared_ptr<CPLSequence> &sequence : segment->GetItems()) {
+	    for(const std::shared_ptr<CPLResource> &resource : sequence->GetItems()) {
+		const IMFEssenceDescriptor &essenceDescriptor = resource->GetTrack()->GetEssenceDescriptor();
+		std::cout << "----> write essence descriptor: " << essenceDescriptor.GetUUID() << std::endl;
+		writeEssenceDescriptors = true;
+
+		ptree ptED;
+		ptED.put("Id", UUIDStr(essenceDescriptor.GetUUID()));
+
+		ptree descRoot;
+		descRoot.put(
+		    "r1:SampleRate", 
+	   	    boost::lexical_cast<std::string>(resource->GetTrack()->GetEditRate().num) + "/" + boost::lexical_cast<std::string>(resource->GetTrack()->GetEditRate().denum));
+		ptED.add_child("r0:" + essenceDescriptor.GetTypeAsString(), descRoot);
+		
+		essenceDescriptorList.add_child("EssenceDescriptor", ptED);
+	    }
+	}	
     }
 
     if (writeEssenceDescriptors) {
@@ -60,6 +84,10 @@ void IMFCompositionPlaylist::Write() const
     }
 
     rootNode.put("EditRate", boost::lexical_cast<std::string>(_editRate.num) + " " + boost::lexical_cast<std::string>(_editRate.denum));
+
+    ptree extensionProperties;
+    extensionProperties.put("imf:ApplicationIdentification", "http://www.smpte-ra.org/schemas/2067-21/2016");
+    rootNode.add_child("ExtensionProperties", extensionProperties);
 
     ptree segmentList;
 
@@ -71,7 +99,7 @@ void IMFCompositionPlaylist::Write() const
     rootNode.add_child("SegmentList", segmentList);
     pt.add_child("CompositionPlaylist", rootNode);
 
-    boost::property_tree::xml_writer_settings<char> settings('\t', 1);
+    boost::property_tree::xml_writer_settings<std::string> settings('\t', 1);
     write_xml(GetPath(), pt, std::locale(), settings);
 }
 
@@ -217,7 +245,7 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
                             std::shared_ptr<CPLResource> resource = CPLResource::Load(resourceListNode.second,
                                                                                       cplEditRate,
                                                                                       tracks);
-                            playlist->_essenceDescriptors.insert(resource->GetSourceEncoding());
+                            //playlist->_essenceDescriptors.insert(resource->GetSourceEncoding());
                             sequence->AppendItem(resource);
                         } catch (IMFInvalidReferenceException &e) {
                             throw IMFCompositionPlaylistException(e.what());
@@ -228,11 +256,6 @@ std::shared_ptr<IMFCompositionPlaylist> IMFCompositionPlaylist::Load(const std::
             }
         }
    }
-
-    std::cout << "found essence descriptors: " << std::endl;
-    for (const std::string& s : playlist->_essenceDescriptors) {
-        std::cout << "\t" << s << std::endl;
-    }
 
     return playlist;
 }

@@ -68,12 +68,6 @@ class CPLResource : public GenericItem
         const std::shared_ptr<IMFTrack> &GetTrack() const
         { return _track; }
 
-        const std::string &GetSourceEncoding() const
-        { return _sourceEncoding; }
-
-        void SetSourceEncoding(const std::string &e)
-        { _sourceEncoding = e; }
-
         const std::string &GetKeyId() const
         { return _keyId; }
 
@@ -118,7 +112,6 @@ class CPLResource : public GenericItem
         int _repeatCount;
         int _entryPoint;
         int _sourceDuration;
-        std::string _sourceEncoding;
         std::string _keyId;
         std::string _hash;
 
