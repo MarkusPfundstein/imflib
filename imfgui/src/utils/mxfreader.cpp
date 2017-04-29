@@ -3,6 +3,7 @@
 #include <AS_02.h>
 #include <iostream>
 #include <sstream>
+#include <list>
 
 #include "../model/imfvideotrack.h"
 #include "../model/imfaudiotrack.h"
@@ -49,7 +50,7 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
     AS_02::PCM::MXFReader reader;
     ASDCP::MXF::WaveAudioDescriptor *waveDescriptor = nullptr;
 
-    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(UUIDGenerator().MakeUUID(), IMFEssenceDescriptor::TYPE::WaveAudioDescriptor));
+    IMFEssenceDescriptor::EssenceDescriptorData essenceDescriptorData;
 
     ASDCP::Result_t result = reader.OpenRead(_filename);
     if (KM_FAILURE(result)) {
@@ -70,7 +71,6 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
         throw MXFReaderException("No essence descriptor found");
     }
 
-
     int duration = 0;
     // On some clipster beta files this was indeed not set.
     if (waveDescriptor->ContainerDuration.empty()) {
@@ -86,7 +86,47 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
         duration = -1;
     }
 
+    // read all the subdescriptors
+    std::list<ASDCP::MXF::InterchangeObject*> object_list;
+    reader.OP1aHeader().GetMDObjectsByType(
+        ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_AudioChannelLabelSubDescriptor), 
+        object_list);
+    reader.OP1aHeader().GetMDObjectsByType(
+        ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_SoundfieldGroupLabelSubDescriptor), 
+        object_list);
+    reader.OP1aHeader().GetMDObjectsByType(
+        ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_GroupOfSoundfieldGroupsLabelSubDescriptor), 
+        object_list);
 
+    std::list<ASDCP::MXF::InterchangeObject*>::iterator i = object_list.begin();
+    for ( ; i != object_list.end(); ++i ) 
+    {
+        ASDCP::MXF::MCALabelSubDescriptor *p = dynamic_cast<ASDCP::MXF::MCALabelSubDescriptor*>(*i);
+
+        if (p != nullptr) {
+            std::cout << "found subdescriptor" << std::endl;
+            auto *s = dynamic_cast<ASDCP::MXF::SoundfieldGroupLabelSubDescriptor*>(p);
+            if (s) {
+                std::cout << "got soundfieldgroup" << std::endl;
+                s->Dump();
+            }
+
+
+        } else {
+            char buf[64];  
+            std::cerr << "Audio sub-descriptor type error.\n" << (**i).InstanceUID.EncodeHex(buf, 64) << std::endl;
+        }
+    }
+
+    
+    /*
+    char identBuf[128];
+    *identBuf = 0;
+    essenceDescriptorData.uuid = waveDescriptor->EssenceContainer.EncodeString(identBuf, 128);
+    */
+    essenceDescriptorData.type = IMFEssenceDescriptor::TYPE::WaveAudioDescriptor;
+
+    // no idea why this is here. but it checks for an error, so I leave it
     ASDCP::WriterInfo info;
     result = reader.FillWriterInfo(info);
     if (KM_FAILURE(result)) {
@@ -95,14 +135,15 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
     }
 
     waveDescriptor->Dump();
-    std::cout << duration << std::endl;
 
     int bits = waveDescriptor->QuantizationBits;
-
 
     char strBuf[41];
     std::stringstream ss;
     ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
+
+    essenceDescriptorData.uuid = UUIDGenerator().MakeUUID();
+    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(essenceDescriptorData));
 
     std::shared_ptr<IMFAudioTrack> track(new IMFAudioTrack(ss.str(), _filename, essenceDescriptor));
     track->SetBits(bits);
@@ -119,7 +160,7 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
     ASDCP::MXF::RGBAEssenceDescriptor *rgbaDescriptor = nullptr;
     ASDCP::MXF::CDCIEssenceDescriptor *cdciDescriptor = nullptr;
 
-    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(UUIDGenerator().MakeUUID()));
+    IMFEssenceDescriptor::EssenceDescriptorData essenceDescriptorData;
 
     ASDCP::Result_t result = reader.OpenRead(_filename);
     if (KM_FAILURE(result)) {
@@ -139,7 +180,7 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
 
     if (KM_SUCCESS(result)) {
         // we have a rgba descriptor
-	essenceDescriptor->SetType(IMFEssenceDescriptor::TYPE::RGBAEssenceDescriptor);
+	    essenceDescriptorData.type = IMFEssenceDescriptor::TYPE::RGBAEssenceDescriptor;
         colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::RGB444;
         if (rgbaDescriptor->ContainerDuration.empty() == false) {
             duration = rgbaDescriptor->ContainerDuration;
@@ -170,7 +211,7 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
 		reinterpret_cast<ASDCP::MXF::InterchangeObject**>(&cdciDescriptor));
 
         if (KM_SUCCESS(result)) {
-	    essenceDescriptor->SetType(IMFEssenceDescriptor::TYPE::CDCIEssenceDescriptor);
+	        essenceDescriptorData.type = IMFEssenceDescriptor::TYPE::CDCIEssenceDescriptor;
 
             if ((cdciDescriptor->HorizontalSubsampling == 1)) {
                 colorSpace = IMFVideoTrack::IMF_COLOR_SPACE::YUV444;
@@ -183,6 +224,12 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
             editRate = cdciDescriptor->SampleRate;
             bits = cdciDescriptor->ComponentDepth;
             cdciDescriptor->Dump();
+
+            /* EssenceContainer */
+        
+            //char identBuf[128];
+            //*identBuf = 0;
+            //cdciDescriptor->EssenceContainer.EncodeString(identBuf, 128);
         } else {
             reader.Close();
             throw MXFReaderException("No essence descriptor found");
@@ -196,14 +243,12 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
         }
     }
 
-    /* Lets try to get SourceEncoding */
-    /*
-    ASDCP::MXF::SourcePackage *sourcePackage = reader.OP1aHeader().GetSourcePackage();
-    Kumu::UUID uuid = sourcePackage->Descriptor;
-    char buf[41];
-    uuid.EncodeHex(buf, 40);
-    std::cout << "buf: " << buf << std::endl;
-    */
+    /* this is instanceId */
+    //ASDCP::MXF::SourcePackage *sourcePackage = reader.OP1aHeader().GetSourcePackage();
+    //Kumu::UUID uuid = sourcePackage->Descriptor;
+    //char buf[41];
+    //uuid.EncodeHex(buf, 40);
+
     std::cout << "Duration: " << duration << std::endl;
     ASDCP::WriterInfo info;
     result = reader.FillWriterInfo(info);
@@ -215,6 +260,9 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
     char strBuf[41];
     std::stringstream ss;
     ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
+
+    essenceDescriptorData.uuid = UUIDGenerator().MakeUUID();
+    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(essenceDescriptorData));
 
     std::shared_ptr<IMFVideoTrack> track(new IMFVideoTrack(ss.str(), _filename, essenceDescriptor));
     track->SetBits(bits);

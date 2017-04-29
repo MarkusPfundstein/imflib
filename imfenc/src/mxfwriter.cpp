@@ -227,7 +227,11 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
             cdciDescriptor->FrameLayout = 0;    // no interlaced shit
             cdciDescriptor->AspectRatio = pictureDescriptor.AspectRatio;
             cdciDescriptor->FieldDominance = 0; // only for interlaced shit // field dominance = 1 -> upper field first
+            cdciDescriptor->WhiteReflevel = 940;
+            cdciDescriptor->BlackRefLevel = 64;
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(cdciDescriptor);
+
+
             cdciDescriptor->Dump();
 	}
     } else {

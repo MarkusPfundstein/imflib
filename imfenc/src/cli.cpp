@@ -97,7 +97,7 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         ("broadcast_profile,b", value<int>(&profile)->default_value(1), "broadcast profile (1-7)")
         ("bitdepth,d", value<int>(&bitDepth)->default_value(10), "target video bit depth (8, 10 or 12)")
         ("sample_rate,r", value<int>(&sampleRate)->default_value(48000), "target audio samplerate (48000 or 96000)")
-        ("pixel_fmt,p", value<std::string>(&colorFormat)->default_value("YUV444"), "pixel format of output. (YUV444, YUV422, RGB444)")
+        ("pixel_fmt,p", value<std::string>(&colorFormat)->default_value("RGB444"), "pixel format of output. (YUV444, YUV422, RGB444)")
         ("use_tiles", "use tiles (only broadcast profile 6 and 7) [default: false]")
 	("no_mux", "don't mux the encoded files into MXF -> keep j2k & wav" )
         ("threads", value<int>(&threads), "number of threads for jpeg2000 encoding");

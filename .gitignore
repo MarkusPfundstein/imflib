@@ -1,3 +1,4 @@
+*.out
 codeblocks/
 INSTALL
 bin/
