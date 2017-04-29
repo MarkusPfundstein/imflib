@@ -20,7 +20,7 @@ class IMFPackage
 {
     public:
         IMFPackage();
-	IMFPackage(const std::shared_ptr<IMFPackageList> &other);
+        IMFPackage(const std::shared_ptr<IMFPackageList> &other);
         virtual ~IMFPackage();
 
         IMFPackage(const IMFPackage& other) = delete;

@@ -5,50 +5,72 @@
 
 #include <memory>
 #include <string>
+#include <list>
+
 
 class IMFEssenceDescriptor : public GenericItem
 {
     public:
     enum TYPE {
-        CDCIEssenceDescriptor,
-        RGBAEssenceDescriptor,
-        WaveAudioDescriptor,
+        CDCIEssenceDescriptorType,
+        RGBAEssenceDescriptorType,
+        WaveAudioDescriptorType,
         INVALID_TYPE
     };
 
-    struct EssenceDescriptorData {
-        TYPE type = TYPE::INVALID_TYPE;
-        std::string uuid = "INVALID_UUID";
+    struct MXFEssenceDescriptorBase
+    {
+        std::string instanceId;
+        TYPE type;    
+
+        MXFEssenceDescriptorBase(TYPE t) : instanceId("INVALID"), type(t) {}
+        virtual ~MXFEssenceDescriptorBase() {}
+
+        virtual std::string GetTypeAsString() { return "UNDEFINED"; }
+    };
+
+    struct RGBAEssenceDescriptor : public MXFEssenceDescriptorBase
+    {
+        RGBAEssenceDescriptor() : MXFEssenceDescriptorBase(TYPE::RGBAEssenceDescriptorType) {}
+        virtual ~RGBAEssenceDescriptor() {}
+
+        virtual std::string GetTypeAsString() { return "RGBADescriptor"; };
+    };
+
+    struct CDCIEssenceDescriptor : public MXFEssenceDescriptorBase
+    {
+        CDCIEssenceDescriptor() : MXFEssenceDescriptorBase(TYPE::CDCIEssenceDescriptorType) {}
+        virtual ~CDCIEssenceDescriptor() {}
+
+        virtual std::string GetTypeAsString() { return "CDCIDescriptor"; };
+    };
+
+    struct WaveAudioDescriptor : public MXFEssenceDescriptorBase
+    {
+        WaveAudioDescriptor() : MXFEssenceDescriptorBase(TYPE::WaveAudioDescriptorType) {}
+        virtual ~WaveAudioDescriptor() {}
+
+        virtual std::string GetTypeAsString() { return "WAVEPCMDescriptor"; };
+
     };
 
     public:
     // TO-DO: this uuid should be used instead of _sourceEncodingUUID in imftrack.h
-    IMFEssenceDescriptor(const EssenceDescriptorData &d)
-        : GenericItem(d.uuid),
-        _essenceDescriptorData(d)
-    { }
+    IMFEssenceDescriptor(const std::string &uuid, const std::shared_ptr<MXFEssenceDescriptorBase> essenceDescriptor);
 
-    virtual ~IMFEssenceDescriptor()
-    { }
+    virtual ~IMFEssenceDescriptor();
 
-    const EssenceDescriptorData& GetEssenceDescriptorData() const 
-    { return _essenceDescriptorData; }
+    const MXFEssenceDescriptorBase& GetEssenceDescriptorData() const 
+    { return *_essenceDescriptor; }
 
     TYPE GetType() const 
-    { return _essenceDescriptorData.type; }   
+    { return _essenceDescriptor->type; }   
 
     std::string GetTypeAsString() const 
-    { 
-        switch(_essenceDescriptorData.type) {
-            case CDCIEssenceDescriptor: return "CDCIDescriptor";
-            case WaveAudioDescriptor: return "WAVEPCMDescriptor";
-            case RGBAEssenceDescriptor: return "RGBADescriptor";
-            default: return "UNKNOWNESSENCETYPE";
-        }
-    }
+    { return _essenceDescriptor->GetTypeAsString(); };
 
     private:
-    EssenceDescriptorData _essenceDescriptorData;
+    std::shared_ptr<MXFEssenceDescriptorBase> _essenceDescriptor;
 };
 
 #endif
