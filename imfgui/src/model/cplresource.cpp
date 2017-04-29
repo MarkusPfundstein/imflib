@@ -52,9 +52,9 @@ int CPLResource::GetNormalizedSourceDuration() const
                on non fractional framerates (25,30) it will cause problems */
             return roundf(_sourceDuration / _track->GetEditRate().AsDouble() * _playlistEditRate.AsDouble());
             break;
+        default:
+            return -1;
     }
-
-    return -1;
 }
 
 void CPLResource::Write(boost::property_tree::ptree &pt) const

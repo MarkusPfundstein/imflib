@@ -1,5 +1,6 @@
 #include "mxfreader.h"
 
+#include <Metadata.h>
 #include <AS_02.h>
 #include <iostream>
 #include <sstream>
@@ -14,6 +15,8 @@
 // TO-DO: Point to value defined in asdcplib KLV.h 
 const uint32_t IDENT_BUFFER_LENGTH = 128;
 
+bool readTransferFileBase(ASDCP::MXF::InterchangeObject *gen, std::shared_ptr<IMFEssenceDescriptor::TransferFileBase> in);
+
 bool readMXFEssenceDescriptorBase(ASDCP::MXF::FileDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::MXFEssenceDescriptorBase> in);
 
 bool readVideoEssenceDescriptor(ASDCP::MXF::GenericPictureEssenceDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::VideoEssenceDescriptor> in);
@@ -25,6 +28,14 @@ bool readCDCIEssenceDescriptor(ASDCP::MXF::CDCIEssenceDescriptor *gen, std::shar
 bool readAudioEssenceDescriptor(ASDCP::MXF::GenericSoundEssenceDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::AudioEssenceDescriptor> in);
 
 bool readWaveAudioDescriptor(ASDCP::MXF::WaveAudioDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::WaveAudioDescriptor> in);
+
+/* START AUDIO SUB DESCRIPTOR READ METHODS */
+// TO-DO: SubDescriptor functions will also call readTransferFileBase and functions for subclasses. Should be fixed for functions above
+bool readMCALabelSubDescriptor(ASDCP::MXF::MCALabelSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::MCALabelSubDescriptor> in);
+
+bool readAudioChannelLabelSubDescriptor(ASDCP::MXF::AudioChannelLabelSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::AudioChannelLabelSubDescriptor> in);
+
+bool readSoundfieldGroupLabelSubDescriptor(ASDCP::MXF::SoundfieldGroupLabelSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::SoundfieldGroupLabelSubDescriptor> in);
 
 
 MXFReader::MXFReader(const std::string& filename)
@@ -80,10 +91,17 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
         throw MXFReaderException("Error reading OP1aHeader");
     }
 
+    ASDCP::WriterInfo info;
+    result = reader.FillWriterInfo(info);
+    if (KM_FAILURE(result)) {
+        reader.Close();
+        throw MXFReaderException("Error reading AudioFile");
+    }
+
     waveDescriptor = dynamic_cast<ASDCP::MXF::WaveAudioDescriptor*>(temp);
     if (waveDescriptor == nullptr) {
         reader.Close();
-        throw MXFReaderException("No essence descriptor found");
+        throw MXFReaderException("No WaveEssence descriptor found");
     }
 
     waveDescriptor->Dump();
@@ -91,11 +109,11 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
     std::shared_ptr<IMFEssenceDescriptor::WaveAudioDescriptor> imfWaveAudioDescriptor(
         new IMFEssenceDescriptor::WaveAudioDescriptor());
 
-    if (!readAudioEssenceDescriptor(waveDescriptor, imfWaveAudioDescriptor)) {
-        reader.Close();
-        throw MXFReaderException("something wrong with GenericSoundDescriptor... check logs");
-    }
-    if (!readWaveAudioDescriptor(waveDescriptor, imfWaveAudioDescriptor)) {
+    bool s = readTransferFileBase(waveDescriptor, imfWaveAudioDescriptor);
+    s = s && readMXFEssenceDescriptorBase(waveDescriptor, imfWaveAudioDescriptor);
+    s = s && readAudioEssenceDescriptor(waveDescriptor, imfWaveAudioDescriptor);
+    s = s && readWaveAudioDescriptor(waveDescriptor, imfWaveAudioDescriptor);
+    if (!s) {
         throw MXFReaderException("something wrong with WaveAudioDescriptor... check logs");
     }   
 
@@ -112,59 +130,67 @@ std::shared_ptr<IMFAudioTrack> MXFReader::ReadAudioTrack()
         duration = -1;
     }
 
-
     // read all the subdescriptors
-    std::list<ASDCP::MXF::InterchangeObject*> object_list;
+    std::list<std::shared_ptr<IMFEssenceDescriptor::AudioChannelLabelSubDescriptor>> audioLabelSubDescriptors;
+    std::list<std::shared_ptr<IMFEssenceDescriptor::SoundfieldGroupLabelSubDescriptor>> soundfieldGroupLabelSubDescriptors;
+
+    // to collect we need to put all stuff into an object list. Then we can dynamic cast (urks);
+    std::list<ASDCP::MXF::InterchangeObject*> tmpListSubDescriptors;
+
     reader.OP1aHeader().GetMDObjectsByType(
-        ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_AudioChannelLabelSubDescriptor), 
-        object_list);
+        ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_AudioChannelLabelSubDescriptor),
+        tmpListSubDescriptors);
     reader.OP1aHeader().GetMDObjectsByType(
         ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_SoundfieldGroupLabelSubDescriptor), 
-        object_list);
+        tmpListSubDescriptors);
+/*  NOT USED YET
     reader.OP1aHeader().GetMDObjectsByType(
         ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_GroupOfSoundfieldGroupsLabelSubDescriptor), 
         object_list);
+*/
 
-    std::list<ASDCP::MXF::InterchangeObject*>::iterator i = object_list.begin();
-    for ( ; i != object_list.end(); ++i ) 
-    {
-        ASDCP::MXF::MCALabelSubDescriptor *p = dynamic_cast<ASDCP::MXF::MCALabelSubDescriptor*>(*i);
+    bool success = true;
+    for (auto it = tmpListSubDescriptors.begin(); success && it != tmpListSubDescriptors.end(); ++it) {
+        (*it)->Dump();
+        auto *p = dynamic_cast<ASDCP::MXF::AudioChannelLabelSubDescriptor*>(*it);
+        if (p) {
+            std::shared_ptr<IMFEssenceDescriptor::AudioChannelLabelSubDescriptor> tmp(
+                new IMFEssenceDescriptor::AudioChannelLabelSubDescriptor);
 
-        if (p != nullptr) {
-            std::cout << "found subdescriptor" << std::endl;
-            p->Dump();
+            success = success && readAudioChannelLabelSubDescriptor(p, tmp);
+
+            imfWaveAudioDescriptor->subDescriptors.push_back(tmp);
         } else {
-            char buf[64];  
-            std::cerr << "Audio sub-descriptor type error.\n" << (**i).InstanceUID.EncodeHex(buf, 64) << std::endl;
+            auto p2 = dynamic_cast<ASDCP::MXF::SoundfieldGroupLabelSubDescriptor*>(*it);
+            if (p2) {
+                std::shared_ptr<IMFEssenceDescriptor::SoundfieldGroupLabelSubDescriptor> tmp(
+                    new IMFEssenceDescriptor::SoundfieldGroupLabelSubDescriptor);
+
+                success = success && readSoundfieldGroupLabelSubDescriptor(p2, tmp);
+
+                imfWaveAudioDescriptor->subDescriptors.push_back(tmp);
+            } else {
+                success = false;
+            }
         }
     }
 
-    
-    /*
-    char identBuf[128];
-    *identBuf = 0;
-    essenceDescriptorData.uuid = waveDescriptor->EssenceContainer.EncodeString(identBuf, 128);
-    */
-
-    // no idea why this is here. but it checks for an error, so I leave it
-    ASDCP::WriterInfo info;
-    result = reader.FillWriterInfo(info);
-    if (KM_FAILURE(result)) {
+    if (!success 
+        || tmpListSubDescriptors.empty() 
+        || tmpListSubDescriptors.size() != imfWaveAudioDescriptor->subDescriptors.size()) {
         reader.Close();
-        throw MXFReaderException("Couldn't get UUID");
+        throw MXFReaderException("Error with audio MCALabelSubDescriptors and so.. check logs");
     }
 
-    int bits = waveDescriptor->QuantizationBits;
+    // TO-DO: Don't make random EssenceDescriptor UUID every time we open an IMP. Keep the old one if IMP exists
+    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(
+        new IMFEssenceDescriptor(UUIDGenerator().MakeUUID(), imfWaveAudioDescriptor));
 
-    char strBuf[41];
-    std::stringstream ss;
-    ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
-
-    std::string uuid = UUIDGenerator().MakeUUID();
-    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(uuid, imfWaveAudioDescriptor));
-
-    std::shared_ptr<IMFAudioTrack> track(new IMFAudioTrack(ss.str(), _filename, essenceDescriptor));
-    track->SetBits(bits);
+    char strBuf[IDENT_BUFFER_LENGTH];
+    *strBuf = 0;
+    std::string trackId = ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, IDENT_BUFFER_LENGTH);
+    std::shared_ptr<IMFAudioTrack> track(new IMFAudioTrack(trackId, _filename, essenceDescriptor));
+    track->SetBits(waveDescriptor->QuantizationBits);
     track->SetDuration(duration);
     track->SetEditRate(RationalNumber(waveDescriptor->SampleRate.Numerator, waveDescriptor->SampleRate.Denominator));
     reader.Close();
@@ -209,7 +235,8 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
 
         // TO-DO move this up. can work for CDCI as well
         
-        bool s = readMXFEssenceDescriptorBase(rgbaDescriptor, videoEssenceDescriptor);
+        bool s = readTransferFileBase(rgbaDescriptor, videoEssenceDescriptor);
+        s = s && readMXFEssenceDescriptorBase(rgbaDescriptor, videoEssenceDescriptor);
         s = s && readVideoEssenceDescriptor(rgbaDescriptor, videoEssenceDescriptor);
         s = s && readRGBAEssenceDescriptor(rgbaDescriptor, std::dynamic_pointer_cast<IMFEssenceDescriptor::RGBAEssenceDescriptor>(videoEssenceDescriptor));
         if (!s) {
@@ -252,7 +279,8 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
                     new IMFEssenceDescriptor::CDCIEssenceDescriptor());
 
             // TO-DO move this up. can work for CDCI as well
-            bool s = readMXFEssenceDescriptorBase(cdciDescriptor, videoEssenceDescriptor);
+            bool s = readTransferFileBase(cdciDescriptor, videoEssenceDescriptor);
+            s = s && readMXFEssenceDescriptorBase(cdciDescriptor, videoEssenceDescriptor);
             s = s && readVideoEssenceDescriptor(cdciDescriptor, videoEssenceDescriptor);
             s = s && readCDCIEssenceDescriptor(cdciDescriptor, std::dynamic_pointer_cast<IMFEssenceDescriptor::CDCIEssenceDescriptor>(videoEssenceDescriptor));
             if (!s) {
@@ -332,6 +360,17 @@ void PrintIMFComplianceWarning(std::string s)
     std::cerr << "[IMF WARNING] Field: " << s << " missing from MXF. File might not pass Photon" << std::endl;
 }
 
+bool readTransferFileBase(ASDCP::MXF::InterchangeObject *gen, std::shared_ptr<IMFEssenceDescriptor::TransferFileBase> in)
+{
+    char identbuf[IDENT_BUFFER_LENGTH];
+    *identbuf = 0;
+
+    in->instanceId = gen->InstanceUID.EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+
+    return true;
+}
+
+
 bool readMXFEssenceDescriptorBase(ASDCP::MXF::FileDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::MXFEssenceDescriptorBase> in)
 {
     char identbuf[IDENT_BUFFER_LENGTH];
@@ -346,7 +385,6 @@ bool readMXFEssenceDescriptorBase(ASDCP::MXF::FileDescriptor *gen, std::shared_p
         return false;
     }
 
-    in->instanceId = gen->InstanceUID.EncodeString(identbuf, IDENT_BUFFER_LENGTH);
     in->sampleRate = RationalNumber(gen->SampleRate.Numerator, gen->SampleRate.Denominator);
     in->containerFormat = gen->EssenceContainer.EncodeString(identbuf, IDENT_BUFFER_LENGTH);
 
@@ -435,6 +473,32 @@ bool readWaveAudioDescriptor(ASDCP::MXF::WaveAudioDescriptor *gen, std::shared_p
     in->averageBytesPerSecond = gen->AvgBps;
     in->channelAssignment = gen->ChannelAssignment.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
     return true;
+}
+
+bool readMCALabelSubDescriptor(ASDCP::MXF::MCALabelSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::MCALabelSubDescriptor> in)
+{
+    bool success = readTransferFileBase(gen, in);
+
+    char identbuf[IDENT_BUFFER_LENGTH];
+    *identbuf = 0;             
+
+    in->mcaLinkId = gen->MCALinkID.EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+
+    return success;
+}
+
+bool readAudioChannelLabelSubDescriptor(ASDCP::MXF::AudioChannelLabelSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::AudioChannelLabelSubDescriptor> in)
+{
+    bool success = readMCALabelSubDescriptor(gen, in);
+
+    return success;
+}
+
+bool readSoundfieldGroupLabelSubDescriptor(ASDCP::MXF::SoundfieldGroupLabelSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::SoundfieldGroupLabelSubDescriptor> in)
+{
+    bool success = readMCALabelSubDescriptor(gen, in);
+
+    return success;
 }
 
 
