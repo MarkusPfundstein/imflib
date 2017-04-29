@@ -12,6 +12,9 @@ struct RationalNumber {
     int num;
     int denum;
 
+    int First() const { return num; }
+    int Second() const { return denum; }
+
     double AsDouble() const
     {
         if (denum == 0) return 0.0;
@@ -40,5 +43,4 @@ struct RationalNumber {
         return boost::lexical_cast<std::string>(num) + " " + boost::lexical_cast<std::string>(denum);
     }
 };
-
 #endif // COMMON_H_INCLUDED

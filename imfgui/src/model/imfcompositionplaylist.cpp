@@ -2,7 +2,7 @@
 
 #include "../utils/uuidgenerator.h"
 
-#include "cplresource.h"
+#include "cplresource.h" 
 #include "cplsegment.h"
 #include "cplsequence.h"
 #include "cplvirtualtrack.h"
@@ -59,24 +59,14 @@ void IMFCompositionPlaylist::Write() const
     bool writeEssenceDescriptors = false;
 
     for (const std::shared_ptr<CPLSegment> &segment : _segments) {
-	for (const std::shared_ptr<CPLSequence> &sequence : segment->GetItems()) {
-	    for(const std::shared_ptr<CPLResource> &resource : sequence->GetItems()) {
-		const IMFEssenceDescriptor &essenceDescriptor = resource->GetTrack()->GetEssenceDescriptor();
-		std::cout << "----> write essence descriptor: " << essenceDescriptor.GetUUID() << std::endl;
-		writeEssenceDescriptors = true;
+        for (const std::shared_ptr<CPLSequence> &sequence : segment->GetItems()) {
+            for(const std::shared_ptr<CPLResource> &resource : sequence->GetItems()) {
+                const IMFEssenceDescriptor &essenceDescriptor = resource->GetTrack()->GetEssenceDescriptor();
+                writeEssenceDescriptors = true;
 
-		ptree ptED;
-		ptED.put("Id", UUIDStr(essenceDescriptor.GetUUID()));
-
-		ptree descRoot;
-		descRoot.put(
-		    "r1:SampleRate", 
-	   	    boost::lexical_cast<std::string>(resource->GetTrack()->GetEditRate().num) + "/" + boost::lexical_cast<std::string>(resource->GetTrack()->GetEditRate().denum));
-		ptED.add_child("r0:" + essenceDescriptor.GetTypeAsString(), descRoot);
-		
-		essenceDescriptorList.add_child("EssenceDescriptor", ptED);
-	    }
-	}	
+                essenceDescriptor.Write(essenceDescriptorList);
+            }
+        }	
     }
 
     if (writeEssenceDescriptors) {
