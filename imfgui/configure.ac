@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([imfgui], [0.1], [markus@odmedia.nl])
+AC_INIT([imfgui, subdir-objects], [0.1], [markus@odmedia.nl])
 AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
 
 AC_LANG(C++)
