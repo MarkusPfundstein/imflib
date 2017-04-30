@@ -282,7 +282,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -331,7 +330,7 @@ imfgui_SOURCES = \
 	views/imfpackageview.cpp \
 	views/packagetableview.cpp
 
-imfgui_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align \
+imfgui_CXXFLAGS = --pedantic -Wall -std=c++11 -Wshadow -Wcast-align \
 	-Wunreachable-code $(QT4_CFLAGS)
 imfgui_LDFLAGS = 
 CLEANFILES = $(imfgui_MOC_FILES)

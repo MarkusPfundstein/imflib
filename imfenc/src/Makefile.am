@@ -18,6 +18,6 @@ imfenc_SOURCES = \
 	mxfwriter.cpp \
 	wavmuxer.cpp
 
-imfenc_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code -D__STDC_CONSTANT_MACROS
+imfenc_CXXFLAGS = --pedantic -Wall -std=c++11 -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code -D__STDC_CONSTANT_MACROS
 
 imfenc_LDFLAGS = 

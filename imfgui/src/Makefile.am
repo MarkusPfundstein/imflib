@@ -52,7 +52,7 @@ imfgui_SOURCES = \
 	views/imfpackageview.cpp \
 	views/packagetableview.cpp
 
-imfgui_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wunreachable-code
+imfgui_CXXFLAGS = --pedantic -Wall -std=c++11 -Wshadow -Wcast-align -Wunreachable-code
 imfgui_CXXFLAGS += $(QT4_CFLAGS)
 
 imfgui_LDFLAGS = 

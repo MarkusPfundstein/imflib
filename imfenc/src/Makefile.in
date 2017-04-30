@@ -253,7 +253,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -272,7 +271,7 @@ imfenc_SOURCES = \
 	mxfwriter.cpp \
 	wavmuxer.cpp
 
-imfenc_CXXFLAGS = --pedantic -Wall -std=c++0x -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code -D__STDC_CONSTANT_MACROS
+imfenc_CXXFLAGS = --pedantic -Wall -std=c++11 -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code -D__STDC_CONSTANT_MACROS
 imfenc_LDFLAGS = 
 all: all-am
 
