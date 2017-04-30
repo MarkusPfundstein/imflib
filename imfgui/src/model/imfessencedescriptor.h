@@ -106,6 +106,7 @@ class IMFEssenceDescriptor : public GenericItem
     {
         uint32_t componentMaxRef;
         uint32_t componentMinRef;
+        std::string pixelLayout;    // raw string, interpret and parse when writing
 
         RGBAEssenceDescriptor() : VideoEssenceDescriptor(TYPE::RGBAEssenceDescriptorType) {}
         virtual ~RGBAEssenceDescriptor() {}
@@ -125,10 +126,40 @@ class IMFEssenceDescriptor : public GenericItem
         virtual void Write(boost::property_tree::ptree &) const;
     };
     /* END VIDEO DESCRIPTORS */
+
+    /* START VIDEO SUB DESCRIPTORS */
+    // base class for JPEG2000 SubDescriptors
+    struct JPEG2000SubDescriptor : public TransferFileBase
+    {
+        uint16_t rsize;
+        uint32_t xsize;
+        uint32_t ysize;
+        uint32_t xOsize;
+        uint32_t yOsize;
+        uint32_t xTsize;
+        uint32_t yTsize;
+        uint32_t xTOsize;
+        uint32_t yTOsize;
+        uint16_t csize;
+
+        std::string pictureComponentSizing;         // raw string -> parsed and expanded on write
+        std::string codingStyleDefault;             // raw string
+        std::string quantizationDefault;            // raw string
+        std::string j2cLayout;                      // raw string -> parsed and expanded on write
+
+        JPEG2000SubDescriptor() : TransferFileBase() {}
+        virtual ~JPEG2000SubDescriptor() {};
+
+        virtual std::string GetTypeAsString() const { return "JPEG2000SubDescriptor"; };
+
+        virtual void Write(boost::property_tree::ptree &) const;
+    };
+    /* END VIDEO SUB DESCRIPTORS */
     
     // undefined zone ... don't go there
 
     /* START AUDIO SUB DESCRIPTORS */
+    // base class for MCA Audio SubDescriptors
     struct MCALabelSubDescriptor : public TransferFileBase
     {
         std::string mcaLinkId;              // UUID 
@@ -136,7 +167,12 @@ class IMFEssenceDescriptor : public GenericItem
         std::string mcaTagName;             // string
         std::string mcaTagSymbol;           // string
         std::string rfc5646SpokenLanguage;         // locale
-        // TO-DO: check if mcaAudioElementKind, mcaAudioContentKind, mcaTitle & mcaVersion should go here as well. Right now they are in SoundfieldGroupLabelSubDescriptor
+    
+        // OPTIONAL? TO-DO: Check this
+        std::string mcaAudioElementKind;    // string
+        std::string mcaAudioContentKind;    // string
+        std::string mcaTitle;               // string
+        std::string mcaTitleVersion;        // string
 
         MCALabelSubDescriptor() : TransferFileBase() {};
         virtual ~MCALabelSubDescriptor() {};
@@ -146,7 +182,7 @@ class IMFEssenceDescriptor : public GenericItem
 
     struct AudioChannelLabelSubDescriptor : public MCALabelSubDescriptor
     {
-        std::string soundFieldGroupLinkId;  // UUID
+        std::string soundfieldGroupLinkId;  // UUID
         uint16_t mcaChannelId;
 
         AudioChannelLabelSubDescriptor() : MCALabelSubDescriptor() {};
@@ -159,11 +195,6 @@ class IMFEssenceDescriptor : public GenericItem
 
     struct SoundfieldGroupLabelSubDescriptor : public MCALabelSubDescriptor
     {
-        // TO-DO: check if the following four should go into MCALabelSubDescriptor. Need to fix asdcplib then I guess
-        std::string mcaAudioElementKind;    // string
-        std::string mcaAudioContentKind;    // string
-        std::string mcaTitle;               // string
-        std::string mcaTitleVersion;        // string
 
         SoundfieldGroupLabelSubDescriptor() : MCALabelSubDescriptor() {};
         virtual ~SoundfieldGroupLabelSubDescriptor() {}

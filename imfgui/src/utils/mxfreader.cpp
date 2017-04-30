@@ -37,6 +37,7 @@ bool readAudioChannelLabelSubDescriptor(ASDCP::MXF::AudioChannelLabelSubDescript
 
 bool readSoundfieldGroupLabelSubDescriptor(ASDCP::MXF::SoundfieldGroupLabelSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::SoundfieldGroupLabelSubDescriptor> in);
 
+bool readJPEG2000SubDescriptor(ASDCP::MXF::JPEG2000PictureSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::JPEG2000SubDescriptor> in);
 
 MXFReader::MXFReader(const std::string& filename)
     : 
@@ -316,12 +317,7 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
         }
     }
 
-    // TO-DO:
-    // if we re-open a IMP, parse this from CPL and set accordingly. Now we generate one randomly every time
-    // we open. works, but ugly. And probably ................... WILL LEAD TO A HARD TO TRACK DOWN BUG
-    std::string uuid = UUIDGenerator().MakeUUID();
-    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(uuid, videoEssenceDescriptor));
-
+    // Done with parsing RGBA/CDCI. Get PictureSub
     ASDCP::MXF::JPEG2000PictureSubDescriptor *pictureSubDescriptor = nullptr;
     result = reader.OP1aHeader().GetMDObjectByType(
 		ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_JPEG2000PictureSubDescriptor),
@@ -332,6 +328,16 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
     }
     pictureSubDescriptor->Dump();
 
+    // Read PictureSub
+    std::shared_ptr<IMFEssenceDescriptor::JPEG2000SubDescriptor> jpeg2000SubDescriptor(new IMFEssenceDescriptor::JPEG2000SubDescriptor());
+    if (!readJPEG2000SubDescriptor(pictureSubDescriptor, jpeg2000SubDescriptor)) {
+        reader.Close();
+        throw MXFReaderException("Error parsing JPEG2000PictureSubDescriptor");
+    }
+
+    videoEssenceDescriptor->subDescriptors.push_back(jpeg2000SubDescriptor);
+
+    // Just a test if we have track files
     std::list<ASDCP::MXF::InterchangeObject*> objectList;
     reader.OP1aHeader().GetMDObjectsByType(ASDCP::DefaultCompositeDict().ul(ASDCP::MDD_Track), objectList);
     if (objectList.empty()) {
@@ -339,12 +345,16 @@ std::shared_ptr<IMFVideoTrack> MXFReader::ReadVideoTrack()
         throw MXFReaderException("NO TRACK FILES IN MXF");
     }
 
+    // TO-DO:
+    // if we re-open a IMP, parse this from CPL and set accordingly. Now we generate one randomly every time
+    // we open. works, but ugly. And probably ................... WILL LEAD TO A HARD TO TRACK DOWN BUG
+    std::shared_ptr<IMFEssenceDescriptor> essenceDescriptor(new IMFEssenceDescriptor(UUIDGenerator().MakeUUID(), videoEssenceDescriptor));
 
     char strBuf[41];
-    std::stringstream ss;
-    ss << ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
+    std::string trackId =  ASDCP::UUID(info.AssetUUID).EncodeHex(strBuf, 40);
 
-    std::shared_ptr<IMFVideoTrack> track(new IMFVideoTrack(ss.str(), _filename, essenceDescriptor));
+    std::shared_ptr<IMFVideoTrack> track(new IMFVideoTrack(trackId, _filename, essenceDescriptor));
+
     track->SetBits(bits);
     track->SetColorSpace(colorSpace);
     track->SetDuration(duration);
@@ -437,6 +447,8 @@ bool readRGBAEssenceDescriptor(ASDCP::MXF::RGBAEssenceDescriptor *gen, std::shar
 
     in->componentMaxRef = gen->ComponentMaxRef.get(); 
     in->componentMinRef = gen->ComponentMinRef.get();
+    // TO-DO: Don't use string but chars
+    in->pixelLayout = gen->PixelLayout.EncodeString(identbuf, IDENT_BUFFER_LENGTH);
     return true;
 }
 
@@ -482,7 +494,34 @@ bool readMCALabelSubDescriptor(ASDCP::MXF::MCALabelSubDescriptor *gen, std::shar
     char identbuf[IDENT_BUFFER_LENGTH];
     *identbuf = 0;             
 
+    if (gen->MCATagName.empty()) {
+        PrintIMFComplianceWarning("MCATagName");
+        return false;
+    }
+    if (gen->RFC5646SpokenLanguage.empty()) {
+        PrintIMFComplianceWarning("RFC5646SpokenLanguage");
+        return false;
+    }
+
     in->mcaLinkId = gen->MCALinkID.EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    in->mcaLabelDictionaryId = gen->MCALabelDictionaryID.EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    in->mcaTagSymbol = gen->MCATagSymbol.EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    in->mcaTagName = gen->MCATagName.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    in->rfc5646SpokenLanguage = gen->RFC5646SpokenLanguage.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+
+    // TO-DO: Make them mandatory and add code to asdcplib
+    if (!gen->MCAAudioElementKind.empty()) {
+        in->mcaAudioElementKind = gen->MCAAudioElementKind.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    }
+    if (!gen->MCAAudioContentKind.empty()) {
+        in->mcaAudioContentKind = gen->MCAAudioContentKind.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    }
+    if (!gen->MCATitle.empty()) {
+        in->mcaTitle = gen->MCATitle.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    }
+    if (!gen->MCATitleVersion.empty()) {
+        in->mcaTitleVersion = gen->MCATitleVersion.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    }
 
     return success;
 }
@@ -490,6 +529,21 @@ bool readMCALabelSubDescriptor(ASDCP::MXF::MCALabelSubDescriptor *gen, std::shar
 bool readAudioChannelLabelSubDescriptor(ASDCP::MXF::AudioChannelLabelSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::AudioChannelLabelSubDescriptor> in)
 {
     bool success = readMCALabelSubDescriptor(gen, in);
+
+    if (gen->MCAChannelID.empty()) {
+        PrintIMFComplianceWarning("MCAChannelID");
+        return false;
+    }
+    if (gen->SoundfieldGroupLinkID.empty()) {
+        PrintIMFComplianceWarning("SoundfieldGroupLinkID");
+        return false;
+    }
+
+    char identbuf[IDENT_BUFFER_LENGTH];
+    *identbuf = 0;             
+
+    in->mcaChannelId = gen->MCAChannelID.get();
+    in->soundfieldGroupLinkId = gen->SoundfieldGroupLinkID.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
 
     return success;
 }
@@ -501,4 +555,48 @@ bool readSoundfieldGroupLabelSubDescriptor(ASDCP::MXF::SoundfieldGroupLabelSubDe
     return success;
 }
 
+bool readJPEG2000SubDescriptor(ASDCP::MXF::JPEG2000PictureSubDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::JPEG2000SubDescriptor> in)
+{
+    bool success = readTransferFileBase(gen, in);
+
+    if (gen->PictureComponentSizing.empty()) {
+        PrintIMFComplianceWarning("PictureComponentSizing");
+        return false;
+    }
+    if (gen->CodingStyleDefault.empty()) {
+        PrintIMFComplianceWarning("CodingStyleDefault");
+        return false;
+    }
+    if (gen->QuantizationDefault.empty()) {
+        PrintIMFComplianceWarning("QuantizationDefault");
+        return false;
+    }
+    if (gen->J2CLayout.empty()) {
+        PrintIMFComplianceWarning("J2CLayout");
+        return false;
+    }
+
+    char identbuf[IDENT_BUFFER_LENGTH];
+    *identbuf = 0;
+
+    in->rsize = gen->Rsize;
+    in->xsize = gen->Xsize;
+    in->ysize = gen->Ysize;
+    in->xOsize = gen->XOsize;
+    in->yOsize = gen->YOsize;
+    in->xTsize = gen->XTsize;
+    in->yTsize = gen->YTsize;
+    in->xTOsize = gen->XTOsize;
+    in->yTOsize = gen->YTOsize;
+    in->csize = gen->Csize;
+
+    // TO-DO: Don't use string but chars
+    in->pictureComponentSizing = gen->PictureComponentSizing.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    in->codingStyleDefault = gen->CodingStyleDefault.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    in->quantizationDefault = gen->QuantizationDefault.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+    // TO-DO: Don't use string but chars
+    in->j2cLayout = gen->J2CLayout.get().EncodeString(identbuf, IDENT_BUFFER_LENGTH);
+
+    return success;
+}
 
