@@ -168,6 +168,7 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     }
     if (colorFormat == "RGB444" || colorFormat == "rgb444" || colorFormat == "RGB" || colorFormat == "rgb") {
         options.colorFormat = COLOR_FORMAT::CF_RGB444;
+        // TO-DO: expose that to cmd line
         options.doMct = true;
     } else if (colorFormat == "YUV444" || colorFormat == "yuv444" || colorFormat == "yuv444p") {
         options.colorFormat = COLOR_FORMAT::CF_YUV444;
