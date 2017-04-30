@@ -1,3 +1,4 @@
+*~
 autom4te.cache/
 imfenc/autom4te.cache/
 imfgui/autom4te.cache/
@@ -18,3 +19,19 @@ imfgui/src/model/.deps/
 imfgui/src/qtmodels/.deps/
 imfgui/src/utils/.deps/
 imfgui/src/views/.deps/
+depcomp
+imfgui/Makefile.in
+imfgui/aclocal.m4
+imfgui/src/Makefile.in
+imfgui/src/model/.dirstamp
+imfgui/src/nohup.out
+imfgui/src/qtmodels/.dirstamp
+imfgui/src/utils/.dirstamp
+imfgui/src/views/.dirstamp
+ltmain.sh
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+
