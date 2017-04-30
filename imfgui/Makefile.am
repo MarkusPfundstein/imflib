@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 EXTRADIST = 
 
-AUTOMAKE_OPTIONS = subdir-objects
+AUTOMAKE_OPTIONS=subdir-objects
 
 SUBDIRS = src
 
