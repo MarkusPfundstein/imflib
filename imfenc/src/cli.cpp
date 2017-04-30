@@ -50,6 +50,8 @@ bool g_done;
 typedef struct {
     /* cmd line stuff */
     bool overwriteFiles;
+    
+    bool extractAudio;
 
     /* VIDEO STUFF */
     J2KEncoder::PROFILE profile ;
@@ -78,7 +80,8 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     bool fullRange = true;
     bool forceOverwrite = false;
     bool useTiles = false;
-    bool noMux = false;
+    bool mux = false;
+    bool extractAudio = false;
     int bitDepth;
     int sampleRate;
     int threads;
@@ -99,7 +102,8 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         ("sample_rate,r", value<int>(&sampleRate)->default_value(48000), "target audio samplerate (48000 or 96000)")
         ("pixel_fmt,p", value<std::string>(&colorFormat)->default_value("RGB444"), "pixel format of output. (YUV444, YUV422, RGB444)")
         ("use_tiles", "use tiles (only broadcast profile 6 and 7) [default: false]")
-	("no_mux", "don't mux the encoded files into MXF -> keep j2k & wav" )
+	    ("experimental_mux", "mux the encoded files into MXF" )
+        ("experimental_extract_audio", "extracts pcm")
         ("threads", value<int>(&threads), "number of threads for jpeg2000 encoding");
         //("full_range", value<bool>(&fullRange)->default_value(true), "full range color space (rgb essence only), else SMPTE 274M-2008 constraints are used");
 
@@ -112,12 +116,19 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         return false;
     }
 
+
     if (vm.count("force")) {
         forceOverwrite = true;
     }
+
+    if (vm.count("experimental_extract_audio")) {
+        std::cout << "[WARNING] experimental_extract_audio is set to 1" << std::endl;
+        extractAudio = true;
+    }
     
-    if (vm.count("no_mux")) {
-   	noMux = true;
+    if (vm.count("experimental_mux")) {
+        std::cout << "[WARNING] experimental_mux is set to 1" << std::endl;
+   	    mux = true;
     }
 
     if (vm.count("in") == 0) {
@@ -179,7 +190,10 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     options.tempFilePath = tempDirectory;
     options.outputPath = outDirectory;
     options.threads = threads;
-    options.noMux = noMux;
+    options.noMux = !mux;
+    options.extractAudio = extractAudio;
+    std::cout << "will not mux: " << options.noMux << std::endl;
+    std::cout << "will extract audio: " << options.extractAudio << std::endl;
 
     // sanity checks
     if (!filesystem::is_directory(options.tempFilePath)) {
@@ -484,58 +498,58 @@ int main(int argc, char **argv)
         }
 
 
-	if (options.noMux == false) {
-		if (decoder.HasVideoTrack() && j2kFiles.empty() == false) {
-		    MXFWriter::MXFOptionsVideo videoOptions;
+        if (options.noMux == false) {
+            if (decoder.HasVideoTrack() && j2kFiles.empty() == false) {
+                MXFWriter::MXFOptionsVideo videoOptions;
 
 
-		    videoOptions.editRate = editRate;
-		    // Aspect Ratio is now known.
-		    videoOptions.aspectRatio = decoder.GetAspectRatio();
-		    videoOptions.containerDuration = (uint32_t)(j2kFiles.size());
-		    videoOptions.yuvEssence = options.colorFormat != COLOR_FORMAT::CF_RGB444;
-		    videoOptions.subsamplingDx = options.colorFormat == CF_YUV422 ? 2 : 1;
-		    videoOptions.encryptHeader = false;
-		    videoOptions.bits = (int)(options.bitsPerComponent);
-		    videoOptions.broadcastProfile = (int)(options.profile);
-		    videoOptions.fullRange = options.fullRange;
+                videoOptions.editRate = editRate;
+                // Aspect Ratio is now known.
+                videoOptions.aspectRatio = decoder.GetAspectRatio();
+                videoOptions.containerDuration = (uint32_t)(j2kFiles.size());
+                videoOptions.yuvEssence = options.colorFormat != COLOR_FORMAT::CF_RGB444;
+                videoOptions.subsamplingDx = options.colorFormat == CF_YUV422 ? 2 : 1;
+                videoOptions.encryptHeader = false;
+                videoOptions.bits = (int)(options.bitsPerComponent);
+                videoOptions.broadcastProfile = (int)(options.profile);
+                videoOptions.fullRange = options.fullRange;
 
-		    // write video
-		    MXFWriter videoMxfWriter;
-		    videoMxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile, videoOptions);
-		}
-	}
+                // write video
+                MXFWriter videoMxfWriter;
+                videoMxfWriter.MuxVideoFiles(j2kFiles, finalVideoFile, videoOptions);
+            }
+        }
 
-	// write wav files to disk
-	for (unsigned int i = 0; i < wavData.size(); ++i) {
-	    std::vector<uint8_t> &data = wavData[i];
+        // write wav files to disk
+        for (unsigned int i = 0; i < wavData.size(); ++i) {
+            std::vector<uint8_t> &data = wavData[i];
 
-	    short channels = (short)decoder.GetChannels(i);
-	    int sampleRate = (int)options.sampleRate;
+            short channels = (short)decoder.GetChannels(i);
+            int sampleRate = (int)options.sampleRate;
 
-	    std::stringstream ss;
-	    ss << options.tempFilePath << "/AUDIO_" << std::setw( 7 ) << std::setfill( '0' ) << i << ".wav";
+            std::stringstream ss;
+            ss << options.tempFilePath << "/AUDIO_" << std::setw( 7 ) << std::setfill( '0' ) << i << ".wav";
 
-	    std::string wavFileName = ss.str();
+            std::string wavFileName = ss.str();
 
-	    WavMuxer wavMuxer;
-	    wavMuxer.MuxToFile(wavFileName, data, channels, sampleRate, 24);
+            WavMuxer wavMuxer;
+            wavMuxer.MuxToFile(wavFileName, data, channels, sampleRate, 24);
 
-	    wavFiles.push_back(wavFileName);
+            wavFiles.push_back(wavFileName);
 
-	    if (options.noMux == false) {
-		    MXFWriter::MXFOptionsAudio audioOptions;
-		    audioOptions.editRate = RationalNumber(sampleRate, 1);
+            if (options.noMux == false) {
+                MXFWriter::MXFOptionsAudio audioOptions;
+                audioOptions.editRate = RationalNumber(sampleRate, 1);
 
-		    MXFWriter audioMxfWriter;
-		    audioMxfWriter.MuxAudioFile(wavFileName, audioFiles[i], audioOptions);
-	    }
-	}
+                MXFWriter audioMxfWriter;
+                audioMxfWriter.MuxAudioFile(wavFileName, audioFiles[i], audioOptions);
+            }
+        }
 
-	if (options.noMux == false) {
-		CleanFiles(j2kFiles);
-		CleanFiles(wavFiles);
-	} // noMux
+        if (options.noMux == false) {
+            CleanFiles(j2kFiles);
+            CleanFiles(wavFiles);
+        } // noMux
     } catch (std::runtime_error &ex) {
         std::cerr << "[EXCEPTION CAUGHT - Aborting]: " << ex.what() << std::endl;
         CleanFiles(j2kFiles);
