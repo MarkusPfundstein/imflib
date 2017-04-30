@@ -20,9 +20,6 @@ imfgui/src/qtmodels/.deps/
 imfgui/src/utils/.deps/
 imfgui/src/views/.deps/
 depcomp
-imfgui/Makefile.in
-imfgui/aclocal.m4
-imfgui/src/Makefile.in
 imfgui/src/model/.dirstamp
 imfgui/src/nohup.out
 imfgui/src/qtmodels/.dirstamp
