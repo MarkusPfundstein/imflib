@@ -114,7 +114,8 @@ void IMFPackage::CopyTrackFiles() const
 
         if (exists(target) == false) {
             std::cout << "Copy " << asset->GetFileName() << " to package.... can take a bit..." << std::endl;
-            move_file(src, target);
+            // TO-DO, ask user if he wants to move or copy
+            rename(src, target);
             //copy_file(src, target);
             asset->SetPath(target.string());
         }
@@ -129,7 +130,8 @@ void IMFPackage::CopyTrackFiles() const
         if (exists(target) == false) {
             std::cout << "Copy " << asset->GetFileName() << " to package.... can take a bit..." << std::endl;
             try {
-                move_file(src, target);
+                // TO-DO, ask user if he wants to move or copy
+                rename(src, target);
                 //copy_file(src, target);
             } catch (boost::filesystem::filesystem_error &e) {
                 throw IMFPackageException(e.what());
