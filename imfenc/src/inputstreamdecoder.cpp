@@ -20,8 +20,8 @@ extern "C" {
 #include <mutex>
 #include <cmath>
 
-InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, COLOR_FORMAT targetColorFormat, int audioRate)
-    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetVideoPixelFormat(-1), _targetAudioSampleRate(audioRate), _doneCallback()
+InputStreamDecoder::InputStreamDecoder(const std::string &file, int bitDepth, COLOR_FORMAT targetColorFormat, int audioRate, bool extractAudio)
+    : _formatContext(nullptr), _videoStreamContext(), _audioStreams(), _subtitleStreams(), _swsContext(nullptr), _targetVideoPixelFormat(-1), _targetAudioSampleRate(audioRate), _doneCallback(), _extractAudio(extractAudio)
 {
 
     if (bitDepth == 8) {
@@ -88,7 +88,6 @@ void InputStreamDecoder::OpenFile(const std::string& file)
     }
 
     for (unsigned int i = 0; i < _formatContext->nb_streams; ++i) {
-
         // first , lets get codec and codec context
         AVStream *stream = _formatContext->streams[i];
 
@@ -175,7 +174,7 @@ void InputStreamDecoder::AddVideoStream(AVStream *stream, const CodecContextPtr 
     _videoStreamContext.context->width = stream->codec->width;
     _videoStreamContext.context->height = stream->codec->height;
 
-    int flags = SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP | SWS_ACCURATE_RND | SWS_BITEXACT | SWS_POINT;
+    //int flags = SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP | SWS_ACCURATE_RND | SWS_BITEXACT | SWS_POINT;
 
     _swsContext = sws_getContext(stream->codec->width,
                                  stream->codec->height,
@@ -230,7 +229,10 @@ bool InputStreamDecoder::HasVideoTrack() const
 
 int InputStreamDecoder::GetNumberAudioTracks() const
 {
-    return _audioStreams.size();
+    if (_extractAudio) {
+        return _audioStreams.size();
+    }
+    return 0;
 }
 
 RationalNumber InputStreamDecoder::GetFrameRate() const
@@ -379,8 +381,10 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
         }
     } while (gotFrame);
 
-    for (unsigned int i = 0; i < _audioStreams.size(); ++i) {
-        HandleDelayedAudioFrames(i, audioCallback);
+    if (_extractAudio) {
+        for (unsigned int i = 0; i < _audioStreams.size(); ++i) {
+            HandleDelayedAudioFrames(i, audioCallback);
+        }
     }
 
     if (_doneCallback) {
@@ -388,8 +392,7 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
     }
 }
 
-bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback,
-                                      GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
+bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType, GotVideoFrameCallbackFunction videoCallback, GotAudioFrameCallbackFunction audioCallback, int audioStreamIndex)
 {
     bool success = true;
 
@@ -401,7 +404,9 @@ bool InputStreamDecoder::HandleFrame(AVFrame& decodedFrame, FRAME_TYPE frameType
             break;
         case FRAME_TYPE::AUDIO:
 
-            success = HandleAudioFrame(decodedFrame, audioCallback, audioStreamIndex);
+            if (_extractAudio) {
+                success = HandleAudioFrame(decodedFrame, audioCallback, audioStreamIndex);
+            }
 
             break;
         case FRAME_TYPE::SUBTITLES:

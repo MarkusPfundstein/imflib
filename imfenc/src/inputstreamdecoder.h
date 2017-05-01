@@ -42,7 +42,7 @@ class InputStreamDecoder
 
         static void RegisterAVFormat();
 
-        explicit InputStreamDecoder(const std::string& file, int depth, COLOR_FORMAT targetColorFormat, int audioRate);
+        explicit InputStreamDecoder(const std::string& file, int depth, COLOR_FORMAT targetColorFormat, int audioRate, bool extractAudio);
 
         InputStreamDecoder(const InputStreamDecoder& ) = delete;
         InputStreamDecoder* operator=(const InputStreamDecoder& ) = delete;
@@ -124,6 +124,8 @@ class InputStreamDecoder
         int _targetAudioSampleRate;
 
         std::function<void(void)> _doneCallback;
+
+        bool _extractAudio;
 };
 
 #endif // INPUTSTREAMDECODER_H

@@ -77,7 +77,7 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     using namespace boost::program_options;
 
     int profile;
-    bool fullRange = true;
+    bool fullRange = false;
     bool forceOverwrite = false;
     bool useTiles = false;
     bool mux = false;
@@ -104,8 +104,8 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         ("use_tiles", "use tiles (only broadcast profile 6 and 7) [default: false]")
 	    ("experimental_mux", "mux the encoded files into MXF" )
         ("experimental_extract_audio", "extracts pcm")
-        ("threads", value<int>(&threads), "number of threads for jpeg2000 encoding");
-        //("full_range", value<bool>(&fullRange)->default_value(true), "full range color space (rgb essence only), else SMPTE 274M-2008 constraints are used");
+        ("threads", value<int>(&threads), "number of threads for jpeg2000 encoding")
+        ("full_range", value<bool>(&fullRange)->default_value(false), "full range color space (rgb essence only), else SMPTE 274M-2008 constraints are used");
 
     variables_map vm;
     store(parse_command_line(argc, argv, description), vm);
@@ -193,8 +193,9 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     options.threads = threads;
     options.noMux = !mux;
     options.extractAudio = extractAudio;
-    std::cout << "will not mux: " << options.noMux << std::endl;
-    std::cout << "will extract audio: " << options.extractAudio << std::endl;
+    std::cout << "fullRange: " << options.fullRange;
+    std::cout << "experimental_mux: " << !options.noMux << std::endl;
+    std::cout << "experimental_extract_audio: " << options.extractAudio << std::endl;
 
     // sanity checks
     if (!filesystem::is_directory(options.tempFilePath)) {
@@ -408,7 +409,7 @@ int main(int argc, char **argv)
 
     try {
 
-        InputStreamDecoder decoder(options.inputFile, (int)options.bitsPerComponent, options.colorFormat, (int)options.sampleRate);
+        InputStreamDecoder decoder(options.inputFile, (int)options.bitsPerComponent, options.colorFormat, (int)options.sampleRate, options.extractAudio);
         // decoder knows now some metadata about the video. Attention: IT DOESN'T KNOW ASPECT RATIO AT THIS PLACE!!!!
 
         std::string finalVideoFile;
@@ -489,7 +490,7 @@ int main(int argc, char **argv)
 
             g_done = false;
 
-            decoder.SetDoneCallback([&g_done]() { g_done = true; });
+            decoder.SetDoneCallback([]() { g_done = true; });
             decoder.Decode([&] (RawVideoFrame *rawFrame) { return HandleVideoFrame_MT(rawFrame, j2kEncoder, j2kFiles, options.tempFilePath); },
                            [&] (RawAudioFrame &rawFrame, int index) { return HandleAudioFrame(rawFrame, *(pcmEncoders[index]), wavData[index], index); });
 
