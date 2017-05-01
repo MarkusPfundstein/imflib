@@ -244,11 +244,36 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                                   *static_cast<MXF::JPEG2000PictureSubDescriptor*>(essenceSubDescriptors.back()));
 
         if (ASDCP_SUCCESS(result)) {
-            rgbDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
+            UL transferCharacteristic;
+            UL colorPrimaries;
+            UL codingEquations;
+
+            switch (options.bits) {
+                case 8:
+                    pictureSubDescriptor->J2CLayout.set(ASDCP::MXF::RGBAValue_RGB_8);
+                    break;
+                case 10:
+                case 12: // hmm ... nothing defined for 12 bit
+                default:
+                    pictureSubDescriptor->J2CLayout.set(ASDCP::MXF::RGBAValue_RGB_10);
+                    break;
+            }
+
+            // BT2020
             if (options.fullRange) {
                 rgbDescriptor->ComponentMaxRef = std::pow(2, options.bits) - 1;
                 rgbDescriptor->ComponentMinRef = 0;
+
+                transferCharacteristic.DecodeHex("060e2b34.0401010e.04010101.01090000");
+                colorPrimaries.DecodeHex("060e2b34.0401010d.04010101.03040000");
+                codingEquations.DecodeHex("060e2b34.0401010d.04010101.02060000");
+
+            // BT709
             } else {
+                transferCharacteristic.DecodeHex("060e2b34.04010101.04010101.01020000");
+                colorPrimaries.DecodeHex("060e2b34.04010106.04010101.03030000");
+                codingEquations.DecodeHex("060e2b34.04010101.04010101.02020000");
+
                 const int upperConstraint[3] = {235, 940, 3760};
                 const int lowerConstraint[3] = {16, 64, 256};
 
@@ -272,9 +297,28 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                         break;
                 }
             }
+
+            // Profile
+            rgbDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
+            rgbDescriptor->TransferCharacteristic = transferCharacteristic;
+            rgbDescriptor->ColorPrimaries = colorPrimaries;
+            rgbDescriptor->CodingEquations = codingEquations;
+
+            // TO-DO: figure out if necessary. Default to 0 in as-02-wrap
+            /*
+            if (Options.md_min_luminance || Options.md_max_luminance) {
+                rgbDescriptor->MasteringDisplayMinimumLuminance = Options.md_min_luminance;
+                rgbDescriptor->MasteringDisplayMaximumLuminance = Options.md_max_luminance;
+            }
+            if (Options.md_primaries.HasValue()) {
+                rgbDescriptor->MasteringDisplayPrimaries = Options.md_primaries;
+                rgbDescriptor->MasteringDisplayWhitePointChromaticity = Options.md_white_point;
+            }
+            */
+
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(rgbDescriptor);
             rgbDescriptor->Dump();
-	}
+	    }
     }
 
     if (essenceDescriptor == nullptr) {
@@ -285,9 +329,6 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
     info.LabelSetType = LS_MXF_SMPTE;
 
     Kumu::GenRandomUUID(info.AssetUUID);
-
-    //char strBuf[40];
-    //std::cout << "ASSET ID: " << UUID(info.AssetUUID).EncodeHex(strBuf, 40) << std::endl;
 
     result = writer.OpenWrite(finalFile,
                               info,
