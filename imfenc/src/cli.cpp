@@ -193,9 +193,10 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     options.threads = threads;
     options.noMux = !mux;
     options.extractAudio = extractAudio;
-    std::cout << "fullRange: " << options.fullRange;
-    std::cout << "experimental_mux: " << !options.noMux << std::endl;
-    std::cout << "experimental_extract_audio: " << options.extractAudio << std::endl;
+    std::cout << "[cli] fullRange: " << options.fullRange << std::endl;
+    std::cout << "[cli] experimental_mux: " << !options.noMux << std::endl;
+    std::cout << "[cli] experimental_extract_audio: " << options.extractAudio << std::endl;
+    std::cout << "[cli] BROADCAST PROFILE: " << profile << std::endl;
 
     // sanity checks
     if (!filesystem::is_directory(options.tempFilePath)) {
