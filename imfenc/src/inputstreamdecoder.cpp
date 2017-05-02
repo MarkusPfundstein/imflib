@@ -336,7 +336,21 @@ void InputStreamDecoder::Decode(GotVideoFrameCallbackFunction videoCallback, Got
             FRAME_TYPE frameType;
             int processedBytes = DecodePacket(packet, *decodedFrame, gotFrame, frameType, audioStreamIndex);
             if (processedBytes < 0) {
-                std::cerr << "[InputStreamDecoder] error processing frame -> CONTINUE" << std::endl;
+                std::cerr << "[InputStreamDecoder] error processing frame. ErrorCode: " << processedBytes << ", gotFrame: " << gotFrame << ", type: ";
+                switch (frameType) {
+                    case FRAME_TYPE::AUDIO:
+                        std::cerr << "AUDIO" << std::endl;
+                        break;
+                    case FRAME_TYPE::VIDEO:
+                        std::cerr << "VIDEO" << std::endl;
+                        break;
+                    case FRAME_TYPE::SUBTITLES:
+                        std::cerr << "SUBTITLE" << std::endl;
+                        break;
+                    case FRAME_TYPE::UNKNOWN:
+                        std::cerr << "UNKNOWN" << std::endl;
+                        break;
+                } 
 
                 // WE COULD BREAK HERE OR GO ON.. maybe I make this a user setting
                 // ignore errors or something like this
