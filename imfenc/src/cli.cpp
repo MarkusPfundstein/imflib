@@ -80,7 +80,7 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     bool fullRange = false;
     bool forceOverwrite = false;
     bool useTiles = false;
-    bool mux = false;
+    bool noMux = false;
     bool extractAudio = false;
     int bitDepth;
     int sampleRate;
@@ -102,7 +102,7 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         ("sample_rate,r", value<int>(&sampleRate)->default_value(48000), "target audio samplerate (48000 or 96000)")
         ("pixel_fmt,p", value<std::string>(&colorFormat)->default_value("RGB444"), "pixel format of output. (YUV444, YUV422, RGB444)")
         ("use_tiles", "use tiles (only broadcast profile 6 and 7) [default: false]")
-	    ("experimental_mux", "mux the encoded files into MXF" )
+	    ("nomux", "dont mux the encoded files into MXF" )
         ("experimental_extract_audio", "extracts pcm")
         ("threads", value<int>(&threads), "number of threads for jpeg2000 encoding")
         ("full_range", value<bool>(&fullRange)->default_value(false), "full range color space (rgb essence only), else SMPTE 274M-2008 constraints are used");
@@ -126,9 +126,8 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
         extractAudio = true;
     }
     
-    if (vm.count("experimental_mux")) {
-        std::cout << "[WARNING] experimental_mux is set to 1" << std::endl;
-   	    mux = true;
+    if (vm.count("nomux")) {
+   	    noMux = true;
     }
 
     if (vm.count("in") == 0) {
@@ -191,10 +190,10 @@ bool ParseProgramOptions(EncoderOptions& options, int argc, char **argv)
     options.tempFilePath = tempDirectory;
     options.outputPath = outDirectory;
     options.threads = threads;
-    options.noMux = !mux;
+    options.noMux = noMux;
     options.extractAudio = extractAudio;
     std::cout << "[cli] fullRange: " << options.fullRange << std::endl;
-    std::cout << "[cli] experimental_mux: " << !options.noMux << std::endl;
+    std::cout << "[cli] will mux: " << !options.noMux << std::endl;
     std::cout << "[cli] experimental_extract_audio: " << options.extractAudio << std::endl;
     std::cout << "[cli] BROADCAST PROFILE: " << profile << std::endl;
 
