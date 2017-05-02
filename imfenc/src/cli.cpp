@@ -272,7 +272,7 @@ void EncodeVideoFromQueue()
             threadContext.outFiles->push_back(threadContext.targetFile);
         }
 
-        std::cout << "Frame: " << threadContext.videoFrame->frameNumber << " done" << '\xd';
+        std::cout << "Finished frame: " << threadContext.videoFrame->frameNumber << '\xd';
         std::cout.flush();
 
         delete threadContext.videoFrame;
