@@ -92,6 +92,8 @@ class IMFEssenceDescriptor : public GenericItem
         uint8_t frameLayout;            
         std::string pictureCompression;     // urn:smpte:ul, in asdcplib called PictureEssenceCoding
 
+        //uint8_t fieldDominance;
+
         RationalNumber imageAspectRatio;
         uint32_t storedWidth;
         uint32_t storedHeight;
@@ -118,6 +120,12 @@ class IMFEssenceDescriptor : public GenericItem
 
     struct CDCIEssenceDescriptor : public VideoEssenceDescriptor
     {
+        uint8_t horizontalSubsampling;
+        uint8_t verticalSubsampling;
+        uint16_t componentDepth;
+        uint32_t whiteRefLevel;
+        uint32_t blackRefLevel;
+
         CDCIEssenceDescriptor() : VideoEssenceDescriptor(TYPE::CDCIEssenceDescriptorType) {}
         virtual ~CDCIEssenceDescriptor() {}
 

@@ -454,8 +454,15 @@ bool readRGBAEssenceDescriptor(ASDCP::MXF::RGBAEssenceDescriptor *gen, std::shar
 
 bool readCDCIEssenceDescriptor(ASDCP::MXF::CDCIEssenceDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::CDCIEssenceDescriptor> in)
 {
-    std::cout << "[WARNING] CDCIEssenceDescriptor reading N.S.Y" << std::endl;
-    return false;
+    // horizontal/componentdepth are only mandatary in asdcplib
+    // TO-DO: make check for the other ones
+    in->componentDepth = gen->ComponentDepth;
+    in->horizontalSubsampling = gen->HorizontalSubsampling;
+    in->verticalSubsampling = gen->VerticalSubsampling.get();
+    in->whiteRefLevel = gen->WhiteReflevel.get();
+    in->blackRefLevel = gen->BlackRefLevel.get();
+
+    return true;
 }
 
 bool readAudioEssenceDescriptor(ASDCP::MXF::GenericSoundEssenceDescriptor *gen, std::shared_ptr<IMFEssenceDescriptor::AudioEssenceDescriptor> in)

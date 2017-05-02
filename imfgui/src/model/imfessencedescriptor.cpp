@@ -34,8 +34,8 @@ void WritePictureComponentSizing(const std::string& s, boost::property_tree::ptr
 
     // TO-DO: rewrite this piece of shit to actually get something elegant and maintainable
     std::vector<std::string> compNames;
-    compNames.push_back("XRSiz");
     compNames.push_back("YRSiz");
+    compNames.push_back("XRSiz");
     compNames.push_back("Ssiz");
 
     ptree compSizing;
@@ -44,7 +44,7 @@ void WritePictureComponentSizing(const std::string& s, boost::property_tree::ptr
         // each iteration is one component
         auto it2 = it;
         auto it2e = it + 6;
-        // backwards: 01 -> YRSiz, 01 ->XRSiz, 09 -> Ssiz
+        // backwards: 01 -> XRSiz, 01 ->YRSiz, 09 -> Ssiz
         int nCnt = 0;
         ptree compTree;
         do {
@@ -74,6 +74,9 @@ void WriteJ2CLayout(const std::string& s, boost::property_tree::ptree &pt)
     compMap['R'] = "CompRed";
     compMap['G'] = "CompGreen";
     compMap['B'] = "CompBlue";
+    compMap['Y'] = "CompLuma";
+    compMap['U'] = "CompColorDifferenceU";
+    compMap['V'] = "CompColorDifferenceV";
 
     const size_t nComps = 3;
     
@@ -192,6 +195,15 @@ void IMFEssenceDescriptor::RGBAEssenceDescriptor::Write(boost::property_tree::pt
 void IMFEssenceDescriptor::CDCIEssenceDescriptor::Write(boost::property_tree::ptree& pt) const
 {
     VideoEssenceDescriptor::Write(pt);
+
+    pt.put("r1:ComponentDepth", componentDepth);
+    pt.put("r1:HorizontalSubsampling", horizontalSubsampling);
+    pt.put("r1:VerticalSubsampling", verticalSubsampling);
+    pt.put("r1:WhiteRefLevel", whiteRefLevel);
+    pt.put("r1:BlackRefLevel", blackRefLevel);
+
+    // TO-DO: fix this, figure out if necessary etc. Apparently asdcplib ONLY writes this when muxing YUV, but FieldDominance is part of GenericSubDescriptor
+    pt.put("r1:FieldDominance", "UnspecifiedField");
 }
 
 void IMFEssenceDescriptor::AudioEssenceDescriptor::Write(boost::property_tree::ptree& pt) const

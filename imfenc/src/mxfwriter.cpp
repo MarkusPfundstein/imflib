@@ -209,6 +209,21 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
 
     // 353 is profile 1.
     MDD_t profile = static_cast<MDD_t>(static_cast<int>(MDD_JP2KEssenceCompression_BroadcastProfile_1) + (profileInt - 1));
+    UL transferCharacteristic;
+    UL colorPrimaries;
+    UL codingEquations;
+    // BT2020
+    if (options.fullRange) {
+        transferCharacteristic.DecodeHex("060e2b34.0401010e.04010101.01090000");
+        colorPrimaries.DecodeHex("060e2b34.0401010d.04010101.03040000");
+        codingEquations.DecodeHex("060e2b34.0401010d.04010101.02060000");
+
+    // BT709
+    } else {
+        transferCharacteristic.DecodeHex("060e2b34.04010101.04010101.01020000");
+        colorPrimaries.DecodeHex("060e2b34.04010106.04010101.03030000");
+        codingEquations.DecodeHex("060e2b34.04010101.04010101.02020000");
+    }
 
     if (yuvEssence) {
         MXF::CDCIEssenceDescriptor* cdciDescriptor = new MXF::CDCIEssenceDescriptor(dict);
@@ -220,6 +235,17 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                                   *static_cast<MXF::JPEG2000PictureSubDescriptor*>(essenceSubDescriptors.back()));
 
         if (ASDCP_SUCCESS(result)) {
+            switch (options.bits) {
+                case 8:
+                    pictureSubDescriptor->J2CLayout.set(ASDCP::MXF::RGBAValue_YUV_8);
+                    break;
+                case 10:
+                case 12: // hmm ... nothing defined for 12 bit
+                default:
+                    pictureSubDescriptor->J2CLayout.set(ASDCP::MXF::RGBAValue_YUV_10);
+                    break;
+            }
+
             cdciDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
             cdciDescriptor->HorizontalSubsampling = options.subsamplingDx;
             cdciDescriptor->VerticalSubsampling = 1; // no vertical subsampling in IMF
@@ -229,11 +255,15 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
             cdciDescriptor->FieldDominance = 0; // only for interlaced shit // field dominance = 1 -> upper field first
             cdciDescriptor->WhiteReflevel = 940;
             cdciDescriptor->BlackRefLevel = 64;
+            cdciDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
+            cdciDescriptor->TransferCharacteristic = transferCharacteristic;
+            cdciDescriptor->ColorPrimaries = colorPrimaries;
+            cdciDescriptor->CodingEquations = codingEquations;
+
             essenceDescriptor = static_cast<MXF::FileDescriptor*>(cdciDescriptor);
 
-
             cdciDescriptor->Dump();
-	}
+	    }
     } else {
         MXF::RGBAEssenceDescriptor* rgbDescriptor = new MXF::RGBAEssenceDescriptor(dict);
         essenceSubDescriptors.push_back(pictureSubDescriptor);
@@ -244,9 +274,6 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                                   *static_cast<MXF::JPEG2000PictureSubDescriptor*>(essenceSubDescriptors.back()));
 
         if (ASDCP_SUCCESS(result)) {
-            UL transferCharacteristic;
-            UL colorPrimaries;
-            UL codingEquations;
 
             switch (options.bits) {
                 case 8:
@@ -259,21 +286,18 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                     break;
             }
 
+            rgbDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
+            rgbDescriptor->TransferCharacteristic = transferCharacteristic;
+            rgbDescriptor->ColorPrimaries = colorPrimaries;
+            rgbDescriptor->CodingEquations = codingEquations;
+
             // BT2020
             if (options.fullRange) {
                 rgbDescriptor->ComponentMaxRef = std::pow(2, options.bits) - 1;
                 rgbDescriptor->ComponentMinRef = 0;
 
-                transferCharacteristic.DecodeHex("060e2b34.0401010e.04010101.01090000");
-                colorPrimaries.DecodeHex("060e2b34.0401010d.04010101.03040000");
-                codingEquations.DecodeHex("060e2b34.0401010d.04010101.02060000");
-
             // BT709
             } else {
-                transferCharacteristic.DecodeHex("060e2b34.04010101.04010101.01020000");
-                colorPrimaries.DecodeHex("060e2b34.04010106.04010101.03030000");
-                codingEquations.DecodeHex("060e2b34.04010101.04010101.02020000");
-
                 const int upperConstraint[3] = {235, 940, 3760};
                 const int lowerConstraint[3] = {16, 64, 256};
 
@@ -298,14 +322,7 @@ void MXFWriter::MuxVideoFiles(const std::list<std::string> &files, const std::st
                 }
             }
 
-            // Profile
-            rgbDescriptor->PictureEssenceCoding = UL(dict->ul(profile));
-            rgbDescriptor->TransferCharacteristic = transferCharacteristic;
-            rgbDescriptor->ColorPrimaries = colorPrimaries;
-            rgbDescriptor->CodingEquations = codingEquations;
-
-            // TO-DO: figure out if necessary. Default to 0 in as-02-wrap
-            /*
+            /* TO-DO: figure out what this means and if its necessary or if this code can go
             if (Options.md_min_luminance || Options.md_max_luminance) {
                 rgbDescriptor->MasteringDisplayMinimumLuminance = Options.md_min_luminance;
                 rgbDescriptor->MasteringDisplayMaximumLuminance = Options.md_max_luminance;
