@@ -26,13 +26,13 @@ class IMFPackageItem : public GenericItem {
         { return _type; }
 
         virtual std::string TypeString() const;
-	std::string ApplicationType() const;
+	    std::string ApplicationType() const;
 
         // returns _filename without path
         std::string GetFileName() const;
 
         // returns file size
-        int GetFileSize() const;
+        uint64_t GetFileSize() const;
 
     protected:
         std::string _filename;
