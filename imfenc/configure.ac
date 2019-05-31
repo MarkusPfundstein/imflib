@@ -17,16 +17,19 @@ AC_PROG_INSTALL
 
 # Checks for libraries.
 AC_CHECK_LIB([openjp2], [main], [], [AC_MSG_ERROR([libopenjp2 was not found])])
+AC_CHECK_LIB([crypto], [main], [], [AC_MSG_ERROR([libcrypto was not found])])
+AC_CHECK_LIB([pthread], [main], [], [AC_MSG_ERROR([libpthread was not found])])
 # FIXME: Replace `main' with a function in `-las02':
 AC_CHECK_LIB([as02], [main], [], [AC_MSG_ERROR([libas02 was not found])])
 # FIXME: Replace `main' with a function in `-lasdcp':
 AC_CHECK_LIB([asdcp], [main], [], [AC_MSG_ERROR([libasdcp was not found])])
+
+AC_CHECK_LIB([avutil], [main], [], [AC_MSG_ERROR([libavutil was not found])])
 # FIXME: Replace `main' with a function in `-lavcodec':
 AC_CHECK_LIB([avcodec], [main], [], [AC_MSG_ERROR([libavcodec was not found])])
 # FIXME: Replace `main' with a function in `-lavformat':
 AC_CHECK_LIB([avformat], [main], [], [AC_MSG_ERROR([libavformat was not found])])
 # FIXME: Replace `main' with a function in `-lavutil':
-AC_CHECK_LIB([avutil], [main], [], [AC_MSG_ERROR([libavutil was not found])])
 # FIXME: Replace `main' with a function in `-lboost_fileystem':
 # AC_CHECK_LIB([boost_fileystem], [boost::filesystem::remove], [], [AC_MSG_ERROR([libboost_fileystem was not found])])
 AC_CHECK_LIB([boost_program_options], [main], [], [AC_MSG_ERROR([libboost_program_options was not found])])
@@ -34,18 +37,18 @@ AC_CHECK_LIB([boost_program_options], [main], [], [AC_MSG_ERROR([libboost_progra
 AC_CHECK_LIB([boost_system], [main], [], [AC_MSG_ERROR([libboost_system was not found])])
 # FIXME: Replace `main' with a function in `-lkumu':
 AC_CHECK_LIB([boost_thread], [main], [], [AC_MSG_ERROR([libboost_threads was not found])])
-AC_CHECK_LIB([kumu], [main], [], [AC_MSG_ERROR([libkumu was not found])])
 # FIXME: Replace `main' with a function in `-lswresample':
 AC_CHECK_LIB([swresample], [main], [], [AC_MSG_ERROR([libswresample was not found])])
 # FIXME: Replace `main' with a function in `-lswscale':
 AC_CHECK_LIB([swscale], [main], [], [AC_MSG_ERROR([libswscale was not found])])
+AC_CHECK_LIB([kumu], [main], [], [AC_MSG_ERROR([libkumu was not found])])
 
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h])
 
 # headers for openjpeg2
-AC_CHECK_HEADERS([openjpeg-2.1/openjpeg.h], [], [AC_MSG_ERROR([openjpeg.h was not found])])
+#AC_CHECK_HEADERS([openjpeg-2.3/openjpeg.h], [], [AC_MSG_ERROR([openjpeg.h was not found])])
 
 # headers for ASDCPLIB
 

@@ -1,0 +1,516 @@
+The system is: Linux - 5.0.0-15-generic - x86_64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /usr/bin/cc 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+
+The C compiler identification is GNU, found in "/home/markus/projects/imflib/openjpeg/build/CMakeFiles/3.13.4/CompilerIdC/a.out"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_a83a4/fast"
+/usr/bin/make -f CMakeFiles/cmTC_a83a4.dir/build.make CMakeFiles/cmTC_a83a4.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_a83a4.dir/testCCompiler.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_a83a4.dir/testCCompiler.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/testCCompiler.c
+Linking C executable cmTC_a83a4
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a83a4.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_a83a4.dir/testCCompiler.c.o  -o cmTC_a83a4 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_d035b/fast"
+/usr/bin/make -f CMakeFiles/cmTC_d035b.dir/build.make CMakeFiles/cmTC_d035b.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o   -c /usr/share/cmake-3.13/Modules/CMakeCCompilerABI.c
+Linking C executable cmTC_d035b
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d035b.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib -v -rdynamic CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o  -o cmTC_d035b 
+Using built-in specs.
+COLLECT_GCC=/usr/bin/cc
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/8/lto-wrapper
+OFFLOAD_TARGET_NAMES=nvptx-none
+OFFLOAD_TARGET_DEFAULT=1
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Ubuntu 8.3.0-6ubuntu1' --with-bugurl=file:///usr/share/doc/gcc-8/README.Bugs --enable-languages=c,ada,c++,go,brig,d,fortran,objc,obj-c++ --prefix=/usr --with-gcc-major-version-only --program-suffix=-8 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-vtable-verify --enable-libmpx --enable-plugin --enable-default-pie --with-system-zlib --with-target-system-zlib --enable-objc-gc=auto --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 8.3.0 (Ubuntu 8.3.0-6ubuntu1) 
+COMPILER_PATH=/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/
+LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/home/markus/projects/imf-frameserver/third_party/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib' '-L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib' '-L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib' '-v' '-rdynamic' '-o' 'cmTC_d035b' '-mtune=generic' '-march=x86-64'
+ /usr/lib/gcc/x86_64-linux-gnu/8/collect2 -plugin /usr/lib/gcc/x86_64-linux-gnu/8/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-linux-gnu/8/lto-wrapper -plugin-opt=-fresolution=/tmp/cctpSyCs.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -export-dynamic -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -z now -z relro -o cmTC_d035b /usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/Scrt1.o /usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/8/crtbeginS.o -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib -L/usr/lib/gcc/x86_64-linux-gnu/8 -L/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/home/markus/projects/imf-frameserver/third_party -L/usr/lib/gcc/x86_64-linux-gnu/8/../../.. CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-linux-gnu/8/crtendS.o /usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/crtn.o
+COLLECT_GCC_OPTIONS='-L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib' '-L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib' '-L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib' '-v' '-rdynamic' '-o' 'cmTC_d035b' '-mtune=generic' '-march=x86-64'
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:"/usr/bin/make" "cmTC_d035b/fast"]
+  ignore line: [/usr/bin/make -f CMakeFiles/cmTC_d035b.dir/build.make CMakeFiles/cmTC_d035b.dir/build]
+  ignore line: [make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp']
+  ignore line: [Building C object CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o]
+  ignore line: [/usr/bin/cc    -o CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o   -c /usr/share/cmake-3.13/Modules/CMakeCCompilerABI.c]
+  ignore line: [Linking C executable cmTC_d035b]
+  ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d035b.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib -v -rdynamic CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o  -o cmTC_d035b ]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/cc]
+  ignore line: [COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/8/lto-wrapper]
+  ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none]
+  ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+  ignore line: [Target: x86_64-linux-gnu]
+  ignore line: [Configured with: ../src/configure -v --with-pkgversion='Ubuntu 8.3.0-6ubuntu1' --with-bugurl=file:///usr/share/doc/gcc-8/README.Bugs --enable-languages=c,ada,c++,go,brig,d,fortran,objc,obj-c++ --prefix=/usr --with-gcc-major-version-only --program-suffix=-8 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-vtable-verify --enable-libmpx --enable-plugin --enable-default-pie --with-system-zlib --with-target-system-zlib --enable-objc-gc=auto --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu]
+  ignore line: [Thread model: posix]
+  ignore line: [gcc version 8.3.0 (Ubuntu 8.3.0-6ubuntu1) ]
+  ignore line: [COMPILER_PATH=/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/home/markus/projects/imf-frameserver/third_party/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib' '-L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib' '-L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib' '-v' '-rdynamic' '-o' 'cmTC_d035b' '-mtune=generic' '-march=x86-64']
+  link line: [ /usr/lib/gcc/x86_64-linux-gnu/8/collect2 -plugin /usr/lib/gcc/x86_64-linux-gnu/8/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-linux-gnu/8/lto-wrapper -plugin-opt=-fresolution=/tmp/cctpSyCs.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -export-dynamic -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -z now -z relro -o cmTC_d035b /usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/Scrt1.o /usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/8/crtbeginS.o -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib -L/usr/lib/gcc/x86_64-linux-gnu/8 -L/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/home/markus/projects/imf-frameserver/third_party -L/usr/lib/gcc/x86_64-linux-gnu/8/../../.. CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-linux-gnu/8/crtendS.o /usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/crtn.o]
+    arg [/usr/lib/gcc/x86_64-linux-gnu/8/collect2] ==> ignore
+    arg [-plugin] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/8/liblto_plugin.so] ==> ignore
+    arg [-plugin-opt=/usr/lib/gcc/x86_64-linux-gnu/8/lto-wrapper] ==> ignore
+    arg [-plugin-opt=-fresolution=/tmp/cctpSyCs.res] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [-plugin-opt=-pass-through=-lc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-export-dynamic] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-znow] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_d035b] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/Scrt1.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/crti.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/8/crtbeginS.o] ==> ignore
+    arg [-L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib] ==> dir [/home/markus/projects/imf-frameserver/third_party/openjpeg/lib]
+    arg [-L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib] ==> dir [/home/markus/projects/imf-frameserver/third_party/asdcplib/lib]
+    arg [-L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib] ==> dir [/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/8] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/8]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib]
+    arg [-L/lib/x86_64-linux-gnu] ==> dir [/lib/x86_64-linux-gnu]
+    arg [-L/lib/../lib] ==> dir [/lib/../lib]
+    arg [-L/usr/lib/x86_64-linux-gnu] ==> dir [/usr/lib/x86_64-linux-gnu]
+    arg [-L/usr/lib/../lib] ==> dir [/usr/lib/../lib]
+    arg [-L/home/markus/projects/imf-frameserver/third_party] ==> dir [/home/markus/projects/imf-frameserver/third_party]
+    arg [-L/usr/lib/gcc/x86_64-linux-gnu/8/../../..] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/8/../../..]
+    arg [CMakeFiles/cmTC_d035b.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-lgcc] ==> lib [gcc]
+    arg [--push-state] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--pop-state] ==> ignore
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--push-state] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--pop-state] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/8/crtendS.o] ==> ignore
+    arg [/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/crtn.o] ==> ignore
+  collapse library dir [/home/markus/projects/imf-frameserver/third_party/openjpeg/lib] ==> [/home/markus/projects/imf-frameserver/third_party/openjpeg/lib]
+  collapse library dir [/home/markus/projects/imf-frameserver/third_party/asdcplib/lib] ==> [/home/markus/projects/imf-frameserver/third_party/asdcplib/lib]
+  collapse library dir [/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib] ==> [/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/8] ==> [/usr/lib/gcc/x86_64-linux-gnu/8]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib] ==> [/usr/lib]
+  collapse library dir [/lib/x86_64-linux-gnu] ==> [/lib/x86_64-linux-gnu]
+  collapse library dir [/lib/../lib] ==> [/lib]
+  collapse library dir [/usr/lib/x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+  collapse library dir [/usr/lib/../lib] ==> [/usr/lib]
+  collapse library dir [/home/markus/projects/imf-frameserver/third_party] ==> [/home/markus/projects/imf-frameserver/third_party]
+  collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/8/../../..] ==> [/usr/lib]
+  implicit libs: [gcc;gcc_s;c;gcc;gcc_s]
+  implicit dirs: [/home/markus/projects/imf-frameserver/third_party/openjpeg/lib;/home/markus/projects/imf-frameserver/third_party/asdcplib/lib;/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib;/usr/lib/gcc/x86_64-linux-gnu/8;/usr/lib/x86_64-linux-gnu;/usr/lib;/lib/x86_64-linux-gnu;/lib;/home/markus/projects/imf-frameserver/third_party]
+  implicit fwks: []
+
+
+
+
+Detecting C [-std=c11] compiler features compiled with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_608ca/fast"
+/usr/bin/make -f CMakeFiles/cmTC_608ca.dir/build.make CMakeFiles/cmTC_608ca.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_608ca.dir/feature_tests.c.o
+/usr/bin/cc   -std=c11 -o CMakeFiles/cmTC_608ca.dir/feature_tests.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/feature_tests.c
+Linking C executable cmTC_608ca
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_608ca.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_608ca.dir/feature_tests.c.o  -o cmTC_608ca 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:1c_restrict
+    Feature record: C_FEATURE:1c_static_assert
+    Feature record: C_FEATURE:1c_variadic_macros
+
+
+Detecting C [-std=c99] compiler features compiled with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_96847/fast"
+/usr/bin/make -f CMakeFiles/cmTC_96847.dir/build.make CMakeFiles/cmTC_96847.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_96847.dir/feature_tests.c.o
+/usr/bin/cc   -std=c99 -o CMakeFiles/cmTC_96847.dir/feature_tests.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/feature_tests.c
+Linking C executable cmTC_96847
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_96847.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_96847.dir/feature_tests.c.o  -o cmTC_96847 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:1c_restrict
+    Feature record: C_FEATURE:0c_static_assert
+    Feature record: C_FEATURE:1c_variadic_macros
+
+
+Detecting C [-std=c90] compiler features compiled with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_cc13e/fast"
+/usr/bin/make -f CMakeFiles/cmTC_cc13e.dir/build.make CMakeFiles/cmTC_cc13e.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_cc13e.dir/feature_tests.c.o
+/usr/bin/cc   -std=c90 -o CMakeFiles/cmTC_cc13e.dir/feature_tests.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/feature_tests.c
+Linking C executable cmTC_cc13e
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_cc13e.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_cc13e.dir/feature_tests.c.o  -o cmTC_cc13e 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+    Feature record: C_FEATURE:1c_function_prototypes
+    Feature record: C_FEATURE:0c_restrict
+    Feature record: C_FEATURE:0c_static_assert
+    Feature record: C_FEATURE:0c_variadic_macros
+Determining if the include file sys/types.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_a5399/fast"
+/usr/bin/make -f CMakeFiles/cmTC_a5399.dir/build.make CMakeFiles/cmTC_a5399.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_a5399.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_a5399.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_a5399
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a5399.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_a5399.dir/CheckIncludeFile.c.o  -o cmTC_a5399 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file stdint.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_9fbe6/fast"
+/usr/bin/make -f CMakeFiles/cmTC_9fbe6.dir/build.make CMakeFiles/cmTC_9fbe6.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_9fbe6.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_9fbe6.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_9fbe6
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_9fbe6.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_9fbe6.dir/CheckIncludeFile.c.o  -o cmTC_9fbe6 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file stddef.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_29ab1/fast"
+/usr/bin/make -f CMakeFiles/cmTC_29ab1.dir/build.make CMakeFiles/cmTC_29ab1.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_29ab1.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_29ab1.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_29ab1
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_29ab1.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_29ab1.dir/CheckIncludeFile.c.o  -o cmTC_29ab1 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining size of unsigned short passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_169b3/fast"
+/usr/bin/make -f CMakeFiles/cmTC_169b3.dir/build.make CMakeFiles/cmTC_169b3.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_169b3.dir/CMAKE_SIZEOF_UNSIGNED_SHORT.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_169b3.dir/CMAKE_SIZEOF_UNSIGNED_SHORT.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CheckTypeSize/CMAKE_SIZEOF_UNSIGNED_SHORT.c
+Linking C executable cmTC_169b3
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_169b3.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_169b3.dir/CMAKE_SIZEOF_UNSIGNED_SHORT.c.o  -o cmTC_169b3 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the system is big endian passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_4b533/fast"
+/usr/bin/make -f CMakeFiles/cmTC_4b533.dir/build.make CMakeFiles/cmTC_4b533.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_4b533.dir/TestEndianess.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_4b533.dir/TestEndianess.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/TestEndianess.c
+Linking C executable cmTC_4b533
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_4b533.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_4b533.dir/TestEndianess.c.o  -o cmTC_4b533 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+TestEndianess.c:
+/* A 16 bit integer is required. */
+typedef unsigned short cmakeint16;
+
+/* On a little endian machine, these 16bit ints will give "THIS IS LITTLE ENDIAN."
+   On a big endian machine the characters will be exchanged pairwise. */
+const cmakeint16 info_little[] =  {0x4854, 0x5349, 0x4920, 0x2053, 0x494c, 0x5454, 0x454c, 0x4520, 0x444e, 0x4149, 0x2e4e, 0x0000};
+
+/* on a big endian machine, these 16bit ints will give "THIS IS BIG ENDIAN."
+   On a little endian machine the characters will be exchanged pairwise. */
+const cmakeint16 info_big[] =     {0x5448, 0x4953, 0x2049, 0x5320, 0x4249, 0x4720, 0x454e, 0x4449, 0x414e, 0x2e2e, 0x0000};
+
+#ifdef __CLASSIC_C__
+int main(argc, argv) int argc; char *argv[];
+#else
+int main(int argc, char *argv[])
+#endif
+{
+  int require = 0;
+  require += info_little[argc];
+  require += info_big[argc];
+  (void)argv;
+  return require;
+}
+
+
+Determining if the include file string.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_d5e75/fast"
+/usr/bin/make -f CMakeFiles/cmTC_d5e75.dir/build.make CMakeFiles/cmTC_d5e75.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_d5e75.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_d5e75.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_d5e75
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d5e75.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_d5e75.dir/CheckIncludeFile.c.o  -o cmTC_d5e75 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file memory.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_e4553/fast"
+/usr/bin/make -f CMakeFiles/cmTC_e4553.dir/build.make CMakeFiles/cmTC_e4553.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_e4553.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_e4553.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_e4553
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_e4553.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_e4553.dir/CheckIncludeFile.c.o  -o cmTC_e4553 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file stdlib.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_9ec7c/fast"
+/usr/bin/make -f CMakeFiles/cmTC_9ec7c.dir/build.make CMakeFiles/cmTC_9ec7c.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_9ec7c.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_9ec7c.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_9ec7c
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_9ec7c.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_9ec7c.dir/CheckIncludeFile.c.o  -o cmTC_9ec7c 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file stdio.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_3abe0/fast"
+/usr/bin/make -f CMakeFiles/cmTC_3abe0.dir/build.make CMakeFiles/cmTC_3abe0.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_3abe0.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_3abe0.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_3abe0
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_3abe0.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_3abe0.dir/CheckIncludeFile.c.o  -o cmTC_3abe0 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file math.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_60efd/fast"
+/usr/bin/make -f CMakeFiles/cmTC_60efd.dir/build.make CMakeFiles/cmTC_60efd.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_60efd.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_60efd.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_60efd
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_60efd.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_60efd.dir/CheckIncludeFile.c.o  -o cmTC_60efd 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file float.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_d3a80/fast"
+/usr/bin/make -f CMakeFiles/cmTC_d3a80.dir/build.make CMakeFiles/cmTC_d3a80.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_d3a80.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_d3a80.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_d3a80
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d3a80.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_d3a80.dir/CheckIncludeFile.c.o  -o cmTC_d3a80 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file time.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_c0b31/fast"
+/usr/bin/make -f CMakeFiles/cmTC_c0b31.dir/build.make CMakeFiles/cmTC_c0b31.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_c0b31.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_c0b31.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_c0b31
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c0b31.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_c0b31.dir/CheckIncludeFile.c.o  -o cmTC_c0b31 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file stdarg.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_45307/fast"
+/usr/bin/make -f CMakeFiles/cmTC_45307.dir/build.make CMakeFiles/cmTC_45307.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_45307.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_45307.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_45307
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_45307.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_45307.dir/CheckIncludeFile.c.o  -o cmTC_45307 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file ctype.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_036d7/fast"
+/usr/bin/make -f CMakeFiles/cmTC_036d7.dir/build.make CMakeFiles/cmTC_036d7.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_036d7.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_036d7.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_036d7
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_036d7.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_036d7.dir/CheckIncludeFile.c.o  -o cmTC_036d7 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file assert.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_cf9ef/fast"
+/usr/bin/make -f CMakeFiles/cmTC_cf9ef.dir/build.make CMakeFiles/cmTC_cf9ef.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_cf9ef.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_cf9ef.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_cf9ef
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_cf9ef.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_cf9ef.dir/CheckIncludeFile.c.o  -o cmTC_cf9ef 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file stdint.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_98596/fast"
+/usr/bin/make -f CMakeFiles/cmTC_98596.dir/build.make CMakeFiles/cmTC_98596.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_98596.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_98596.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_98596
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_98596.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_98596.dir/CheckIncludeFile.c.o  -o cmTC_98596 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file inttypes.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_9e498/fast"
+/usr/bin/make -f CMakeFiles/cmTC_9e498.dir/build.make CMakeFiles/cmTC_9e498.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_9e498.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_9e498.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_9e498
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_9e498.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_9e498.dir/CheckIncludeFile.c.o  -o cmTC_9e498 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file strings.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_67a24/fast"
+/usr/bin/make -f CMakeFiles/cmTC_67a24.dir/build.make CMakeFiles/cmTC_67a24.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_67a24.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_67a24.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_67a24
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_67a24.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_67a24.dir/CheckIncludeFile.c.o  -o cmTC_67a24 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file sys/stat.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_3386c/fast"
+/usr/bin/make -f CMakeFiles/cmTC_3386c.dir/build.make CMakeFiles/cmTC_3386c.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_3386c.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_3386c.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_3386c
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_3386c.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_3386c.dir/CheckIncludeFile.c.o  -o cmTC_3386c 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+
+Determining if the include file unistd.h exists passed with the following output:
+Change Dir: /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_7b3a4/fast"
+/usr/bin/make -f CMakeFiles/cmTC_7b3a4.dir/build.make CMakeFiles/cmTC_7b3a4.dir/build
+make[1]: Entering directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_7b3a4.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_7b3a4.dir/CheckIncludeFile.c.o   -c /home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_7b3a4
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7b3a4.dir/link.txt --verbose=1
+/usr/bin/cc    -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib  -rdynamic CMakeFiles/cmTC_7b3a4.dir/CheckIncludeFile.c.o  -o cmTC_7b3a4 
+make[1]: Leaving directory '/home/markus/projects/imflib/openjpeg/build/CMakeFiles/CMakeTmp'
+
+

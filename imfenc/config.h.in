@@ -28,11 +28,17 @@
 /* Define to 1 if you have the `boost_thread' library (-lboost_thread). */
 #undef HAVE_LIBBOOST_THREAD
 
+/* Define to 1 if you have the `crypto' library (-lcrypto). */
+#undef HAVE_LIBCRYPTO
+
 /* Define to 1 if you have the `kumu' library (-lkumu). */
 #undef HAVE_LIBKUMU
 
 /* Define to 1 if you have the `openjp2' library (-lopenjp2). */
 #undef HAVE_LIBOPENJP2
+
+/* Define to 1 if you have the `pthread' library (-lpthread). */
+#undef HAVE_LIBPTHREAD
 
 /* Define to 1 if you have the `swresample' library (-lswresample). */
 #undef HAVE_LIBSWRESAMPLE
@@ -49,9 +55,6 @@
 
 /* Define to 1 if you have the `memset' function. */
 #undef HAVE_MEMSET
-
-/* Define to 1 if you have the <openjpeg-2.1/openjpeg.h> header file. */
-#undef HAVE_OPENJPEG_2_1_OPENJPEG_H
 
 /* Define to 1 if stdbool.h conforms to C99. */
 #undef HAVE_STDBOOL_H

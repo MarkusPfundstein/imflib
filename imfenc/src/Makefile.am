@@ -1,7 +1,7 @@
 # compiler flags
 
-AM_CXXFLAGS = 
-AM_LDFLAGS = 
+#AM_CXXFLAGS = 
+AM_LDFLAGS = ${AM_LDFLAGS}
 
 #LIBS = -lopenjp2 -lboost_fileystem -lboost_system -las02 -lasdcp -lkumu -lavcodec -lavformat -lavutil -lswresample -lswscale
 
@@ -18,6 +18,10 @@ imfenc_SOURCES = \
 	mxfwriter.cpp \
 	wavmuxer.cpp
 
-imfenc_CXXFLAGS = --pedantic -Wall -std=c++11 -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code -D__STDC_CONSTANT_MACROS
+LPATH=../../third_party
+INC_PATH=-I${LPATH}/openjpeg/include -I${LPATH}/asdcplib/include -I${LPATH}/ffmpeg/include
+LIB_PATH=-L${LPATH}/openjpeg/lib -L${LPATH}/asdcplib/lib -L${LPATH}/ffmpeg/lib
 
-imfenc_LDFLAGS = 
+imfenc_CXXFLAGS = --pedantic -Wall -std=c++11 -Wshadow -Wcast-align -Wswitch-default -Wswitch-enum -Wunreachable-code -D__STDC_CONSTANT_MACROS ${INC_PATH}
+
+imfenc_LDFLAGS = ${LIB_PATH}

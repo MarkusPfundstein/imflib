@@ -1,0 +1,1 @@
+/usr/bin/cc -ffast-math -O3 -DNDEBUG  -L/home/markus/projects/imf-frameserver/third_party/openjpeg/lib -L/home/markus/projects/imf-frameserver/third_party/asdcplib/lib -L/home/markus/projects/imf-frameserver/third_party/ffmpeg/lib -rdynamic CMakeFiles/t1_generate_luts.dir/t1_generate_luts.c.o  -o ../../../bin/t1_generate_luts -lm 

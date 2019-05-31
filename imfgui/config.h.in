@@ -1,41 +1,5 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define to 1 if you have the <inttypes.h> header file. */
-#undef HAVE_INTTYPES_H
-
-/* Define to 1 if you have the <KLV.h> header file. */
-#undef HAVE_KLV_H
-
-/* Define to 1 if you have the <KM_error.h> header file. */
-#undef HAVE_KM_ERROR_H
-
-/* Define to 1 if you have the <KM_fileio.h> header file. */
-#undef HAVE_KM_FILEIO_H
-
-/* Define to 1 if you have the <KM_log.h> header file. */
-#undef HAVE_KM_LOG_H
-
-/* Define to 1 if you have the <KM_memio.h> header file. */
-#undef HAVE_KM_MEMIO_H
-
-/* Define to 1 if you have the <KM_mutex.h> header file. */
-#undef HAVE_KM_MUTEX_H
-
-/* Define to 1 if you have the <KM_platform.h> header file. */
-#undef HAVE_KM_PLATFORM_H
-
-/* Define to 1 if you have the <KM_prng.h> header file. */
-#undef HAVE_KM_PRNG_H
-
-/* Define to 1 if you have the <KM_tai.h> header file. */
-#undef HAVE_KM_TAI_H
-
-/* Define to 1 if you have the <KM_util.h> header file. */
-#undef HAVE_KM_UTIL_H
-
-/* Define to 1 if you have the <KM_xml.h> header file. */
-#undef HAVE_KM_XML_H
-
 /* Define to 1 if you have the `as02' library (-las02). */
 #undef HAVE_LIBAS02
 
@@ -45,47 +9,11 @@
 /* Define to 1 if you have the `boost_system' library (-lboost_system). */
 #undef HAVE_LIBBOOST_SYSTEM
 
+/* Define to 1 if you have the `crypto' library (-lcrypto). */
+#undef HAVE_LIBCRYPTO
+
 /* Define to 1 if you have the `kumu' library (-lkumu). */
 #undef HAVE_LIBKUMU
-
-/* Define to 1 if you have the <MDD.h> header file. */
-#undef HAVE_MDD_H
-
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
-
-/* Define to 1 if you have the <Metadata.h> header file. */
-#undef HAVE_METADATA_H
-
-/* Define to 1 if you have the <MXFTypes.h> header file. */
-#undef HAVE_MXFTYPES_H
-
-/* Define to 1 if you have the <MXF.h> header file. */
-#undef HAVE_MXF_H
-
-/* Define to 1 if you have the <PCMParserList.h> header file. */
-#undef HAVE_PCMPARSERLIST_H
-
-/* Define to 1 if you have the <stdint.h> header file. */
-#undef HAVE_STDINT_H
-
-/* Define to 1 if you have the <stdlib.h> header file. */
-#undef HAVE_STDLIB_H
-
-/* Define to 1 if you have the <strings.h> header file. */
-#undef HAVE_STRINGS_H
-
-/* Define to 1 if you have the <string.h> header file. */
-#undef HAVE_STRING_H
-
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#undef HAVE_SYS_STAT_H
-
-/* Define to 1 if you have the <sys/types.h> header file. */
-#undef HAVE_SYS_TYPES_H
-
-/* Define to 1 if you have the <unistd.h> header file. */
-#undef HAVE_UNISTD_H
 
 /* Name of package */
 #undef PACKAGE
@@ -107,9 +35,6 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
-
-/* Define to 1 if you have the ANSI C header files. */
-#undef STDC_HEADERS
 
 /* Version number of package */
 #undef VERSION

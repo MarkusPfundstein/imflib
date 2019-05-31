@@ -2,9 +2,6 @@
 
 include moc.mk
 
-AM_CXXFLAGS = 
-AM_LDFLAGS = 
-
 LIBS += $(QT4_LIBS)
 LIBS += $(XERCES_LIBS)
 LIBS += -lboost_filesystem
@@ -52,9 +49,13 @@ imfgui_SOURCES = \
 	views/imfpackageview.cpp \
 	views/packagetableview.cpp
 
-imfgui_CXXFLAGS = --pedantic -Wall -std=c++11 -Wshadow -Wcast-align -Wunreachable-code
+LPATH=../../third_party
+INC_PATH=-I${LPATH}/openjpeg/include -I${LPATH}/asdcplib/include -I${LPATH}/ffmpeg/include
+LIB_PATH=-L${LPATH}/openjpeg/lib -L${LPATH}/asdcplib/lib -L${LPATH}/ffmpeg/lib
+
+imfgui_CXXFLAGS = --pedantic -Wall -std=c++11 -Wshadow -Wcast-align -Wunreachable-code ${INC_PATH}
 imfgui_CXXFLAGS += $(QT4_CFLAGS)
 
-imfgui_LDFLAGS = 
+imfgui_LDFLAGS = ${LIB_PATH} 
 
 CLEANFILES = $(imfgui_MOC_FILES)
