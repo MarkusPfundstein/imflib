@@ -1,6 +1,6 @@
 # imflib
 
-Goal: encode and create IMF App2(E) compatible IMPs.
+Goal: encode IMF App2(E) compatible MXF and create and edit IMPs.
 
 State: Basic creation and editing works. Files pass Netflix' photon.
 
