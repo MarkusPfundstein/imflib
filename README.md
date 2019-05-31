@@ -6,7 +6,7 @@ State: Basic creation and editing works. Files pass Netflix' photon.
 
 *Note*: For decoding IMF files, see [imf-frameserver](https://github.com/MarkusPfundstein/imf-frameserver)
 
-The development of imflib so far has been sponsored 100% by [ODMEDIA](www.odmedia.com). I am looking currently for more sponsors. Please get in touch.
+The development of imflib so far has been sponsored 100% by [ODMEDIA](http://www.odmedia.com). I am looking currently for more sponsors. Please get in touch.
 
 ## Features
 
@@ -82,7 +82,7 @@ Example for mov file:
 
 Start the gui with `sh imfgui.sh`
 
-Examples coming
+Examples coming, for now see the file `manual.pdf` and follow the steps
 
 ## LICENSE
 
